@@ -47,7 +47,7 @@ load_data_menu = uimenu(menu, 'label', '1. Load data');
 uimenu( load_data_menu, 'label', 'From MoBILab', 'CallBack', 'disp(''Starting MoBILab...''); runmobilab;');
 uimenu( load_data_menu, 'label', 'Convert .xdf to .set', 'CallBack', 'disp(''Starting data conversion plugin...''); pop_convert_xdf_to_set();');
 uimenu( load_data_menu, 'label', 'From .set file(s)', 'CallBack', 'disp(''Loading data for eeglab...''); ALLEEG = pop_loadset(); eeglab redraw; disp(''Done.'')');
-uimenu( load_data_menu, 'label', 'Merge multiple set files (optional)', 'CallBack', 'disp(''Starting merging datasets...''); EEG = pop_mergeset(ALLEEG)');
+uimenu( load_data_menu, 'label', 'Merge multiple .set files and save the created file (optional step)', 'CallBack', 'disp(''Starting merging datasets...''); [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET ); eeglab redraw; disp(''Done.'')');
 
 preprocess_menu = uimenu(menu, 'label', '2. Preprocessing', 'CallBack', 'disp(''Starting preprocessing...''); EEG = pop_bemobil_preprocess(EEG); eeglab redraw;');
 
