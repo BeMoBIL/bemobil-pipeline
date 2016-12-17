@@ -21,9 +21,9 @@ function [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET, ind
     else
         EEG = pop_mergeset( ALLEEG );   
     end
-    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);
+    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
     EEG = eeg_checkset( EEG ); 
-    EEG = pop_saveset( EEG, 'filename','merged.set','filepath', [ EEG.filepath '\']);
+    EEG = pop_saveset( EEG, 'filename','merged.set','filepath', [ ALLEEG(CURRENTSET-1).filepath '\']);
     [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 
 
