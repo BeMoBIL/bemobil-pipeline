@@ -4,21 +4,25 @@
 % copy the content of this script to a new script and save it in one of your workplace folders.
 % DO NOT OVERWRITE THIS SCRIPT.
 
+close all
+clear all
 %% Filename informations
 
-study_folder = 'BPN Projects:\Lukas_Gehrke\studies\Spot_Rotation\';
-subjects_folder = 'data\level0\';
-session_folders = ['1' '2' '3' '4'];
-eeg_data_filename = 'test_body.set';
+study_folder = 'P:\Lukas_Gehrke\studies\Spot_Rotation\';
+subjects_folder = 'data\level_0\';
+number_of_subjects = 11;
+eeg_data_filenames ={'control_body.set' 'control_joy.set' 'test_body.set' 'test_joy.set'};
 
 %% Parameters
 
+load_from_xdf = false;
+
 % processing
 channel_locations_filename = 'channel_locations.elc';
-channels_to_remove = '';
+channels_to_remove = ['N29' 'N30' 'N31'];
 eog_channels  = ['G16' 'G32'];
 locutoff = 1;
-highcutoff = [];
+highcutoff = 124;
 resample_freq = 250;
 %EEG = bemobil_preprocess(EEG, channel_locations, channels_to_remove,...
 %eog_channels, locutoff, highcutoff, resample_freq);
@@ -82,38 +86,48 @@ current_dir = pwd;
 datapath = strcat(study_folder, subjects_folder);
 cd(datapath);
 
-for session = 1:length(session_folders)
-    cd(session)
+[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
+
+for subject = 1:number_of_subjects
+    cd(num2str(subject))
+    STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
     
-    EEG = pop_loadset(eeg_data_filename);
+    if load_from_xdf
+        convert_xdf_to_set([],pwd);
+    end
+    
+    EEG = pop_loadset('filename', eeg_data_filenames, 'filepath', pwd);
+    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
+    
+    bemobil_merge(ALLEEG,EEG,CURRENTSET,[1:length(ALLEEG)]);
     
     % preprocessing
-    EEG = bemobil_preprocess(EEG, channel_locations, channels_to_remove,...
+    EEG = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filename, channels_to_remove,...
         eog_channels, locutoff, highcutoff, resample_freq);
     
     % remove unwanted/irrelevant segments
-    EEG = bemobil_segment(EEG, keep_or_remove, start_segment, end_segment);
-    
-    % optional automatic cleaning
-    %EEG = pop_cleanline(EEG, 'LineFrequencies', line_frequencies);
-    %EEG = clean_rawdata(EEG, arg_flatline, arg_highpass, arg_channel, arg_noisy, arg_burst, arg_window)
-    
-    % manual channel rejection
-    EEG = pop_select(EEG);
-    
-    % manual time domain cleaning: components
-    EEG = pop_eegplot(EEG, 0);
-    
-    % interpolation and average referencing
-    EEG = bemobil_interp_avref(EEG);
-    
-    % dipfit
-    EEG = bemobil_dipfit(EEG, headmodel, channels_to_include,...
-        components_to_fit, RV_threshold, remove_outside_head,...
-        fit_bilateral_dipoles);
+    %     EEG = bemobil_segment(EEG, keep_or_remove, start_segment, end_segment);
+    %
+    %     % optional automatic cleaning
+    %     %EEG = pop_cleanline(EEG, 'LineFrequencies', line_frequencies);
+    %     %EEG = clean_rawdata(EEG, arg_flatline, arg_highpass, arg_channel, arg_noisy, arg_burst, arg_window)
+    %
+    %     % manual channel rejection
+    %     EEG = pop_select(EEG);
+    %
+    %     % manual time domain cleaning: components
+    %     EEG = pop_eegplot(EEG, 0);
+    %
+    %     % interpolation and average referencing
+    %     EEG = bemobil_interp_avref(EEG);
+    %
+    %     % dipfit
+    %     EEG = bemobil_dipfit(EEG, headmodel, channels_to_include,...
+    %         components_to_fit, RV_threshold, remove_outside_head,...
+    %         fit_bilateral_dipoles);
     
     % finish dataset
-        
+    
 end
 
 cd(current_dir);
