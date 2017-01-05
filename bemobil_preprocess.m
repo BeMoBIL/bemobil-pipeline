@@ -48,9 +48,8 @@ if ~isempty(channel_locations)
     chanlocfile_path = [EEG.filepath '\' channel_locations];
     if ~isempty(channel_locations)
         EEG = pop_chanedit(EEG, 'load',...
-            {chanlocfile_path 'filetype' 'autodetect'},...
-            'eval','chans = pop_chancenter( chans, [],[]);');
-        disp('Imported channel locations and recentered.');
+            {chanlocfile_path 'filetype' 'autodetect'});
+        disp('Imported channel locations.');
     end
     EEG.urchanlocs = EEG.chanlocs;
 end
