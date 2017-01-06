@@ -3,7 +3,7 @@
 temp = EEG.event;
 
 % delete all events that are not purely alphabetical
-indNumericalChars = cellfun(@(x) sum(isstrprop(x, 'digit'))>0, {temp.type});
+indNumericalChars = cellfun(@(x) sum(isstrprop(x, 'digit'))>1, {temp.type});
 
 temp(indNumericalChars)=[];
 

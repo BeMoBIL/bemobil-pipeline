@@ -83,7 +83,7 @@ fit_bilateral_dipoles = 2;
 
 % finalize single subject (copy back ICA weights to original dataset)
 
-%% Main Loop
+%% Preprocessing Loop
 
 current_dir = pwd;
 datapath = strcat(study_folder, subjects_folder);
@@ -113,6 +113,10 @@ for subject = subjects
 end
 
 cd(current_dir);
+
+%% Manual cleaning 1
+
+%% other stuff
 
 
     % remove unwanted/irrelevant segments
