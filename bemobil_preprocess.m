@@ -25,7 +25,7 @@ if nargin < 1
 end;
 
 % check if preprocessed file already exist and break if it does
-out_filename = ['Preprocessed_' EEG.filename];
+out_filename = 'preprocessed.set';
 dir_files = dir(EEG.filepath);
 if ismember(out_filename, {dir_files.name})
     error(['Warning: preprocessed file already exists in: ' EEG.filepath '. ' 'Exiting...']);
@@ -58,9 +58,9 @@ end
 % channels
 if ~isempty(channel_locations)
     for n = 1:length(EEG.chanlocs)
-        if ismember(EEG.chanlocs(n).labels, eog_channels)
+        if ismember(lower(EEG.chanlocs(n).labels), lower(eog_channels))
             EEG.chanlocs(n).type = strcat('EOG');
-            disp(['Changed channel type: ', EEG.chanlocs(n).labels, ' to EOG electrode./n']);
+            disp(['Changed channel type: ', EEG.chanlocs(n).labels, ' to EOG electrode.']);
         end
     end
     EEG = eeg_checkset( EEG );
@@ -96,14 +96,14 @@ EEG = eeg_checkset( EEG );
 disp(['Filtered the data from ', num2str(locutoff), ' to ', num2str(highcutoff)]);
 current_pwd = pwd;
 cd(EEG.filepath);
-saveas(gcf,[out_filename '_filter_response_' 'eegfiltnew_' num2str(locutoff) '-' num2str(highcutoff) '.eps'], 'psc2');
+saveas(gcf,['preprocessing_filter_response_' 'eegfiltnew_' num2str(locutoff) '-' num2str(highcutoff) '.eps'], 'psc2');
 close;
 cd(current_pwd);
 
 %save data and stop function so manual channel rejection is possible
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
 EEG = eeg_checkset( EEG );
-EEG = pop_saveset( EEG, 'filename','preprocessed.set','filepath', [ ALLEEG(CURRENTSET-1).filepath '\']);
+EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', [ ALLEEG(CURRENTSET-1).filepath '\']);
 disp('...done');
 [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 end

@@ -6,21 +6,24 @@
 
 close all
 clear all
-%% Filename informations
+%% Parameters
+
+% Filename informations
 
 study_folder = 'P:\Lukas_Gehrke\studies\Spot_Rotation\';
 subjects_folder = 'data\level_0\';
-number_of_subjects = 11;
+subjects = 1:12;
 eeg_data_filenames ={'control_body.set' 'control_joy.set' 'test_body.set' 'test_joy.set'};
 
-%% Parameters
 
-load_from_xdf = false;
+% other parameters
+
+load_from_xdf = true;
 
 % processing
 channel_locations_filename = 'channel_locations.elc';
-channels_to_remove = ['N29' 'N30' 'N31'];
-eog_channels  = ['G16' 'G32'];
+channels_to_remove = {'N29' 'N30' 'N31'};
+eog_channels  = {'G16' 'G32'};
 locutoff = 1;
 highcutoff = 124;
 resample_freq = 250;
@@ -88,7 +91,8 @@ cd(datapath);
 
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 
-for subject = 1:number_of_subjects
+for subject = subjects
+    disp(['Subject #' num2str(subject)]);
     cd(num2str(subject))
     STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
     
@@ -105,6 +109,12 @@ for subject = 1:number_of_subjects
     EEG = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filename, channels_to_remove,...
         eog_channels, locutoff, highcutoff, resample_freq);
     
+    cd ..
+end
+
+cd(current_dir);
+
+
     % remove unwanted/irrelevant segments
     %     EEG = bemobil_segment(EEG, keep_or_remove, start_segment, end_segment);
     %
@@ -127,10 +137,6 @@ for subject = 1:number_of_subjects
     %         fit_bilateral_dipoles);
     
     % finish dataset
-    
-end
-
-cd(current_dir);
 
 %% Epoching
 
