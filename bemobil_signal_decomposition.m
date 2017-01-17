@@ -19,7 +19,7 @@
 % See also:
 %   POP_BEMOBIL_SIGNAL_DECOMPOSITION, POP_RUNAMICA, RUNAMICA15, EEGLAB
 
-function [ EEG ] = bemobil_signal_decomposition( EEG, iteration, amica, numb_models, maxx_threads, other_algorithm)
+function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, iteration, amica, numb_models, maxx_threads, other_algorithm)
 
 if nargin < 1
     help bemobil_signal_decomposition;
@@ -41,7 +41,7 @@ if amica
         disp('Found datfile');
         while maxx_threads > 0
             try
-                [weights, sphere, mods] = runamica15([EEG.filepath EEG.datfile],...
+                [w, s, mods] = runamica15([EEG.filepath EEG.datfile],...
                     'num_models', numb_models,...
                     'max_threads', maxx_threads,...
                     'outdir', amica_outdir,...
@@ -53,12 +53,14 @@ if amica
                 
             end
         end
-        error('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+        disp('Continuing with default runica...');
+        other_algorithm = 'runica';
     else
         disp('No datfile field found in EEG structure. Will write temp file in current directory.');
         while maxx_threads > 0
             try
-                [weights, sphere, mods] = runamica15(EEG.data(:,:),...
+                [w, s, mods] = runamica15(EEG.data(:,:),...
                     'num_models', numb_models,...
                     'max_threads', maxx_threads,...
                     'outdir', amica_outdir);
@@ -69,21 +71,37 @@ if amica
                 
             end
         end
-        error('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+        disp('Continuing with default runica...');
+        other_algorithm = 'runica';
     end
     
     
     %mods = loadmodout15(amica_outdir);
-    EEG.icaweights = weights;
-    EEG.icasphere = sphere;
+    %     EEG.icaweights = w;
+    %     EEG.icasphere = s;
     %EEG.ica_mod_prob = mods.mod_prob;
     %EEG.ica_comp_var_explained = mods.svar;
+else
+    
+    other_algorithm = 'runica';
+    
 end
 
 if ~isempty(other_algorithm)
     % do other algorithm decomposition
+    
+    if strcmp(other_algorithm, 'runica')
+        
+        [w,s] = runica(EEG.data);
+        %         EEG.icaweights = w;
+        %         EEG.icasphere = s;
+        
+    end
 end
 
+EEG.icaweights = w;
+EEG.icasphere = s;
 EEG = eeg_checkset(EEG);
 
 % saving data set

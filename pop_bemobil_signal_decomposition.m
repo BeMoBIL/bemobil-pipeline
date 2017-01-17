@@ -12,7 +12,7 @@
 % See also: 
 %   RUNAMICA15, POP_RUNAMICA EEGLAB
 
-function [ EEG ] = pop_bemobil_signal_decomposition( EEG )
+function [ALLEEG EEG CURRENTSET] = pop_bemobil_signal_decomposition( ALLEEG, EEG, CURRENTSET )
 
 if nargin < 1
 	help pop_bemobil_signal_decomposition;
@@ -73,7 +73,7 @@ structout.num_models = str2double(structout.num_models);
 structout.max_threads = str2double(structout.max_threads);
 
 % run processing function with values from gui input
-EEG = bemobil_signal_decomposition(EEG, structout.iteration, structout.amica,...
+[ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, structout.iteration, structout.amica,...
     structout.num_models, structout.max_threads); %structout.other);
 end
 

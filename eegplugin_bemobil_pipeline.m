@@ -58,7 +58,7 @@ uimenu( channel_data_cleaning_menu, 'label', 'Clean_Rawdata (ASR) (optional)', '
 uimenu( channel_data_cleaning_menu, 'label', '2. Manual channel rejection', 'CallBack', 'disp(''Select channels...''); EEG = pop_select(EEG); eeglab redraw;');
 uimenu( channel_data_cleaning_menu, 'label', '3. Manual time domain cleaning', 'CallBack', 'disp(''Starting data cleaning on channel level...''); pop_eegplot(EEG); eeglab redraw;');
 
-signal_decomposition_menu = uimenu( menu, 'label', '4. Signal decomposition', 'CallBack', 'disp(''Opening AMICA GUI...''); EEG = pop_bemobil_signal_decomposition(EEG); eeglab redraw;');
+signal_decomposition_menu = uimenu( menu, 'label', '4. Signal decomposition', 'CallBack', 'disp(''Opening AMICA GUI...''); [ALLEEG EEG CURRENTSET] = pop_bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
 
 comp_data_cleaning_menu = uimenu( menu, 'label', '5. Data cleaning (component level)', 'CallBack', 'disp(''Starting data cleaning on component level...''); pop_eegplot(EEG, 0);');
 

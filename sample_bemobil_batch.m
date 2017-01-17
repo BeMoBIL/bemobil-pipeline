@@ -116,6 +116,31 @@ cd(current_dir);
 
 %% Manual cleaning 1
 
+%% ICA loop 1
+
+current_dir = pwd;
+datapath = strcat(study_folder, subjects_folder);
+cd(datapath);
+
+[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
+
+for subject = subjects
+    disp(['Subject #' num2str(subject)]);
+    cd(num2str(subject))
+    STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
+    
+    EEG = pop_loadset('filename', 'preICA1', 'filepath', pwd);
+    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
+    
+    % running signal decomposition
+    [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, 1, true,...
+    1, 8);
+    
+    cd ..
+end
+
+cd(current_dir);
+
 %% other stuff
 
 
