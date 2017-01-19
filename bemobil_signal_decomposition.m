@@ -19,7 +19,7 @@
 % See also:
 %   POP_BEMOBIL_SIGNAL_DECOMPOSITION, POP_RUNAMICA, RUNAMICA15, EEGLAB
 
-function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, iteration, amica, numb_models, maxx_threads, other_algorithm)
+function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, iteration, out_filename, amica, numb_models, maxx_threads, other_algorithm)
 
 if nargin < 1
     help bemobil_signal_decomposition;
@@ -27,8 +27,8 @@ if nargin < 1
 end;
 
 % check if decomposed file already exists and break if it does
-out_filename = ['postICA' num2str(iteration)];
-amica_outdir = strcat(EEG.filepath, 'amica_iteration_', iteration);
+out_filename = [out_filename '_' num2str(iteration)];
+amica_outdir = strcat(EEG.filepath, '\amica_', out_filename);
 
 dir_files = dir(EEG.filepath);
 if ismember(out_filename, {dir_files.name})
@@ -38,57 +38,58 @@ end
 
 if amica
     if isfield(EEG,'datfile') && length(EEG.datfile) > 0
-        disp('Found datfile');
-        while maxx_threads > 0
-            try
-                [w, s, mods] = runamica15([EEG.filepath EEG.datfile],...
-                    'num_models', numb_models,...
-                    'max_threads', maxx_threads,...
-                    'outdir', amica_outdir,...
-                    'num_chans', EEG.nbchan);
-                break
-            catch
-                maxx_threads = maxx_threads - 1;
-                warning(['AMICA crashed. Reducing maximum threads to ' num2str(maxx_threads)]);
-                
-            end
-        end
-        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
-        disp('Continuing with default runica...');
-        other_algorithm = 'runica';
+        disp('Found datfile.');
+        data = [EEG.filepath '\' EEG.datfile];
+        
+        
     else
         disp('No datfile field found in EEG structure. Will write temp file in current directory.');
-        while maxx_threads > 0
-            try
-                [w, s, mods] = runamica15(EEG.data(:,:),...
-                    'num_models', numb_models,...
-                    'max_threads', maxx_threads,...
-                    'outdir', amica_outdir);
-                break
-            catch
-                maxx_threads = maxx_threads - 1;
-                warning(['AMICA crashed. Reducing maximum threads to ' num2str(maxx_threads)]);
-                
-            end
+        data = EEG.data(:,:);
+        
+    end
+    
+    disp('Starting AMICA...');
+    while maxx_threads > 0
+        try
+            [w, s, mods] = runamica15(data,...
+                'num_models', numb_models,...
+                'max_threads', maxx_threads,...
+                'outdir', amica_outdir,...
+                'num_chans', EEG.nbchan,...
+                'writestep', 2000);
+            break
+        catch
+            maxx_threads = maxx_threads - 1;
+            warning(['AMICA crashed. Reducing maximum threads to ' num2str(maxx_threads)]);
+            
         end
+    end
+    
+    if maxx_threads == 0
         warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
         disp('Continuing with default runica...');
+        amica = 0;
         other_algorithm = 'runica';
+    else
+        disp('AMICA successfull, storing weights and sphere.');
     end
     
     
-    %mods = loadmodout15(amica_outdir);
-    %     EEG.icaweights = w;
-    %     EEG.icasphere = s;
-    %EEG.ica_mod_prob = mods.mod_prob;
-    %EEG.ica_comp_var_explained = mods.svar;
-else
-    
-    other_algorithm = 'runica';
-    
 end
+%mods = loadmodout15(amica_outdir);
+%     EEG.icaweights = w;
+%     EEG.icasphere = s;
+%EEG.ica_mod_prob = mods.mod_prob;
+%EEG.ica_comp_var_explained = mods.svar;
 
-if ~isempty(other_algorithm)
+if ~amica 
+    % this can't be as the else statement, because the amica can fail and 
+    % be 0 after having been 1 before
+    
+    if ~exist(other_algorithm, 'var')
+        other_algorithm = 'runica';
+    end
+    
     % do other algorithm decomposition
     
     if strcmp(other_algorithm, 'runica')
@@ -96,9 +97,13 @@ if ~isempty(other_algorithm)
         [w,s] = runica(EEG.data);
         %         EEG.icaweights = w;
         %         EEG.icasphere = s;
+        disp('runica successfull, storing weights and sphere.');
         
     end
+    
 end
+
+
 
 EEG.icaweights = w;
 EEG.icasphere = s;

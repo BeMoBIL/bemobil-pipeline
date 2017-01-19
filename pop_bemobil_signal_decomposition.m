@@ -21,7 +21,7 @@ end;
 
 % add preprocess GUI
 uigeom_cols = 2;
-uigeom_rows = 4;
+uigeom_rows = 5;
 
 uigom = {
     {uigeom_cols uigeom_rows [0 0] [1 1]} 
@@ -36,13 +36,16 @@ uigom = {
     {uigeom_cols uigeom_rows [0 3] [1 1]} 
     {uigeom_cols uigeom_rows [1 3] [1 1]}
     
-    %{uigeom_cols uigeom_rows [0 4] [1 1]} 
-    %{uigeom_cols uigeom_rows [1 4] [1 1]}
+    {uigeom_cols uigeom_rows [0 4] [1 1]} 
+    {uigeom_cols uigeom_rows [1 4] [1 1]}
     };
 
 uilist = {
-    { 'style', 'text', 'string', 'Iteration'}
+    { 'style', 'text', 'string', 'Iteration (will be added after filename)'}
     { 'style', 'edit', 'string', '1', 'tag', 'iteration'}
+    
+    { 'style', 'text', 'string', 'Out filename'}
+    { 'style', 'edit', 'string', 'postICA', 'tag', 'out_filename'}
 
     { 'style', 'text', 'string', 'AMICA yes/no'}
     { 'style', 'checkbox', 'value', 1, 'tag', 'amica'}
@@ -53,8 +56,8 @@ uilist = {
     { 'style', 'text', 'string', 'AMICA: max_threads'}
     { 'style', 'edit', 'string', '4', 'tag', 'max_threads'}
 
-    %{ 'style', 'text', 'string', 'will add others here later'}
-    %{ 'style', 'edit', 'string', 'other decomp algorithm'}
+%     { 'style', 'text', 'string', 'will add others here later'}
+%     { 'style', 'edit', 'string', 'other decomp algorithm'}
     };
 
 [ tmp1 tmp2 strhalt structout ] = inputgui('geom', uigom, 'uilist', uilist, ...
@@ -73,7 +76,8 @@ structout.num_models = str2double(structout.num_models);
 structout.max_threads = str2double(structout.max_threads);
 
 % run processing function with values from gui input
-[ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, structout.iteration, structout.amica,...
+[ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
+    structout.iteration, structout.out_filename, structout.amica,...
     structout.num_models, structout.max_threads); %structout.other);
 end
 
