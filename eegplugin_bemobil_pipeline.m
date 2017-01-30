@@ -47,9 +47,9 @@ load_data_menu = uimenu(menu, 'label', '1. Load data');
 uimenu( load_data_menu, 'label', 'From MoBILab', 'CallBack', 'disp(''Starting MoBILab...''); runmobilab;');
 uimenu( load_data_menu, 'label', 'Convert .xdf to .set', 'CallBack', 'disp(''Starting data conversion plugin...''); pop_convert_xdf_to_set();');
 uimenu( load_data_menu, 'label', 'From .set file(s)', 'CallBack', 'disp(''Loading data for eeglab...''); ALLEEG = pop_loadset(); eeglab redraw; disp(''Done.'')');
-uimenu( load_data_menu, 'label', 'Merge multiple set files (optional)', 'CallBack', 'disp(''Starting merging datasets...''); EEG = pop_mergeset(ALLEEG)');
+uimenu( load_data_menu, 'label', 'Merge multiple .set files and save the created file (optional step)', 'CallBack', 'disp(''Starting merging datasets...''); [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET ); eeglab redraw; disp(''Done.'')');
 
-preprocess_menu = uimenu(menu, 'label', '2. Preprocessing', 'CallBack', 'disp(''Starting preprocessing...''); EEG = pop_bemobil_preprocess(EEG); eeglab redraw;');
+preprocess_menu = uimenu(menu, 'label', '2. Preprocessing', 'CallBack', 'disp(''Starting preprocessing...''); [ ALLEEG EEG CURRENTSET ] = pop_bemobil_preprocess(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
 
 channel_data_cleaning_menu = uimenu(menu, 'label', '3. Data cleaning (channel level)');
 uimenu( channel_data_cleaning_menu, 'label', '1. Reject irrelevant experiment segments', 'CallBack', 'disp(''Starting segments GUI...''); EEG = pop_bemobil_segment(EEG); eeglab redraw;');
@@ -58,7 +58,7 @@ uimenu( channel_data_cleaning_menu, 'label', 'Clean_Rawdata (ASR) (optional)', '
 uimenu( channel_data_cleaning_menu, 'label', '2. Manual channel rejection', 'CallBack', 'disp(''Select channels...''); EEG = pop_select(EEG); eeglab redraw;');
 uimenu( channel_data_cleaning_menu, 'label', '3. Manual time domain cleaning', 'CallBack', 'disp(''Starting data cleaning on channel level...''); pop_eegplot(EEG); eeglab redraw;');
 
-signal_decomposition_menu = uimenu( menu, 'label', '4. Signal decomposition', 'CallBack', 'disp(''Opening AMICA GUI...''); EEG = pop_bemobil_signal_decomposition(EEG); eeglab redraw;');
+signal_decomposition_menu = uimenu( menu, 'label', '4. Signal decomposition', 'CallBack', 'disp(''Opening AMICA GUI...''); [ALLEEG EEG CURRENTSET] = pop_bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
 
 comp_data_cleaning_menu = uimenu( menu, 'label', '5. Data cleaning (component level)', 'CallBack', 'disp(''Starting data cleaning on component level...''); pop_eegplot(EEG, 0);');
 

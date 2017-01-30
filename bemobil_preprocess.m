@@ -10,22 +10,22 @@
 %   locutoff:             - low cut off frequency for firfilt filering. If none, locutoff is set to 1
 %   highcutoff            - high cut of frequency, if none, data will only be high pass filtered
 %   resample_freq         - Resample frequency (Hz)
-%    
+%
 % Outputs:
 %   EEG     - EEGLAB EEG structure
 %
-% See also: 
+% See also:
 %   POP_BEMOBIL_PREPROCESS, EEGLAB
 
-function [ EEG ] = bemobil_preprocess(EEG, channel_locations, channels_to_remove, eog_channels, locutoff, highcutoff, resample_freq)
+function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations, channels_to_remove, eog_channels, locutoff, highcutoff, resample_freq)
 
 if nargin < 1
-	help bemobil_preprocess;
-	return;
-end;	
+    help bemobil_preprocess;
+    return;
+end;
 
 % check if preprocessed file already exist and break if it does
-out_filename = ['Preprocessed_' EEG.filename];
+out_filename = 'preprocessed.set';
 dir_files = dir(EEG.filepath);
 if ismember(out_filename, {dir_files.name})
     error(['Warning: preprocessed file already exists in: ' EEG.filepath '. ' 'Exiting...']);
@@ -39,18 +39,17 @@ EEG = eeg_checkset(EEG, 'makeur');
 if ismember(channels_to_remove, {EEG.chanlocs.labels})
     % b) remove not needed channels import "corrected" chanlocs file
     EEG = pop_select( EEG,'nochannel', channels_to_remove);
-    EEG = eeg_checkset( EEG );  
+    EEG = eeg_checkset( EEG );
     disp(['Removed electrodes: ' channels_to_remove ' from the dataset.']);
 end
 
 % 1c) import chanlocs and copy to urchanlocs
 if ~isempty(channel_locations)
-    chanlocfile_path = [EEG.filepath channel_locations];
+    chanlocfile_path = [EEG.filepath '\' channel_locations];
     if ~isempty(channel_locations)
         EEG = pop_chanedit(EEG, 'load',...
-            {chanlocfile_path 'filetype' 'autodetect'},...
-            'eval','chans = pop_chancenter( chans, [],[]);');
-        disp('Imported channel locations and recentered.');
+            {chanlocfile_path 'filetype' 'autodetect'});
+        disp('Imported channel locations.');
     end
     EEG.urchanlocs = EEG.chanlocs;
 end
@@ -58,11 +57,11 @@ end
 % 1d) change channel names in standard MoBI montage declaring the EOG
 % channels
 if ~isempty(channel_locations)
-    for n = 1:length(EEG.chanlocs)            
-        if ismember(EEG.chanlocs(n).labels, eog_channels)
+    for n = 1:length(EEG.chanlocs)
+        if ismember(lower(EEG.chanlocs(n).labels), lower(eog_channels))
             EEG.chanlocs(n).type = strcat('EOG');
-            disp(['Changed channel type: ', EEG.chanlocs(n).labels, ' to EOG electrode./n']);
-        end            
+            disp(['Changed channel type: ', EEG.chanlocs(n).labels, ' to EOG electrode.']);
+        end
     end
     EEG = eeg_checkset( EEG );
 end
@@ -76,7 +75,7 @@ EEG = pop_resample(EEG, resample_freq);
 EEG = eeg_checkset( EEG );
 disp(['Resampled data to: ', num2str(resample_freq), 'Hz.']);
 
-% 3. Filtering 
+% 3. Filtering
 % Resources https://sccn.ucsd.edu/wiki/Firfilt_FAQ
 if isnan(locutoff)
     locutoff = 1;
@@ -97,11 +96,15 @@ EEG = eeg_checkset( EEG );
 disp(['Filtered the data from ', num2str(locutoff), ' to ', num2str(highcutoff)]);
 current_pwd = pwd;
 cd(EEG.filepath);
-saveas(gcf,[out_filename '_filter_response_' 'eegfiltnew_' num2str(locutoff) '-' num2str(highcutoff) '.eps'], 'psc2');
+saveas(gcf,['preprocessing_filter_response_' 'eegfiltnew_' num2str(locutoff) '-' num2str(highcutoff) '.eps'], 'psc2');
 close;
 cd(current_pwd);
 
 %save data and stop function so manual channel rejection is possible
-pop_saveset(EEG, strcat(EEG.filepath, out_filename));
+[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
+EEG = eeg_checkset( EEG );
+EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', [ ALLEEG(CURRENTSET-1).filepath '\']);
+disp('...done');
+[ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 end
 

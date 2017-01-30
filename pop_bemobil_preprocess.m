@@ -15,7 +15,7 @@
 % See also: 
 %   BEMOBIL_PREPROCESS, EEGLAB
 
-function [ EEG ] = pop_bemobil_preprocess( EEG )
+function [ ALLEEG EEG CURRENTSET ] = pop_bemobil_preprocess( ALLEEG, EEG, CURRENTSET )
 
 if nargin < 1
 	help pop_bemobil_preprocess;
@@ -58,13 +58,13 @@ uilist = {
     { 'style', 'edit', 'string', 'G16 G32' 'tag' 'heog_chans'}
 
     { 'style', 'text', 'string', 'Resample frequency'}
-    { 'style', 'edit', 'string', '500' 'tag' 'resample_freq'}
+    { 'style', 'edit', 'string', '250' 'tag' 'resample_freq'}
 
     { 'style', 'text', 'string', 'Filter(FIR) low cutoff frequency'}
     { 'style', 'edit', 'string', '1' 'tag' 'locutoff'}
 
     { 'style', 'text', 'string', 'Filter(FIR) high cutoff frequency'}
-    { 'style', 'edit', 'string', '' 'tag' 'highcutoff'}
+    { 'style', 'edit', 'string', '124' 'tag' 'highcutoff'}
 
     };
 
@@ -87,7 +87,7 @@ structout.locutoff = str2double(structout.locutoff);
 structout.highcutoff = str2double(structout.highcutoff);
 
 % run processing function with values from gui input
-EEG = bemobil_preprocess(EEG, structout.chanlocs, structout.remove_chans,...
+[ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, structout.chanlocs, structout.remove_chans,...
     structout.heog_chans, structout.locutoff, structout.highcutoff, ...
     structout.resample_freq);
 end
