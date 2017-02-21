@@ -103,10 +103,10 @@ for subject = subjects
     EEG = pop_loadset('filename', eeg_data_filenames, 'filepath', pwd);
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
     
-    bemobil_merge(ALLEEG,EEG,CURRENTSET,[1:length(ALLEEG)]);
+    [ALLEEG EEG CURRENTSET] = bemobil_merge(ALLEEG,EEG,CURRENTSET,[1:length(ALLEEG)]);
     
     % preprocessing
-    EEG = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filename, channels_to_remove,...
+    [ALLEEG EEG CURRENTSET] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filename, channels_to_remove,...
         eog_channels, locutoff, highcutoff, resample_freq);
     
     cd ..
