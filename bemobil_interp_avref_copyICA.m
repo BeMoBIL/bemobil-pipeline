@@ -1,4 +1,4 @@
-% bemobil_interp_avref() - Interpolates missing channels with spherical
+% bemobil_interp_avref_copyICA() - Interpolates missing channels with spherical
 % interpolation and rereferences data to average reference.
 %
 % Usage:
@@ -13,14 +13,14 @@
 % See also: 
 %   POP_REREF, POP_INTERP, EEGLAB
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, EEG_index_to_copy_ICA, channels_to_interpolate, out_filename, out_filepath)
 
 if nargin < 1
 	help bemobil_interp_avref;
 	return;
 end;
 
-if ~exist('out_filename', 'var') out_filename = 'interpolated_avRef.set'; end;
+if ~exist('out_filename', 'var') out_filename = 'interpolated_avRef_ICA_weights.set'; end;
 if ~exist('out_filepath', 'var') out_filepath = EEG.filepath; end;
 
 % make sure output folder exists, nothing changes, if yes
@@ -55,6 +55,21 @@ end
 % Compute average reference
 EEG = pop_reref( EEG, []);
 disp('Rereferencing done.');
+
+% Copy ICA weights
+if ~isempty(EEG_index_to_copy_ICA)
+    disp('Copying ICA weights from provided data set.');
+    EEG.icaweights = ALLEEG(EEG_index_to_copy_ICA).icaweights;
+    EEG.icawinv = ALLEEG(EEG_index_to_copy_ICA).icawinv;
+    EEG.icasphere = ALLEEG(EEG_index_to_copy_ICA).icasphere;
+    EEG.icaact = ALLEEG(EEG_index_to_copy_ICA).icaact;
+    EEG.icasplinefile = ALLEEG(EEG_index_to_copy_ICA).icasplinefile;
+    EEG.icachansind = ALLEEG(EEG_index_to_copy_ICA).icachansind;
+    
+    EEG = eeg_checkset( EEG );
+else
+    disp('No data set to copy ICA weights from is provided. Skipping this step.');
+end
 
 % save data set
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
