@@ -5,8 +5,9 @@
 %   >>  EEG = bemobil_preprocess( filename, filepath );
 %
 % Inputs:
-%   filename     - filename of a *.xdf file
-%   filepath     - filepath to a *.xdf file
+%   filename        - filename of a *.xdf file
+%   filepath_input  - filepath to a *.xdf file
+%   filepath_output - filepath for the *.set file
 %    
 % Outputs:
 %   .set file    - EEGLAB compatible .set file
@@ -14,20 +15,26 @@
 % See also: 
 %   LOAD_XDF, POP_LOAD_XDF, POP_SAVESET, EEGLAB
 
-function [ EEG ] = convert_xdf_to_set( filename, filepath )
+function [ALLEEG EEG CURRENTSET] = convert_xdf_to_set(ALLEEG, filename, filepath_input, filepath_output )
 
 if nargin < 1
 	help convert_xdf_to_set;
 	return;
 end;
 
+if ~exist('filepath_output','var')
+    filepath_output = filepath_input;
+end
+
+mkdir(filepath_output)
+
 if isempty(filename)
     % if a single file is not provided, find all *.xdf
     % files in session_path
-    data_to_process_tmp = dir([filepath '/*.xdf']);
+    data_to_process_tmp = dir([filepath_input '/*.xdf']);
     data_to_process = {data_to_process_tmp.name};
 else
-    data_to_process = {strcat(filepath, '/', filename)};
+    data_to_process = {[filename '.xdf']};
 end
 
 % check if any data files are ready to be processed
@@ -39,14 +46,12 @@ end
 % 1. load data
 for i = 1:length(data_to_process)
     disp(['Now loading dataset: ' num2str(i) ' in session folder']);
+    
+    setname = strsplit(data_to_process{i},'.');
+    setname = setname{1};
+    EEG = pop_loadxdf(strcat(filepath_input, '/', data_to_process{i}), 'streamtype', 'EEG', 'exclude_markerstreams', {});
+    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'setname',[setname '_EEG'],'savenew',[filepath_output '\' setname '_EEG.set'],'gui','off'); 
 
-    if length(data_to_process) > 1
-        EEG = pop_loadxdf(strcat(filepath, '/', data_to_process{i}), 'streamtype', 'EEG', 'exclude_markerstreams', {});
-        pop_saveset(EEG, data_to_process{i}, filepath);
-    else
-        EEG = pop_loadxdf(data_to_process{i}, 'streamtype', 'EEG', 'exclude_markerstreams', {});
-        pop_saveset(EEG, filename, filepath);
-    end
 end
 end
 
