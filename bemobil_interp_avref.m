@@ -1,36 +1,44 @@
-% bemobil_interp_avref() - Interpolates missing channels with spherical
-% interpolation and rereferences data to average reference.
+% bemobil_interp_avref() - Interpolates missing channels with spherical interpolation and
+% average references the data.
 %
 % Usage:
-%   >>  [ EEG ] = bemobil_interp_avref( EEG )
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, out_filename, out_filepath)
 %
 % Inputs:
-%   EEG     - EEGLAB EEG structure
-%    
+%   ALLEEG                  - complete EEGLAB data set structure
+%   EEG                     - current EEGLAB EEG structure
+%   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
+%   channels_to_interpolate - vector of channel numbers that should be interpolated; if [],
+%       attempts to interpolate all missing (already deleted) channels from urchanlocs
+%   out_filename            - output filename (OPTIONAL ARGUMENT)
+%   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
+%       if both a name and a path are provided)
+%
 % Outputs:
-%   EEG     - average referenced and channel interpolated EEGLAB EEG structure
+%   ALLEEG                  - complete EEGLAB data set structure
+%   EEG                     - current EEGLAB EEG structure
+%   Currentset              - index of current EEGLAB EEG structure within ALLEEG
+%
+%   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
 % See also: 
-%   POP_REREF, POP_INTERP, EEGLAB
+%   EEGLAB, bemobil_switch_interchanged_channels, pop_interp, pop_reref, pop_interp, 
+% 
+% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
 
 function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, out_filename, out_filepath)
 
-if nargin < 1
-	help bemobil_interp_avref;
-	return;
-end;
+% only save a file on disk if both a name and a path are provided
+save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
 
-if ~exist('out_filename', 'var') out_filename = 'interpolated_avRef.set'; end;
-if ~exist('out_filepath', 'var') out_filepath = EEG.filepath; end;
-
-% make sure output folder exists, nothing changes, if yes
-mkdir(out_filepath);
-
-% check if preprocessed file already exist and break if it does
-dir_files = dir(out_filepath);
-if ismember(out_filename, {dir_files.name})
-    error(['Warning: ' out_filename ' file already exists in: ' out_filepath '. ' 'Exiting...']);
-    %return; use only if warning is provided only on console with disp
+% check if file already exist and show warning if it does
+if save_file_on_disk
+    mkdir(out_filepath); % make sure that folder exists, nothing happens if so
+    dir_files = dir(out_filepath);
+    if ismember(out_filename, {dir_files.name})
+        warning([out_filename ' file already exists in: ' out_filepath '. File will be overwritten...']);
+    end
 end
 
 % Interpolate channels with spherical interpolation
@@ -42,8 +50,7 @@ if isempty(channels_to_interpolate)
         disp('...done.')
         EEG = eeg_checkset(EEG);
     else
-        disp('...no urchanlocs present in dataset. Cannot interpolate.');
-        return;
+        warning('...no urchanlocs present in dataset. Cannot interpolate.');
     end
 else
     disp('Interpolating channels that are indicated...');
@@ -56,10 +63,14 @@ end
 EEG = pop_reref( EEG, []);
 disp('Rereferencing done.');
 
-% save data set
+% new data set in EEGLAB
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
 EEG = eeg_checkset( EEG );
-EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', out_filepath);
-disp('...done');
-[ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 
+% save on disk
+if save_file_on_disk
+    EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', out_filepath);
+    disp('...done');
+end
+
+[ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);

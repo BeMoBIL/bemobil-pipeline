@@ -1,21 +1,15 @@
-% bemobil_preprocess() - Preprocessing of EEG data
+% bemobil_filter() - Filtering of EEG data
 %
 % Usage:
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, locutoff, highcutoff, resample_freq);
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, locutoff, highcutoff, resample_freq, out_filename, out_filepath);
+%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, locutoff, highcutoff);
+%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, locutoff, highcutoff, out_filename, out_filepath);
 %
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
 %   EEG                     - current EEGLAB EEG structure
 %   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
-%   channel_locations_file  - channel_locations file (with path); OR []
-%   channels_to_remove      - cell of all channels that should be thrown out
-%       per se (e.g. {'N29' 'N30' 'N31'}); OR []
-%   eog_channels            - cell of channels that should be declared as EOG
-%       for later use (e.g. {'G16' 'G32'}); OR []
 %   lowcutoff               - low cut off frequency for firfilt filering, if [], no filter will be applied
 %   highcutoff              - high cut of frequency, if [], no filter will be applied
-%   resample_freq           - Resample frequency (Hz), if [], no resampling will be applied
 %   out_filename            - output filename (OPTIONAL ARGUMENT)
 %   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
 %       if both a name and a path are provided)
@@ -28,11 +22,11 @@
 %   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
 % See also:
-%   EEGLAB, pop_eegfiltnew, pop_resample, pop_chanedit, pop_select
+%   EEGLAB, pop_eegfiltnew, bemobil_preprocess
 % 
-% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
+% Authors: Marius Klug, 2017
 
-function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, lowcutoff, highcutoff, resample_freq, out_filename, out_filepath)
+function [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, lowcutoff, highcutoff, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -46,46 +40,6 @@ if save_file_on_disk
     end
 end
 
-% 1a) fill/copy all ur_structures with raw data (e.g. copy event to urevent)
-EEG = eeg_checkset(EEG, 'makeur');
-
-% 1b) remove unused neck electrodes from file (if BeMoBIL layout is used as is)
-if ~isempty([]) && ismember(channels_to_remove, {EEG.chanlocs.labels})
-    % b) remove not needed channels import "corrected" chanlocs file
-    EEG = pop_select( EEG,'nochannel', channels_to_remove);
-    EEG = eeg_checkset( EEG );
-    disp(['Removed electrodes: ' channels_to_remove ' from the dataset.']);
-end
-
-% 1c) import chanlocs and copy to urchanlocs
-if ~isempty(channel_locations_filepath)
-    EEG = pop_chanedit(EEG, 'load',...
-        {channel_locations_filepath 'filetype' 'autodetect'});
-    disp('Imported channel locations.');
-    EEG.urchanlocs = EEG.chanlocs;
-end
-
-% 1d) change channel names in standard MoBI montage declaring the EOG
-% channels
-if ~isempty(eog_channels)
-    for n = 1:length(EEG.chanlocs)
-        if ismember(lower(EEG.chanlocs(n).labels), lower(eog_channels))
-            EEG.chanlocs(n).type = strcat('EOG');
-            disp(['Changed channel type: ', EEG.chanlocs(n).labels, ' to EOG electrode.']);
-        end
-    end
-    EEG = eeg_checkset( EEG );
-end
-
-% 2. Resample/downsample to 250 Hz if no other resampling frequency is
-% provided
-if ~isempty(resample_freq)
-    EEG = pop_resample(EEG, resample_freq);
-    EEG = eeg_checkset( EEG );
-    disp(['Resampled data to: ', num2str(resample_freq), 'Hz.']);
-end
-
-% 3. Filtering
 % Resources https://sccn.ucsd.edu/wiki/Firfilt_FAQ
 
 % highpass
