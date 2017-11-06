@@ -48,6 +48,10 @@ if save_file_on_disk
     if ismember(out_filename, {dir_files.name})
         warning([out_filename ' file already exists in: ' out_filepath '. File will be overwritten...']);
     end
+else
+    % necessary for AMICA write-out, there won't be other data savings than the AMICA folder!
+    out_filepath = EEG.filepath;
+    out_filename = EEG.filename;
 end
 
 if amica
@@ -62,6 +66,9 @@ if amica
         
     end
     
+    % delete potentially preexistent folder since it will interfere in case AMICA crashes
+    if ~isempty(dir([out_filepath '\' out_filename '_AMICA'])); rmdir([out_filepath '\' out_filename '_AMICA'],'s'); end
+    
     disp('Starting AMICA...');
     while maxx_threads > 0
         % try/catch loop because AMICA can crash dependent on the data set and the number of threads
@@ -73,23 +80,29 @@ if amica
                 'num_chans', EEG.nbchan,...
                 'writestep', 2000,...
                 'pcakeep',data_rank);
-            break
+            disp('AMICA successfull, storing weights and sphere.');
+            EEG.etc.spatial_filter.algorithm = 'AMICA';
+            EEG.etc.spatial_filter.AMICAmods = mods;
+            
+            % if successful, get out of the loop
+            break 
+            
         catch
+            
+            % if error, reduce threads by one
             maxx_threads = maxx_threads - 1;
             warning(['AMICA crashed. Reducing maximum threads to ' num2str(maxx_threads)]);
             
         end
     end
-    
+
     if maxx_threads == 0
-        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+    
+        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads of your CPU. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
         disp('Continuing with default EEGLAB runica() ...');
         amica = 0;
         other_algorithm = 'runica';
-    else
-        disp('AMICA successfull, storing weights and sphere.');
-        EEG.etc.spatial_filter.algorithm = 'AMICA';
-        EEG.etc.spatial_filter.AMICAmods = mods;
+    
     end
     
     

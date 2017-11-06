@@ -29,7 +29,7 @@
 %
 % See also:
 %   EEGLAB, pop_eegfiltnew, pop_resample, pop_chanedit, pop_select
-% 
+%
 % Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
 
 function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, lowcutoff, highcutoff, resample_freq, out_filename, out_filepath)
@@ -50,11 +50,17 @@ end
 EEG = eeg_checkset(EEG, 'makeur');
 
 % 1b) remove unused neck electrodes from file (if BeMoBIL layout is used as is)
-if ~isempty([]) && ismember(channels_to_remove, {EEG.chanlocs.labels})
-    % b) remove not needed channels import "corrected" chanlocs file
-    EEG = pop_select( EEG,'nochannel', channels_to_remove);
-    EEG = eeg_checkset( EEG );
-    disp(['Removed electrodes: ' channels_to_remove ' from the dataset.']);
+if ~isempty(channels_to_remove)
+    if all(ismember(channels_to_remove, {EEG.chanlocs.labels}))
+        % b) remove not needed channels import "corrected" chanlocs file
+        EEG = pop_select( EEG,'nochannel', channels_to_remove);
+        EEG = eeg_checkset( EEG );
+        disp(['Removed electrodes: ' channels_to_remove ' from the dataset.']);
+    else
+        error('Not all of the specified channels to remove were present als data channels!')
+    end
+else
+    disp('No channels to remove specified, skipping this step.')
 end
 
 % 1c) import chanlocs and copy to urchanlocs
@@ -88,18 +94,22 @@ end
 % 3. Filtering
 % Resources https://sccn.ucsd.edu/wiki/Firfilt_FAQ
 
+EEG.etc.filter.type = 'Hamming windowed sinc FIR filter (zero-phase)';
+
+
 % highpass
 
 if ~isempty(lowcutoff)
-   
+    
     figure;
     [EEG, com, b] = pop_eegfiltnew(EEG, lowcutoff, 0, [], 0, [], 1);
     EEG = eeg_checkset( EEG );
-    saveas(gcf,[out_filepath '\preprocessing_filter_response_highpass_' num2str(lowcutoff) 'Hz']);
+    
+    if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_highpass']); end
     
     split1 = strsplit(com, ' ');
-    split2 = strsplit(split1{6}, ',');
-    highpass_order = str2num(split2{1});
+    split2 = strsplit(split1{4}, ',');
+    highpass_order = str2num(split2{3}) + 1;
     highpass_cutoff = lowcutoff/2; % in eeglab the specified cutoff is the passband edge
     highpass_passband = lowcutoff;
     highpass_transition_bandwidth = lowcutoff;
@@ -109,6 +119,8 @@ if ~isempty(lowcutoff)
         num2str(highpass_passband) 'Hz passband edge, and '...
         num2str(highpass_order) ' order.']);
     
+    % removing and remaking the filed is necessary for the order of the struct fields to be identical
+    if isfield(EEG.etc.filter,'highpass');  EEG.etc.filter = rmfield(EEG.etc.filter, 'highpass'); end
     EEG.etc.filter.highpass.cutoff = highpass_cutoff;
     EEG.etc.filter.highpass.transition_bandwidth = highpass_transition_bandwidth;
     EEG.etc.filter.highpass.passband = highpass_passband;
@@ -116,7 +128,14 @@ if ~isempty(lowcutoff)
     close;
 else
     
-    EEG.etc.filter.highpass = 'not applied';
+    if ~isfield(EEG.etc.filter,'highpass')
+        EEG.etc.filter.highpass = 'not applied';
+    else
+        % removing and remaking the filed is necessary for the order of the struct fields to be identical
+        temp = EEG.etc.filter.highpass;
+        EEG.etc.filter = rmfield(EEG.etc.filter, 'highpass');
+        EEG.etc.filter.highpass = temp;
+    end
     
 end
 
@@ -126,28 +145,30 @@ end
 if ~isempty(highcutoff)
     
     if highcutoff > (EEG.srate/2) - 1
-    disp('Warning: Cannot filter higher than Nyquist frequency.');
-    highcutoff = (EEG.srate/2) - 1;
-    disp(['Now continuing with highest possible frequency: ' num2str(highcutoff)]);
+        disp('Warning: Cannot filter higher than Nyquist frequency.');
+        highcutoff = (EEG.srate/2) - 1;
+        disp(['Now continuing with highest possible frequency: ' num2str(highcutoff)]);
     end
-   
+    
     figure;
     [EEG, com, b] = pop_eegfiltnew(EEG, 0, highcutoff, [], 0, [], 1);
     EEG = eeg_checkset( EEG );
-    saveas(gcf,[out_filepath '\preprocessing_filter_response_lowpass_' num2str(highcutoff) 'Hz']);
+    if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_lowpass']); end
     
     split1 = strsplit(com, ' ');
-    split2 = strsplit(split1{6}, ',');
-    lowpass_order = str2num(split2{1});
-    lowpass_transition_bandwidth = highcutoff*0.25/2;
-    lowpass_cutoff = highcutoff + lowpass_transition_bandwidth; % in eeglab the specified cutoff is the passband edge
+    split2 = strsplit(split1{4}, ',');
+    lowpass_order = str2num(split2{3}) + 1;
+    lowpass_transition_bandwidth = highcutoff*0.25;
+    lowpass_cutoff = highcutoff + lowpass_transition_bandwidth/2; % in eeglab the specified cutoff is the passband edge
     lowpass_passband = highcutoff;
     
-    disp(['Highpass filtered the data with ' num2str(lowpass_cutoff) 'Hz cutoff, '...
+    disp(['Lowpass filtered the data with ' num2str(lowpass_cutoff) 'Hz cutoff, '...
         num2str(lowpass_transition_bandwidth) 'Hz transition bandwidth, '...
         num2str(lowpass_passband) 'Hz passband edge, and '...
         num2str(lowpass_order) ' order.']);
     
+    % removing and remaking the filed is necessary for the order of the struct fields to be identical
+    if isfield(EEG.etc.filter,'lowpass'); EEG.etc.filter = rmfield(EEG.etc.filter, 'lowpass'); end
     EEG.etc.filter.lowpass.cutoff = lowpass_cutoff;
     EEG.etc.filter.lowpass.transition_bandwidth = lowpass_transition_bandwidth;
     EEG.etc.filter.lowpass.passband = lowpass_passband;
@@ -155,11 +176,16 @@ if ~isempty(highcutoff)
     close;
 else
     
-    EEG.etc.filter.lowpass = 'not applied';
+    if ~isfield(EEG.etc.filter,'lowpass')
+        EEG.etc.filter.lowpass = 'not applied';
+    else
+        % removing and remaking the filed is necessary for the order of the struct fields to be identical
+        temp = EEG.etc.filter.lowpass;
+        EEG.etc.filter = rmfield(EEG.etc.filter, 'lowpass');
+        EEG.etc.filter.lowpass = temp;
+    end
     
 end
-
-EEG.etc.filter.type = 'Hamming windowed sinc FIR filter';
 
 % new data set in EEGLAB
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');

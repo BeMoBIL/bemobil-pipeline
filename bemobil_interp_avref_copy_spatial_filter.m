@@ -40,7 +40,7 @@
 % 
 % Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_ICA, channels_to_interpolate, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, channels_to_interpolate, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -77,7 +77,7 @@ EEG = pop_reref( EEG, []);
 disp('Rereferencing done.');
 
 % Copy spatial filter weights
-if ~isempty(EEG_set_to_copy_ICA)
+if ~isempty(EEG_set_to_copy_spatial_filter)
     
     % check if the requirements are met
     
@@ -126,15 +126,15 @@ if ~isempty(EEG_set_to_copy_ICA)
     % requirements are met!
     
     disp('Copying ICA weights from provided data set.');
-    EEG.icaweights = EEG_set_to_copy_ICA.icaweights;
-    EEG.icasphere = EEG_set_to_copy_ICA.icasphere;
+    EEG.icaweights = EEG_set_to_copy_spatial_filter.icaweights;
+    EEG.icasphere = EEG_set_to_copy_spatial_filter.icasphere;
     
     % recompute the rest of ICA stuff
     EEG = eeg_checkset( EEG );
     
-    if isfield(EEG_set_to_copy_ICA.etc,'spatial_filter')
+    if isfield(EEG_set_to_copy_spatial_filter.etc,'spatial_filter')
         
-        EEG.etc.spatial_filter = EEG_set_to_copy_ICA.etc.spatial_filter;
+        EEG.etc.spatial_filter = EEG_set_to_copy_spatial_filter.etc.spatial_filter;
         
     end
 else
