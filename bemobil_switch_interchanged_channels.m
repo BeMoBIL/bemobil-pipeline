@@ -118,7 +118,7 @@ newEEG.etc.interchanged_channels.channels_original = channelsOriginal;
 newEEG.etc.interchanged_channels.channels_new = channelsNew;
 
 % new data set in EEGLAB
-[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
+[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, newEEG, CURRENTSET, 'gui', 'off');
 EEG = eeg_checkset( EEG );
 
 % save on disk

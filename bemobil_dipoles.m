@@ -22,10 +22,11 @@
 function STUDY = bemobil_dipoles(STUDY,ALLEEG)
 
     % compute for all clusters except parentclust and outlier clust
-    clsind = 1:length(STUDY.cluster)-2; 
+    clsind = 3:length(STUDY.cluster); 
     
     for clust = 1:length(clsind)
         clear all_diplocs
+        clear residual_variances
         max_r = 0;
         len = length(STUDY.cluster(clsind(clust)).comps);
         tmppos = [ 0 0 0 ];
@@ -33,7 +34,6 @@ function STUDY = bemobil_dipoles(STUDY,ALLEEG)
         tmprv = 0;
         ndip = 0;
         for k = 1:len 
-            fprintf('.');
             comp  = STUDY.cluster(clsind(clust)).comps(k);
             abset = STUDY.cluster(clsind(clust)).sets(1,k);
             if ~isfield(ALLEEG(abset), 'dipfit')
@@ -61,7 +61,7 @@ function STUDY = bemobil_dipoles(STUDY,ALLEEG)
                        max_r = max(max_r,max(ALLEEG(abset).dipfit.vol.r));
                    end
                 end
-                all_diplocs(k,:) = posxyz;
+                all_diplocs(k,:) = mean(posxyz,1);
             end
         end
         centroid{clust}.dipole.posxyz =  tmppos/ndip;
@@ -72,7 +72,35 @@ function STUDY = bemobil_dipoles(STUDY,ALLEEG)
         end
         STUDY.cluster(clsind(clust)).dipole = centroid{clust}.dipole;
         STUDY.cluster(clsind(clust)).all_diplocs = all_diplocs;
+        
+        % compute spread (squared deviation from centroid)
+        squared_deviations = 0;
+        for IC = 1:size(all_diplocs,1)
+
+            dist_this_IC = sqrt((all_diplocs(IC,1) - centroid{clust}.dipole.posxyz(1))^2 + (all_diplocs(IC,2) - centroid{clust}.dipole.posxyz(2))^2 + (all_diplocs(IC,3) - centroid{clust}.dipole.posxyz(3))^2);
+            squared_deviations = squared_deviations + dist_this_IC^2;
+
+        end
+        
+        STUDY.cluster(clsind(clust)).squared_deviations = squared_deviations;
+        
+        % store residual variances
+        
+        for ICind = 1:length(STUDY.cluster(clsind(clust)).comps)
+            subject = STUDY.cluster(clsind(clust)).sets(ICind);
+            IC = STUDY.cluster(clsind(clust)).comps(ICind);
+            
+            residual_variances(ICind) = ALLEEG(subject).dipfit.model(IC).rv;
+        end
+        median_rv = median(residual_variances);
+        mean_rv = mean(residual_variances);
+        
+        STUDY.cluster(clsind(clust)).residual_variances = residual_variances;
+        STUDY.cluster(clsind(clust)).median_rv = median_rv;
+        STUDY.cluster(clsind(clust)).mean_rv = mean_rv;
+        
+        
+        
     end
-    fprintf('\n');
 end
 
