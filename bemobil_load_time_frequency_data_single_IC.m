@@ -1,4 +1,4 @@
-function time_frequency_data = bemobil_load_time_frequency_data_single_IC(input_path, subject, IC, timewarp_name, trial_normalization, times, freqs, baseline_start_end, experiment_conditions, experiment_conditions_titles, epoch_rejections, epoch_rejections_for_baseline)
+function time_frequency_data = bemobil_load_time_frequency_data_single_IC(input_path, subject, IC, epochs_info, timewarp_name, trial_normalization, times, freqs, baseline_start_end, experiment_conditions, experiment_conditions_titles, epoch_rejections, epoch_rejections_for_baseline)
 
 time_frequency_data.baseline_start_end = baseline_start_end;
 time_frequency_data.epoch_rejections_for_ERSPs = epoch_rejections;
@@ -43,9 +43,13 @@ end
 % do grand average
 
 if isempty(experiment_conditions)
+    % if no conditions are specified, all epochs are in the gradn average
     experiment_conditions_grand_average = true(1,size(subject_ersp_thisIC_all_epochs_power,1));
 else
-    experiment_conditions_grand_average = logical(experiment_conditions);
+    % if conditions are specified, the grand average should only have the data of the conditions to
+    % compare
+    error('not implemented yet')
+%     experiment_conditions_grand_average = logical(experiment_conditions);
 end
 
 % this is the mean ersp of this IC by this subject across all epochs that
