@@ -60,7 +60,7 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
     same_reference = strcmp(EEG.ref,EEG_set_to_copy_spatial_filter.ref);
     same_interpolated_locations = true; % initialize as true, because they both might not have the fields, which is fine
     same_interpolated_channels = true;
-    same_interchanged_channels = true;
+    same_demixed_channels = true;
     
     % check the fields
     if isfield(EEG_set_to_copy_spatial_filter.etc,'interpolated_locations') % one has it
@@ -83,19 +83,19 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
         end
     end
     
-    if isfield(EEG_set_to_copy_spatial_filter.etc,'interchanged_channels')
-        if ~(isfield(EEG.etc,'interchanged_channels') && isequal(EEG.etc.interchanged_channels, EEG_set_to_copy_spatial_filter.etc.interchanged_channels))
-            same_interchanged_channels = false;
+    if isfield(EEG_set_to_copy_spatial_filter.etc,'demixed_channels')
+        if ~(isfield(EEG.etc,'demixed_channels') && isequal(EEG.etc.demixed_channels, EEG_set_to_copy_spatial_filter.etc.demixed_channels))
+            same_demixed_channels = false;
         end
-    elseif isfield(EEG.etc,'interchanged_channels')
-        if ~(isfield(EEG_set_to_copy_spatial_filter.etc,'interchanged_channels') && isequal(EEG.etc.interchanged_channels, EEG_set_to_copy_spatial_filter.etc.interchanged_channels))
-            same_interchanged_channels = false;
+    elseif isfield(EEG.etc,'demixed_channels')
+        if ~(isfield(EEG_set_to_copy_spatial_filter.etc,'demixed_channels') && isequal(EEG.etc.demixed_channels, EEG_set_to_copy_spatial_filter.etc.demixed_channels))
+            same_demixed_channels = false;
         end
         
     end
     
     
-    if ~all([same_reference,same_interpolated_locations,same_interpolated_channels,same_interchanged_channels])
+    if ~all([same_reference,same_interpolated_locations,same_interpolated_channels,same_demixed_channels])
         error('Requirements not met. Type ''help bemobil_copy_spatial_filter'' for information!')
     end
     

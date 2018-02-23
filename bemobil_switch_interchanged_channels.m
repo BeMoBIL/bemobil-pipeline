@@ -36,6 +36,8 @@
 
 function [ALLEEG, EEG, CURRENTSET] = bemobil_switch_interchanged_channels( EEG , ALLEEG, CURRENTSET, channelsNew, channelsOriginal, process, out_filename, out_filepath)
 
+error('Deprecated version, use ''bemobil_unmix_electrode_mixups()'' istead of ''bemobil_switch_interchanged_channels()''. If you know what you''re doing, uncomment this line.')
+
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
 
@@ -68,6 +70,7 @@ if strcmp(process, 'exchange labels, type & channel number')
     % G16 (eye) is at the position of G10 (forehead) for example
     
     tempNewEEG = newEEG;
+    
 
     % first interchange labels and type, then the data is connected to the
     % correct labes/type
