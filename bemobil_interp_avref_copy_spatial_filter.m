@@ -14,9 +14,9 @@
 % information about the algorithm is stored (is also copied).
 %
 % Usage:
-%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_ICA, channels_to_interpolate)
-%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_ICA, channels_to_interpolate, copy_dipfit)
-%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_ICA, channels_to_interpolate, copy_dipfit, out_filename, out_filepath)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, channels_to_interpolate)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copyICA( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject, out_filename, out_filepath)
 %
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
@@ -41,7 +41,7 @@
 % 
 % Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, channels_to_interpolate, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -78,9 +78,9 @@ EEG = pop_reref( EEG, []);
 disp('Rereferencing done.');
 
 % Copy spatial filter weights
-if ~isempty(EEG_set_to_copy_spatial_filter)
+if ~isempty(EEG_set_to_copy_spatial_filter) && ~isempty(copy_dipfit) && ~isempty(copy_reject)
     
-    [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit);
+    [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject);
     
 %     % check if the requirements are met
 %     
@@ -140,8 +140,9 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
 %         EEG.etc.spatial_filter = EEG_set_to_copy_spatial_filter.etc.spatial_filter;
 %         
 %     end
+
 else
-    disp('No data set to copy ICA weights from is provided. Skipping this step.');
+    disp('No data set to copy ICA weights from or no booleans if copy dipfit and rejections is provided. Skipping this step.');
 end
 
 % new data set in EEGLAB

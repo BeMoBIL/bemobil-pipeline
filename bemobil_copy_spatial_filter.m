@@ -14,8 +14,8 @@
 % Optionally also copies already computed dipfit information.
 %
 % Usage:
-%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit)
-%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, out_filename, out_filepath)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject, out_filename, out_filepath)
 %
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
@@ -39,7 +39,7 @@
 %
 % Authors: Marius Klug, 2017
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -127,6 +127,25 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
         else
             warning('Attempted to copy dipfit information but they were not present!')
         end
+    end
+    
+    % copy component rejection information
+    
+    if copy_reject
+        if ~isempty(EEG_set_to_copy_spatial_filter.reject.gcompreject)
+            EEG.reject.gcompreject=EEG_set_to_copy_spatial_filter.reject.gcompreject;
+            
+            % copy SASICA results (if existing)
+            if isfield(EEG_set_to_copy_spatial_filter.reject,'SASICA')
+                EEG.reject.SASICA=EEG_set_to_copy_spatial_filter.reject.SASICA;
+            else
+                warning('Attempted to copy SASICA information in EEG.reject but they were not present!')
+            end
+            
+        else
+            warning('Attempted to copy component rejection information, but it was empty!')
+        end
+        
     end
     
 else
