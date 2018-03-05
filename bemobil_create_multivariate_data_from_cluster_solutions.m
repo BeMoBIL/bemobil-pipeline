@@ -1,4 +1,32 @@
-function [cluster_multivariate_data data_plot] = bemobil_create_multivariate_data_from_cluster_solutions(STUDY,ALLEEG,clustering_solutions,cluster_ROI_talairach)
+% bemobil_create_multivariate_data_from_cluster_solutions() - Creates a multivariate data set with all available info of
+% each cluster solution to be used for evaluation later. A region of interest is necessary: Each clustering solution's
+% closes cluster to that ROI is being evaluated by finding it's specific values.
+% 
+% Usage:
+%   >>  [cluster_multivariate_data, data_plot] = bemobil_create_multivariate_data_from_cluster_solutions(STUDY,ALLEEG,...
+%       clustering_solutions,cluster_ROI_talairach)
+%
+% Inputs:
+%   ALLEEG                      - complete EEGLAB data set structure
+%   STUDY                       - STUDY data set of EEGLAB, which has to be loaded previously
+%   clustering_solutions        - struct of all clustering solutions created from bemobil_repeated_clustering
+%   cluster_ROI_talairach       - talairach coordinates of the region of interest (THIS NEEDS TO BE A STRUCT consisting of
+%                                   .x, .y, and .z fields)
+%
+% Outputs:
+%   cluster_multivariate_data   - multivariate data set for each solutions' best fitting cluster (to ROI). Struct with
+%                               fields data (the data set consisting of these values: n_subjects,n_ICs,n_ICs/n_subjects,...
+%                               normalized_spread,mean_rv,x,y,z,distance_from_ROI), best_fitting_cluster (the number of
+%                               the best fitting cluster in the solution), and cluster_ROI_talairach (the input)
+%   data_plot                   - plot of the histograms of all dimensions
+%   
+%
+% See also:
+%   EEGLAB, bemobil_repeated_clustering_and_evaluation, bemobil_repeated_clustering
+%
+% Authors: Marius Klug, 2018
+
+function [cluster_multivariate_data, data_plot] = bemobil_create_multivariate_data_from_cluster_solutions(STUDY,ALLEEG,clustering_solutions,cluster_ROI_talairach)
 
 best_fitting_cluster = zeros((length(fields(clustering_solutions))-1),1);
 best_fitting_cluster_distance = inf((length(fields(clustering_solutions))-1),1);
@@ -65,7 +93,7 @@ end
 % best_fitting_clusters.normalized_spread = best_fitting_cluster_normalized_spread;
 % best_fitting_clusters.mean_rv = best_fitting_cluster_mean_rv;
 
-% plot quality measures
+% plot data
 data_plot = figure;
 subplot(3,3,1);hist(best_fitting_cluster_n_subjects); title(['best fitting cluster number of subjects, median = ' num2str(median(best_fitting_cluster_n_subjects))])
 subplot(3,3,2);hist(best_fitting_cluster_n_ICs); title(['best fitting cluster number of ICs, median = ' num2str(median(best_fitting_cluster_n_ICs))])
@@ -85,7 +113,7 @@ multivariate_data = zeros((length(fields(clustering_solutions))-1),4);
 
 multivariate_data(:,1) = best_fitting_cluster_n_subjects;
 multivariate_data(:,2) = best_fitting_cluster_n_ICs;
-multivariate_data(:,3) = best_fitting_cluster_n_subjects/best_fitting_cluster_n_ICs;
+multivariate_data(:,3) = best_fitting_cluster_n_ICs./best_fitting_cluster_n_subjects;
 multivariate_data(:,4) = best_fitting_cluster_normalized_spread;
 multivariate_data(:,5) = best_fitting_cluster_mean_rv;
 multivariate_data(:,6) = best_fitting_cluster_x;

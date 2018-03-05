@@ -43,7 +43,7 @@ end
 % do grand average
 
 if isempty(experiment_conditions)
-    % if no conditions are specified, all epochs are in the gradn average
+    % if no conditions are specified, all epochs are in the grand average
     experiment_conditions_grand_average = true(1,size(subject_ersp_thisIC_all_epochs_power,1));
 else
     % if conditions are specified, the grand average should only have the data of the conditions to
