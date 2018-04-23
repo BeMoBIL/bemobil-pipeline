@@ -2,18 +2,19 @@
 % saved on the disk. 
 %
 % Usage:
-%   >> bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
-%       timewarp_name, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
+% function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
+%     output_foldername, timewarp_loadpath, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
 % 
 % Inputs:
-%   EEG                             - current EEGLAB EEG structure
-%   subject                         - subject to be calculated
+%   input_path                      - path to the EEG data sets (without the subject number)
+%   input_filename                  - name of the epoch data set
+%   subjects                        - vector of subjects that should be calculated
 %   components_to_use_for_study     - which independent components should be used for calculation
-%   timewarp_name                   - the name of the used timewarp. this
-%                                   will be part of the filepath where the
-%                                   ERSPs will be written to
+%   output_foldername               - name of the folder where the ERSPs will be saved 
+%   timewarp_loadpath               - the full path to the timewarp INCLUDING the name
 %   epochs_info_loadpath            - filepath to load previously stored epochs information. Useful only if you want to
-%                                   store timewarp latencies there, otherwise ignored.
+%                                   store timewarp latencies there, otherwise ignored. INCLUDING the name of the
+%                                   epochs_info struct.
 %   recompute                       - boolean, if should recompute, even if
 %                                   previous data is present
 %   do_timewarp                     - if there should be no timewarping applied at all, set this to false. In this case 
@@ -22,24 +23,20 @@
 %                                   rest as NAN, set this true
 %   n_freqs                         - number of frequencies for ERSP
 %   n_times                         - number of timepoints of timewarp
-%   fft_options                     - struct with the complete fft options
-%                                   (cycles,freqrange,freqscale,padratio,
-%                                   alpha,powbase)
-%   filepath                        - path where the new single trial ERSP
-%                                   base directory will be (output_path =
-%                                   [output_filepath 'ERSPs\' timewarp_name
-%                                   '\IC_' num2str(IC)];
 %
 % Outputs:
 %
-%   NONE
+%   NONE!
+%   files are STORED on the DISK.
+%   output_path = [input_path num2str(subject) '\ERSPs\' output_foldername '\IC_' num2str(IC)];
 %
 % See also:
 %   EEGLAB, newtimef, make_timewarp
 %
 % Authors: Marius Klug, 2018
 
-function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study, timewarp_name, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
+function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
+    output_foldername, timewarp_loadpath, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
 
 
 
@@ -57,14 +54,14 @@ pop_editoptions( 'option_storedisk', 0, 'option_savetwofiles', 1, 'option_saveve
 
 if do_timewarp
     try
-        load([input_path timewarp_name],'timeWarp')
+        load(timewarp_loadpath,'timeWarp')
     catch
-       error(['timeWarp struct could not be loaded using ''' input_path timewarp_name '''!']) 
+       error(['timeWarp struct could not be loaded using ''' timewarp_loadpath '''!']) 
     end
     try
-        load([input_path timewarp_name '_latencyMeans'],'latencyMeans')
+        load([timewarp_loadpath '_latencyMeans'],'latencyMeans')
     catch
-        error(['latencyMeans struct could not be loaded using ''' input_path timewarp_name '''!'])
+        error(['latencyMeans struct could not be loaded using ''' timewarp_loadpath '''!'])
     end
 else
 end
@@ -93,10 +90,11 @@ for subject = subjects
         tic % start checking the time
         disp(['Subject: ' num2str(subject)])
         disp(['IC: ' num2str(IC)])
-        output_path = [filepath 'ERSPs\' timewarp_name '\IC_' num2str(IC)];
-        directory_content = dir(output_path);
+        
+        output_path = [filepath 'ERSPs\' output_foldername '\IC_' num2str(IC)];
         
         % check if this is already calculated
+        directory_content = dir(output_path);
         already_calculated = false;
         for data = 1:length(directory_content)
             if strcmp(directory_content(data).name,'all_epochs_ersp.mat')
