@@ -1,9 +1,9 @@
-% bemobil_compute_single_trial_ERSPs() - Computes single
-% trial ERSP data for a given subject. NO OUTPUT, files will be saved on
-% the disk.
+% bemobil_compute_single_trial_ERSPs() - Computes single trial ERSP data for a given subject. NO OUTPUT, files will be 
+% saved on the disk. 
 %
 % Usage:
-%   >> bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study, timewarp_name, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
+%   >> bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
+%       timewarp_name, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
 % 
 % Inputs:
 %   EEG                             - current EEGLAB EEG structure
@@ -142,19 +142,9 @@ for subject = subjects
 
                 thisTimeWarp = this_subject_timewarp_latencies(epoch_index,:); % this is the timewarp latency for this epoch
 
-
-                %             output_path = [filepath 'ERSPs\' timewarp_name_1 '\IC_' num2str(IC) '\epoch_' num2str(epoch)];
-                %
-                %             mkdir(output_path);
-                %
-                %             if size(dir(output_path),1) == 4
-                %                 % 4 is correct for current script, so this epoch can be skipped
-                %                 continue;
-                %             end
-                %
-                
                 if dont_warp_but_cut
                     
+                    % do the timefreq analysis without timewarp
                     [full_ersp,~,~,times,~,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
                         EEG.pnts,...
                         [EEG.times(1) EEG.times(end)],...
@@ -172,11 +162,15 @@ for subject = subjects
                         'plotitc','off',...
                         'verbose','off');
                     
+                    % have a NaN ERSP
                     ersp = NaN(n_freqs,n_times);
-                    ersp(:,find(times<=thisTimeWarp(1),1,'last'):find(times>=thisTimeWarp(end),1,'first')) =...
-                        full_ersp(:,find(times<=thisTimeWarp(1),1,'last'):find(times>=thisTimeWarp(end),1,'first'));
+                    
+                    % fill it with the ersp data up to the last timewarp latency frame
+                    ersp(:,1:find(times>=thisTimeWarp(end),1,'first')) = full_ersp(:,1:find(times>=thisTimeWarp(end),1,'first'));
                     
                 else
+                    
+                    % do normal timewarp
                     [ersp,~,~,~,~,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
                         EEG.pnts,...
                         [EEG.times(1) EEG.times(end)],...
@@ -201,17 +195,18 @@ for subject = subjects
                 all_epochs_ersp(timeWarp(subject).epochs(epoch_index),:,:) = single(ersp); % single saves disk space
                 
                 if epochs_info_present
+                    % store timewarp latency infos
                     epochs_info(timeWarp(subject).epochs(epoch_index)).timeWarpLatencies = thisTimeWarp;
                 end
 
             end
         else
             
-            % not all epochs do have a timewarp, since there might have been a wrong marker order or nonexistent markers
             for epoch = 1:length(EEG.epoch)
 
                 fprintf('.')
 
+                % do timefreq analysis without timewarp
                 [ersp,~,~,~,~,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
                     EEG.pnts,...
                     [EEG.times(1) EEG.times(end)],...
@@ -233,6 +228,8 @@ for subject = subjects
                 all_epochs_ersp(epoch,:,:) = single(ersp); % single saves disk space
                 
                 if epochs_info_present
+                    
+                    % no timewarp was done, store that
                     epochs_info(epoch).timeWarpLatencies = [];
                 end
 
