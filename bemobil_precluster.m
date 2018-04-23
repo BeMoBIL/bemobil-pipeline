@@ -11,7 +11,7 @@
 %   clustering_weights      - STRUCT of weights for preclustering, containing the fields:
 %                               dipoles, scalp_topographies, spectra, ERSPs
 %   freqrange               - frequency range of the ERSPs and spectra to be taken into account
-%   timewindow              - time window of ERSPs to be taken into account
+%   timewindow              - time window of ERSPs to be taken into account (in ms)
 %   out_filename            - output filename (OPTIONAL ARGUMENT)
 %   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
 %       if both a name and a path are provided)

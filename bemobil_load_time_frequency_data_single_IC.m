@@ -1,18 +1,23 @@
-function time_frequency_data = bemobil_load_time_frequency_data_single_IC(input_path, subject, IC, epochs_info, timewarp_name, trial_normalization, times, freqs, baseline_start_end, experiment_conditions, experiment_conditions_titles, epoch_rejections, epoch_rejections_for_baseline)
-
-time_frequency_data.baseline_start_end = baseline_start_end;
-time_frequency_data.epoch_rejections_for_ERSPs = epoch_rejections;
-time_frequency_data.epoch_rejections_for_baseline = epoch_rejections_for_baseline;
-time_frequency_data.timewarp_name = timewarp_name;
-time_frequency_data.experiment_conditions = experiment_conditions;
-time_frequency_data.grand_average.erspboot = [];
+function time_frequency_data = bemobil_load_time_frequency_data_single_IC(input_path, subject, IC, epochs_info,...
+    timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
+    epoch_rejections, epoch_rejections_for_baseline)
 
 filepath_ersp_data = [input_path num2str(subject) '\ERSPs\' timewarp_name '\IC_' num2str(IC) '\'];
 
 load([filepath_ersp_data 'all_epochs_ersp'],'all_epochs_ersp')
 
-time_frequency_data.freqs = freqs;
-time_frequency_data.times = times;
+all_epochs_ersp = all_epochs_ersp(:, freqIndices(1):freqIndices(2), timeIndices(1):timeIndices(2));
+
+if isempty(epoch_rejections); epoch_rejections = zeros(1,length(epochs_info)); end
+if isempty(epoch_rejections_for_baseline); epoch_rejections_for_baseline = zeros(1,length(epochs_info)); end
+
+time_frequency_data.info.baseline_start_end = baseline_start_end;
+time_frequency_data.info.epoch_rejections_for_ERSPs = epoch_rejections;
+time_frequency_data.info.epoch_rejections_for_baseline = epoch_rejections_for_baseline;
+time_frequency_data.info.timewarp_name = timewarp_name;
+time_frequency_data.info.experiment_conditions = experiment_conditions_to_plot;
+time_frequency_data.freqs = freqs(freqIndices(1):freqIndices(2));
+time_frequency_data.times = times(timeIndices(1):timeIndices(2));
 
 % subject_ersp_thisIC_all_epochs_power = NaN(nepochs,length(freqs),length(times));
 subject_ersp_thisIC_all_epochs_power = 10.^(all_epochs_ersp/10);
@@ -22,35 +27,47 @@ if trial_normalization
     subject_ersp_thisIC_all_epochs_power = subject_ersp_thisIC_all_epochs_power ./ full_trial_baselines;
 end
 
-% experiment_conditions = zeros(1,280);
-
-% for field = 1:length(epoch_fields_to_test)
-%     for epoch_index = 1:length(all_epochs_info)
-%         
-%         
-%         for condition = 1:length(experiment_conditions_to_test)
-%             if strcmp(epoch_info.eventexperiment_condition,experiment_conditions_to_test{condition})
-%                 experiment_conditions(epoch_index) = condition;
-%             end
-%             
-%         end
-%         
-%     end
-%     
-% end
 
 
-% do grand average
+% assigning a vector with the specified experiment conditions. tests for each epoch if all specified subconditions of a
+% condition are met, and if so, assigns that condition number to the epoch. 
 
-if isempty(experiment_conditions)
-    % if no conditions are specified, all epochs are in the grand average
-    experiment_conditions_grand_average = true(1,size(subject_ersp_thisIC_all_epochs_power,1));
+if isempty(experiment_conditions_to_plot)
+    
+    experiment_conditions = ones(1,length(epochs_info));
+    
 else
-    % if conditions are specified, the grand average should only have the data of the conditions to
-    % compare
-    error('not implemented yet')
-%     experiment_conditions_grand_average = logical(experiment_conditions);
+    
+    experiment_conditions = zeros(1,length(epochs_info));
+    
+    for n_epoch = 1:length(epochs_info)
+        for condition = 1:length(experiment_conditions_to_plot)
+            subconditions = false(1,length(experiment_conditions_to_plot(condition).fields));
+            
+            for subcondition = 1:length(experiment_conditions_to_plot(condition).fields)
+                if strcmp(num2str(epochs_info(n_epoch).(experiment_conditions_to_plot(condition).fields{subcondition})),...
+                        experiment_conditions_to_plot(condition).conditions{subcondition})
+                    
+                    subconditions(subcondition) = true;
+                    
+                end
+                
+            end
+            
+            if all(subconditions)
+                experiment_conditions(n_epoch) = condition;
+            end
+            
+        end
+    end
+    
 end
+
+% do grand average: if no conditions are specified, all epochs are in the grand average
+% if conditions are specified, the grand average should only have the data of the conditions to compare
+
+experiment_conditions_grand_average = logical(experiment_conditions);
+
 
 % this is the mean ersp of this IC by this subject across all epochs that
 % are suitable for the ERSP
@@ -62,17 +79,20 @@ subject_ersps_across_epochs_power_grand_average_for_baseline = squeeze(nanmean(s
 
 
 time_frequency_data.grand_average.base_power = single(squeeze(mean(subject_ersps_across_epochs_power_grand_average_for_baseline(:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),2)));
-time_frequency_data.grand_average.base_power_ersp = single(repmat(time_frequency_data.grand_average.base_power,1,length(times)));
+time_frequency_data.grand_average.base_power_ersp = single(repmat(time_frequency_data.grand_average.base_power,1,length(times(timeIndices(1):timeIndices(2)))));
 time_frequency_data.grand_average.base_dB_ersp = single(10.*log10(time_frequency_data.grand_average.base_power_ersp)); % this is necessary for bootstrapping
 time_frequency_data.grand_average.raw_power = single(subject_ersps_across_epochs_power_grand_average);
 time_frequency_data.grand_average.raw_dB = single(10.*log10(subject_ersps_across_epochs_power_grand_average));
 time_frequency_data.grand_average.ersp_power = single(subject_ersps_across_epochs_power_grand_average ./ time_frequency_data.grand_average.base_power);
 time_frequency_data.grand_average.ersp = single(10.*log10(time_frequency_data.grand_average.ersp_power));
-time_frequency_data.grand_average.condition = 'grand average';
+time_frequency_data.grand_average.erspboot = [];
+time_frequency_data.grand_average.condition_title = 'grand average';
+time_frequency_data.grand_average.n_epochs = sum(~logical(epoch_rejections)&experiment_conditions_grand_average);
+
 
 
     
-    for condition = 1:length(experiment_conditions_titles)
+for condition = 1:length(experiment_conditions_to_plot)
     
     % this is the mean ersp of this IC by this subject across all epochs that
     % are suitable for the ERSP
@@ -83,7 +103,7 @@ time_frequency_data.grand_average.condition = 'grand average';
     subject_ersps_across_epochs_power_this_for_baseline = squeeze(nanmean(subject_ersp_thisIC_all_epochs_power(~logical(epoch_rejections_for_baseline)&experiment_conditions==condition,:,:,:),1));
     
     time_frequency_data.(['condition_' num2str(condition)]).base_power = single(squeeze(mean(subject_ersps_across_epochs_power_this_for_baseline(:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),2)));
-    time_frequency_data.(['condition_' num2str(condition)]).base_power_ersp = single(repmat(time_frequency_data.(['condition_' num2str(condition)]).base_power,1,length(times)));
+    time_frequency_data.(['condition_' num2str(condition)]).base_power_ersp = single(repmat(time_frequency_data.(['condition_' num2str(condition)]).base_power,1,length(times(timeIndices(1):timeIndices(2)))));
     time_frequency_data.(['condition_' num2str(condition)]).base_dB_ersp = single(10.*log10(time_frequency_data.(['condition_' num2str(condition)]).base_power_ersp)); % this is necessary for bootstrapping
     time_frequency_data.(['condition_' num2str(condition)]).raw_power = single(subject_ersps_across_epochs_power_this_condition);
     time_frequency_data.(['condition_' num2str(condition)]).raw_dB = single(10.*log10(subject_ersps_across_epochs_power_this_condition));
@@ -91,8 +111,25 @@ time_frequency_data.grand_average.condition = 'grand average';
     time_frequency_data.(['condition_' num2str(condition)]).ersp_with_grand_average_baseline_power = single(subject_ersps_across_epochs_power_this_condition ./ time_frequency_data.grand_average.base_power);
     time_frequency_data.(['condition_' num2str(condition)]).ersp = single(10.*log10(time_frequency_data.(['condition_' num2str(condition)]).ersp_power));
     time_frequency_data.(['condition_' num2str(condition)]).ersp_with_grand_average_baseline = single(10.*log10(time_frequency_data.(['condition_' num2str(condition)]).ersp_with_grand_average_baseline_power));
-    time_frequency_data.(['condition_' num2str(condition)]).condition = experiment_conditions_titles{condition};
+    
+    
+    % determine title of this condition to save and plot later
+    this_condition_title = '';
+    this_condition_title = [this_condition_title experiment_conditions_to_plot(condition).fields{1} ': '];
+    this_condition_title = [this_condition_title experiment_conditions_to_plot(condition).conditions{1}];
+        
+    for subcondition = 2:length(experiment_conditions_to_plot(condition).fields)
+        this_condition_title = [this_condition_title ', '];
+        this_condition_title = [this_condition_title experiment_conditions_to_plot(condition).fields{subcondition} ': '];
+        this_condition_title = [this_condition_title experiment_conditions_to_plot(condition).conditions{subcondition}];
+        
     end
+    
+    time_frequency_data.(['condition_' num2str(condition)]).erspboot = [];
+    time_frequency_data.(['condition_' num2str(condition)]).condition_title = this_condition_title;
+    
+    time_frequency_data.(['condition_' num2str(condition)]).n_epochs = sum(~logical(epoch_rejections)&(experiment_conditions==condition));
+end
     
 
 

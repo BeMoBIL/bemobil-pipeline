@@ -135,6 +135,7 @@ end
 %% find best clustering solutions and store in STUDY. Also crate and save top 5 plots
 
 ranked_solutions = bemobil_clustering_rank_solutions(cluster_multivariate_data,quality_measure_weights);
+
 filepath_to_evaluations = [filepath_clustering_solutions '\evaluations\weights_' num2str(quality_measure_weights) '\'];
 mkdir(filepath_to_evaluations)
 
@@ -146,16 +147,23 @@ for rank = [5 4 3 2 1]
     STUDY.bemobil.clustering.cluster_ROI_talairach = cluster_multivariate_data.cluster_ROI_talairach;
     STUDY.bemobil.clustering.cluster_ROI_index = cluster_multivariate_data.best_fitting_cluster(ranked_solutions(rank));
     STUDY.bemobil.clustering.cluster_ROI_multivariate_data = cluster_multivariate_data.data(ranked_solutions(rank),:);
+    STUDY.bemobil.clustering.cluster_ROI_multivariate_data
     
     topoplot_and_dipplot_fig = figure;
     subplot(1,2,1);
     std_topoplot(STUDY,ALLEEG,'clusters',STUDY.bemobil.clustering.cluster_ROI_index,'figure','off');
-    
     subplot(1,2,2);
     %     dipplot_fig = figure;
     std_dipplot(STUDY,ALLEEG,'clusters',STUDY.bemobil.clustering.cluster_ROI_index,'figure','off');
+    
     savefig(topoplot_and_dipplot_fig, [filepath_to_evaluations 'rank-' num2str(rank) '_ROI_plot'])
 end
+
+% find dipole locations, centroids, and residual variances of clusters
+STUDY = bemobil_dipoles(STUDY,ALLEEG);
+STUDY.bemobil.clustering.quality_measure_weights = quality_measure_weights;
+fprintf('Best fitting cluster: %d\n', STUDY.bemobil.clustering.cluster_ROI_index)
+
 
 % save on disk
 disp('Saving STUDY...')
