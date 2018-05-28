@@ -3,7 +3,8 @@
 %
 % Usage:
 % function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
-%     output_foldername, timewarp_loadpath, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
+%     output_foldername, timewarp_latency_loadpath, epochs_info_filename_input, epochs_info_filename_output, recompute, do_timewarp,...
+%     dont_warp_but_cut, n_freqs, n_times )
 % 
 % Inputs:
 %   input_path                      - path to the EEG data sets (without the subject number)
@@ -11,14 +12,15 @@
 %   subjects                        - vector of subjects that should be calculated
 %   components_to_use_for_study     - which independent components should be used for calculation
 %   output_foldername               - name of the folder where the ERSPs will be saved 
-%   timewarp_loadpath               - the full path to the timewarp INCLUDING the name
-%   epochs_info_loadpath            - filepath to load previously stored epochs information. Useful only if you want to
-%                                   store timewarp latencies there, otherwise ignored. INCLUDING the name of the
-%                                   epochs_info struct.
+%   timewarp_latency_loadpath       - the full path to the timewarp latencies INCLUDING the name
+%   epochs_info_filename_input      - filename of previously stored epochs information. Useful only if you want to
+%                                   store timewarp latencies there, otherwise ignored. 
+%   epochs_info_filename_output     - filename to save new epochs information with timewarp info per epoch. Useful only 
+%                                   if you want to store timewarp latencies there, otherwise ignored. 
 %   recompute                       - boolean, if should recompute, even if
 %                                   previous data is present
-%   do_timewarp                     - if there should be no timewarping applied at all, set this to false. In this case 
-%                                   the timewarp_name is only the output path
+%   has_timewarp_latencies          - set true if there are precomputed timewarp latencies present. Will lead to
+%                                   timewarped ERSPs
 %   dont_warp_but_cut               - if a timewarp is present but should only be used to cut the ERSP and leave the
 %                                   rest as NAN, set this true
 %   n_freqs                         - number of frequencies for ERSP
@@ -29,6 +31,7 @@
 %   NONE!
 %   files are STORED on the DISK.
 %   output_path = [input_path num2str(subject) '\ERSPs\' output_foldername '\IC_' num2str(IC)];
+%   save([input_path '\' num2str(subject) '\' epochs_info_filename_output], 'epochs_info');
 %
 % See also:
 %   EEGLAB, newtimef, make_timewarp
@@ -36,7 +39,8 @@
 % Authors: Marius Klug, 2018
 
 function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
-    output_foldername, timewarp_loadpath, epochs_info_loadpath, recompute, do_timewarp, dont_warp_but_cut, n_freqs, n_times )
+    output_foldername, timewarp_latency_loadpath, epochs_info_filename_input, epochs_info_filename_output, recompute, has_timewarp_latencies,...
+    dont_warp_but_cut, n_freqs, n_times )
 
 
 
@@ -52,30 +56,18 @@ fft_options.powbase = NaN;
 if ~exist('ALLEEG','var'); eeglab; end
 pop_editoptions( 'option_storedisk', 0, 'option_savetwofiles', 1, 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_eegobject', 0, 'option_computeica', 1, 'option_scaleicarms', 1, 'option_rememberfolder', 1, 'option_donotusetoolboxes', 0, 'option_checkversion', 1, 'option_chat', 1);
 
-if do_timewarp
+if has_timewarp_latencies
     try
-        load(timewarp_loadpath,'timeWarp')
+        load(timewarp_latency_loadpath,'timeWarp')
     catch
-       error(['timeWarp struct could not be loaded using ''' timewarp_loadpath '''!']) 
+       error(['timeWarp struct could not be loaded using ''' timewarp_latency_loadpath '''!']) 
     end
     try
-        load([timewarp_loadpath '_latencyMeans'],'latencyMeans')
+        load([timewarp_latency_loadpath '_latencyMeans'],'latencyMeans')
     catch
-        error(['latencyMeans struct could not be loaded using ''' timewarp_loadpath '''!'])
+        error(['latencyMeans struct could not be loaded using ''' timewarp_latency_loadpath '''!'])
     end
 else
-end
-
-try 
-    % load epoch_info. load stores into a struct, so the first element of the struct has to be taken
-    epochs_info = load(epochs_info_loadpath);
-    epoch_info_fields = fieldnames(epochs_info);
-    epochs_info = epochs_info.(epoch_info_fields{1});
-    
-    epochs_info_present = true;
-catch
-    warning('Loading epoch info failed, no timewarp info will be saved in epochs!')
-    epochs_info_present = false;
 end
 
 for subject = subjects
@@ -84,6 +76,18 @@ for subject = subjects
     filepath = [input_path num2str(subject) '\'];
     
     EEG = pop_loadset('filename',input_filename,'filepath',filepath);
+    
+    try 
+        % load epoch_info. load stores into a struct, so the first element of the struct has to be taken
+        epochs_info = load([input_path '\' num2str(subject) '\' epochs_info_filename_input]);
+        epoch_info_fields = fieldnames(epochs_info);
+        epochs_info = epochs_info.(epoch_info_fields{1});
+
+        epochs_info_present = true;
+    catch
+        warning('Loading epoch info failed, no timewarp info will be saved in epochs!')
+        epochs_info_present = false;
+    end
     
     % compute newtimef data
     for IC = components_to_use_for_study
@@ -109,7 +113,7 @@ for subject = subjects
         
         all_epochs_ersp = nan(length(EEG.epoch),n_freqs,n_times);
         
-        if do_timewarp
+        if has_timewarp_latencies
             this_subject_timewarp_latencies = timeWarp(subject).latencies;
 
             % for some reason this is necessary, maybe a bug in maketimewarp, anyways, there exist instances, where the
@@ -143,7 +147,7 @@ for subject = subjects
                 if dont_warp_but_cut
                     
                     % do the timefreq analysis without timewarp
-                    [full_ersp,~,~,times,~,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
+                    [full_ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
                         EEG.pnts,...
                         [EEG.times(1) EEG.times(end)],...
                         EEG.srate,...
@@ -169,7 +173,7 @@ for subject = subjects
                 else
                     
                     % do normal timewarp
-                    [ersp,~,~,~,~,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
+                    [ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
                         EEG.pnts,...
                         [EEG.times(1) EEG.times(end)],...
                         EEG.srate,...
@@ -205,7 +209,7 @@ for subject = subjects
                 fprintf('.')
 
                 % do timefreq analysis without timewarp
-                [ersp,~,~,~,~,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
+                [ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
                     EEG.pnts,...
                     [EEG.times(1) EEG.times(end)],...
                     EEG.srate,...
@@ -244,9 +248,19 @@ for subject = subjects
         disp('ETA (h):')
         disp(eta/3600)
     end
+    
+    % this is a little dirty, since the epoch info will be filled each IC again, but it is identical, so won't matter
+    if epochs_info_present
+        save([input_path '\' num2str(subject) '\' epochs_info_filename_output], 'epochs_info');
+    end
+    
 end
 
 % those are always the same and only need to be saved once
-save([input_path '\times'], 'times');
-save([input_path '\freqs'], 'freqs');
+try
+    save([input_path '\times'], 'times');
+    save([input_path '\freqs'], 'freqs');
+catch
+    warning('No trials have been actually computed, nothing was saved on the disk. Probably everything had been computed before and recompute was set to 0.')
+end
 disp('Done.')
