@@ -1,7 +1,7 @@
 % bemobil_dipoles() - Searches and stores dipole xyz information for all clusters and their 
 % centroids in the STUDY.
 %   
-% THIS FUNCTION RELIES HEAVILY ON A EEGLAB FUNCTION STD_CENTROID, ALL CREDITS FOR THE PREVIOUS WORK
+% THIS FUNCTION RELIES HEAVILY ON AN EEGLAB FUNCTION STD_CENTROID, ALL CREDITS FOR THE PREVIOUS WORK
 % GO TO Hilit Serby & Arnaud Delorme, SCCN, INC, UCSD, Feb 03, 2005!
 %
 % Usage:
