@@ -25,7 +25,7 @@
 % See also: 
 %   EEGLAB, bemobil_interp_reref, bemobil_interp_avref_copy_spatial_filter, bemobil_copy_spatial_filter, pop_interp, pop_reref, pop_interp, 
 % 
-% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2017
 
 function [ALLEEG, EEG, CURRENTSET] = bemobil_interp( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, out_filename, out_filepath)
 

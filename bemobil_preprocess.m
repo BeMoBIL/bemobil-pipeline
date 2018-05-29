@@ -31,7 +31,7 @@
 % See also:
 %   EEGLAB, pop_eegfiltnew, pop_resample, pop_chanedit, pop_select
 %
-% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2017
 
 function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, resample_freq, out_filename, out_filepath)
 

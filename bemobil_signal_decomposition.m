@@ -34,7 +34,7 @@
 % See also:
 %    EEGLAB, runamica15
 %
-% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2017
 
 function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath)
 

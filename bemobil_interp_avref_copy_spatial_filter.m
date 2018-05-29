@@ -39,7 +39,7 @@
 % See also: 
 %   EEGLAB, bemobil_copy_spatial_filter, pop_interp, pop_reref, pop_interp, 
 % 
-% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2017
 
 function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject, out_filename, out_filepath)
 

@@ -25,7 +25,7 @@
 % See also:
 %   EEGLAB, pop_mergeset
 % 
-% Authors: Lukas Gehrke, Friederike Hohlefeld, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2017
 
 function [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET, indices, out_filename, out_filepath)
 
