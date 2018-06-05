@@ -85,7 +85,7 @@ while timepoint<=length(component_activity)
             
             % add minimum diration (in ms) to the maximum timepoint and use that one instead of the old end-of-peak
             % timepoint
-            timepoint = maximum_timepoint + (refractory_period/(1/EEG.srate))/1000;
+            timepoint = maximum_timepoint + round((refractory_period/(1/EEG.srate))/1000);
             
         end
     else
