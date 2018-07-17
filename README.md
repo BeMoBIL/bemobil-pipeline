@@ -1,4 +1,4 @@
-Please find and contribute to the discussion about the steps in the pipeline here: 
-https://docs.google.com/document/d/1OJe1GSku5_ho9OZMuAW-WId07VljZ2UHniQWubrlYys/edit?usp=sharing
+The BeMoBIL Pipeline is an open source toolbox for analysis and visualization of mobile brain/body imaging data. 
+It includes both wrappers and additional functionalities. 
 
-Once the discussion is final a how-to will be derived from it and put here as a documentation and FAQ!
+It is work in progress, please write an email to marius.s.klug@gmail.com for comments/questions!

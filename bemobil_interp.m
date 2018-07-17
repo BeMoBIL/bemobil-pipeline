@@ -1,16 +1,16 @@
-% bemobil_merge() - Merge multiple .set files and save the created file in
-% pre-defined folder, if unspecified, in folder defined by EEG.filepath
+% bemobil_interp() - Interpolates missing channels with spherical interpolation and
+% average references the data.
 %
 % Usage:
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET );
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET, indices );
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET, indices, out_filename, out_filepath );
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, out_filename, out_filepath)
 %
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
 %   EEG                     - current EEGLAB EEG structure
 %   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
-%   indices                 - indices of the sets to merge (OPTIONAL ARGUMENT - GUI WILL OPEN IF NOT PROVIDED)
+%   channels_to_interpolate - vector of channel numbers that should be interpolated; if [],
+%       attempts to interpolate all missing (already deleted) channels from urchanlocs
 %   out_filename            - output filename (OPTIONAL ARGUMENT)
 %   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
 %       if both a name and a path are provided)
@@ -22,12 +22,12 @@
 %
 %   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
-% See also:
-%   EEGLAB, pop_mergeset
+% See also: 
+%   EEGLAB, bemobil_interp_reref, bemobil_interp_avref_copy_spatial_filter, bemobil_copy_spatial_filter, pop_interp, pop_reref, pop_interp, 
 % 
 % Authors: Lukas Gehrke, Marius Klug, 2017
 
-function [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET, indices, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_interp( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -41,22 +41,22 @@ if save_file_on_disk
     end
 end
 
-if exist('indices', 'var')
-    EEG = pop_mergeset( ALLEEG, indices );
-else
-    EEG = pop_mergeset( ALLEEG );
-end
+% Interpolate channels with spherical interpolation
 
-
-[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
-
-% if data files have been specified by indices, note the file names in EEG.etc
-if exist('indices', 'var')
-    appended_files={ALLEEG(indices(1)).filename};
-    for index=indices(2:end)
-        appended_files(index)={ALLEEG(index).filename};
+if isempty(channels_to_interpolate)
+    disp('No channel indices provided. Attempting to interpolate missing channels from urchanlocs...');
+    if ~isempty(EEG.urchanlocs)
+        EEG = pop_interp(EEG, EEG.urchanlocs, 'spherical');
+        disp('...done.')
+        EEG = eeg_checkset(EEG);
+    else
+        warning('...no urchanlocs present in dataset. Cannot interpolate.');
     end
-    EEG.etc.appended_files = appended_files;
+else
+    disp('Interpolating channels that are indicated...');
+    EEG = pop_interp(EEG, channels_to_interpolate, 'spherical');
+    disp('...done');
+    EEG.etc.interpolated_channels = channels_to_interpolate;
 end
 
 % new data set in EEGLAB

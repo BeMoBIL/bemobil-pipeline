@@ -10,7 +10,7 @@ angle = '';
 
 %% Find all occurences of a marker_of_interest
 
-expression = 'start_outward_rotation:steamvr with PS CAPTURE,test'; %all test trials
+expression = 'start_outward_rotation:.*,test'; %all test trials
 cnt = 1; % index of occurences
 
 for i = 1:length(EEG.event)
@@ -47,4 +47,4 @@ end
 
 %% Epoch to a marker of interest
 
-EEG = pop_epoch(EEG);
+% EEG = pop_epoch(EEG);
