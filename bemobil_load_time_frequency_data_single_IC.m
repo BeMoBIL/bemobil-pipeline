@@ -21,6 +21,7 @@ time_frequency_data.times = times(timeIndices(1):timeIndices(2));
 
 % subject_ersp_thisIC_all_epochs_power = NaN(nepochs,length(freqs),length(times));
 subject_ersp_thisIC_all_epochs_power = 10.^(all_epochs_ersp/10);
+subject_ersp_thisIC_all_epochs_power_unnormalized = subject_ersp_thisIC_all_epochs_power;
 
 if trial_normalization
     full_trial_baselines = nanmean(subject_ersp_thisIC_all_epochs_power,3);
@@ -68,17 +69,21 @@ end
 
 experiment_conditions_grand_average = logical(experiment_conditions);
 
-
 % this is the mean ersp of this IC by this subject across all epochs that
 % are suitable for the ERSP
 subject_ersps_across_epochs_power_grand_average = squeeze(nanmean(subject_ersp_thisIC_all_epochs_power(~logical(epoch_rejections)&experiment_conditions_grand_average,:,:),1));
 
 % this is the mean ersp of this IC by this subject across all epochs that
 % are suitable for the baseline of the ERSP
-subject_ersps_across_epochs_power_grand_average_for_baseline = squeeze(nanmean(subject_ersp_thisIC_all_epochs_power(~logical(epoch_rejections_for_baseline)&experiment_conditions_grand_average,:,:),1));
+subject_ersps_all_epochs_power_for_baseline_grand_average = subject_ersp_thisIC_all_epochs_power(~logical(epoch_rejections_for_baseline)&experiment_conditions_grand_average,:,:);
 
+% compute baselines of all epochs
+subject_baselines_all_epochs_power_for_grand_average = squeeze(nanmean(subject_ersps_all_epochs_power_for_baseline_grand_average(:,:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),3));
 
-time_frequency_data.grand_average.base_power = single(squeeze(mean(subject_ersps_across_epochs_power_grand_average_for_baseline(:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),2)));
+% compute average baseline
+subject_baseline_across_epochs_power_grand_average = squeeze(nanmean(subject_baselines_all_epochs_power_for_grand_average,1))';
+
+time_frequency_data.grand_average.base_power = single(subject_baseline_across_epochs_power_grand_average);
 time_frequency_data.grand_average.base_power_ersp = single(repmat(time_frequency_data.grand_average.base_power,1,length(times(timeIndices(1):timeIndices(2)))));
 time_frequency_data.grand_average.base_dB_ersp = single(10.*log10(time_frequency_data.grand_average.base_power_ersp)); % this is necessary for bootstrapping
 time_frequency_data.grand_average.raw_power = single(subject_ersps_across_epochs_power_grand_average);
@@ -89,7 +94,17 @@ time_frequency_data.grand_average.erspboot = [];
 time_frequency_data.grand_average.condition_title = 'grand average';
 time_frequency_data.grand_average.n_epochs = sum(~logical(epoch_rejections)&experiment_conditions_grand_average);
 
+% Compute unnormalized baseline spectrum for all epochs for later plots. THIS DOES NOT CORRESPOND TO THE ACTUALLY USED
+% BASELINES, IF TRIAL NORMALIZATION WAS IN USE!
 
+% this is the mean ersp of this IC by this subject across all epochs that
+% are suitable for the baseline of the ERSP
+all_epochs_power_for_baseline_grand_average_unnormalized = subject_ersp_thisIC_all_epochs_power_unnormalized(~logical(epoch_rejections_for_baseline)&experiment_conditions_grand_average,:,:);
+
+% compute baselines of all epochs
+baselines_all_epochs_power_for_grand_average_unnormalized = squeeze(nanmean(all_epochs_power_for_baseline_grand_average_unnormalized(:,:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),3));
+
+time_frequency_data.grand_average.all_epochs_base_power_unnormalized = single(baselines_all_epochs_power_for_grand_average_unnormalized)';
 
     
 for condition = 1:length(experiment_conditions_to_plot)
@@ -100,9 +115,15 @@ for condition = 1:length(experiment_conditions_to_plot)
     
     % this is the mean ersp of this IC by this subject across all epochs that
     % are suitable for the baseline of the ERSP
-    subject_ersps_across_epochs_power_this_for_baseline = squeeze(nanmean(subject_ersp_thisIC_all_epochs_power(~logical(epoch_rejections_for_baseline)&experiment_conditions==condition,:,:,:),1));
-    
-    time_frequency_data.(['condition_' num2str(condition)]).base_power = single(squeeze(mean(subject_ersps_across_epochs_power_this_for_baseline(:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),2)));
+    subject_ersps_all_epochs_power_for_baseline_this_condition = subject_ersp_thisIC_all_epochs_power(~logical(epoch_rejections)&experiment_conditions==condition,:,:,:);
+
+    % compute baselines of all epochs
+    subject_baselines_all_epochs_power_for_this_condition = squeeze(nanmean(subject_ersps_all_epochs_power_for_baseline_this_condition(:,:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),3));
+
+    % compute average baseline
+    subject_baseline_across_epochs_power_this_condition = squeeze(nanmean(subject_baselines_all_epochs_power_for_this_condition,1))';
+
+    time_frequency_data.(['condition_' num2str(condition)]).base_power = single(subject_baseline_across_epochs_power_this_condition);
     time_frequency_data.(['condition_' num2str(condition)]).base_power_ersp = single(repmat(time_frequency_data.(['condition_' num2str(condition)]).base_power,1,length(times(timeIndices(1):timeIndices(2)))));
     time_frequency_data.(['condition_' num2str(condition)]).base_dB_ersp = single(10.*log10(time_frequency_data.(['condition_' num2str(condition)]).base_power_ersp)); % this is necessary for bootstrapping
     time_frequency_data.(['condition_' num2str(condition)]).raw_power = single(subject_ersps_across_epochs_power_this_condition);
@@ -112,6 +133,18 @@ for condition = 1:length(experiment_conditions_to_plot)
     time_frequency_data.(['condition_' num2str(condition)]).ersp = single(10.*log10(time_frequency_data.(['condition_' num2str(condition)]).ersp_power));
     time_frequency_data.(['condition_' num2str(condition)]).ersp_with_grand_average_baseline = single(10.*log10(time_frequency_data.(['condition_' num2str(condition)]).ersp_with_grand_average_baseline_power));
     
+    % Compute unnormalized baseline spectrum for all epochs for later plots. THIS DOES NOT CORRESPOND TO THE ACTUALLY USED
+    % BASELINES, IF TRIAL NORMALIZATION WAS IN USE!
+
+    % this is the mean ersp of this IC by this subject across all epochs that
+    % are suitable for the baseline of the ERSP
+    all_epochs_power_for_baseline_this_cond_unnormalized = subject_ersp_thisIC_all_epochs_power_unnormalized(~logical(epoch_rejections)&experiment_conditions==condition,:,:,:);
+
+    % compute baselines of all epochs
+    baselines_all_epochs_power_for_this_cond_unnormalized = squeeze(nanmean(all_epochs_power_for_baseline_this_cond_unnormalized(:,:,find(times>baseline_start_end(1),1,'first'):find(times<=baseline_start_end(2),1,'last')),3));
+
+    time_frequency_data.(['condition_' num2str(condition)]).all_epochs_base_power_unnormalized = single(baselines_all_epochs_power_for_this_cond_unnormalized)';
+
     
     % determine title of this condition to save and plot later
     this_condition_title = '';

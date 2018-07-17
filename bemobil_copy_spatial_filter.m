@@ -1,4 +1,4 @@
-% bemobil_copy_spatial_filter() - Copies the ICA weights from a given data set into the
+% bemobil_copy_spatial_filter() - Copies the ICA weights and rejection vector from a given data set into the
 % current EEG data set. Requirements (otherwise the ICA weights will either not work or work but
 % be incorrect): both data sets have to be at the same stage of processing, meaning:
 %

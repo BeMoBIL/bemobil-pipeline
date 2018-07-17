@@ -95,6 +95,9 @@ while timepoint<=length(component_activity)
     
 end
 
+% make ur-events (necessary for addevents() )
+EEG = eeg_checkset(EEG,'makeur');
+
 % piggyback on a function created in the EYE-EEG toolbox because I didn't want to code this myself
 EEG = addevents(EEG,event_latencies',{'latency'},event_name);
 

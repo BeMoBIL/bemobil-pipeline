@@ -95,15 +95,15 @@ end
 
 % plot data
 data_plot = figure;
-subplot(3,3,1);hist(best_fitting_cluster_n_subjects); title(['best fitting cluster number of subjects, median = ' num2str(median(best_fitting_cluster_n_subjects))])
-subplot(3,3,2);hist(best_fitting_cluster_n_ICs); title(['best fitting cluster number of ICs, median = ' num2str(median(best_fitting_cluster_n_ICs))])
-subplot(3,3,3);hist(best_fitting_cluster_spread); title(['best fitting cluster spread, median = ' num2str(median(best_fitting_cluster_spread))])
-subplot(3,3,4);hist(best_fitting_cluster_normalized_spread); title(['best fitting cluster normalized spread, median = ' num2str(median(best_fitting_cluster_normalized_spread))])
-subplot(3,3,5);hist(best_fitting_cluster_distance); title(['best fitting cluster distance, median = ' num2str(median(best_fitting_cluster_distance))])
-subplot(3,3,6);hist(best_fitting_cluster_mean_rv); title(['best fitting cluster mean residual variance, median = ' num2str(median(best_fitting_cluster_mean_rv))])
-subplot(3,3,7);hist(best_fitting_cluster_x); title(['best fitting cluster x, median = ' num2str(median(best_fitting_cluster_x))])
-subplot(3,3,8);hist(best_fitting_cluster_y); title(['best fitting cluster y, median = ' num2str(median(best_fitting_cluster_y))])
-subplot(3,3,9);hist(best_fitting_cluster_z); title(['best fitting cluster z, median = ' num2str(median(best_fitting_cluster_z))])
+subplot(3,3,1);histogram(best_fitting_cluster_n_subjects); title(['best fitting cluster number of subjects, median = ' num2str(median(best_fitting_cluster_n_subjects))])
+subplot(3,3,2);histogram(best_fitting_cluster_n_ICs); title(['best fitting cluster number of ICs, median = ' num2str(median(best_fitting_cluster_n_ICs))])
+subplot(3,3,3);histogram(best_fitting_cluster_spread); title(['best fitting cluster spread, median = ' num2str(median(best_fitting_cluster_spread))])
+subplot(3,3,4);histogram(best_fitting_cluster_normalized_spread); title(['best fitting cluster normalized spread, median = ' num2str(median(best_fitting_cluster_normalized_spread))])
+subplot(3,3,5);histogram(best_fitting_cluster_distance); title(['best fitting cluster distance, median = ' num2str(median(best_fitting_cluster_distance))])
+subplot(3,3,6);histogram(best_fitting_cluster_mean_rv); title(['best fitting cluster mean residual variance, median = ' num2str(median(best_fitting_cluster_mean_rv))])
+subplot(3,3,7);histogram(best_fitting_cluster_x); title(['best fitting cluster x, median = ' num2str(median(best_fitting_cluster_x))])
+subplot(3,3,8);histogram(best_fitting_cluster_y); title(['best fitting cluster y, median = ' num2str(median(best_fitting_cluster_y))])
+subplot(3,3,9);histogram(best_fitting_cluster_z); title(['best fitting cluster z, median = ' num2str(median(best_fitting_cluster_z))])
 
 % create multivariate statistics data matrix -> non-normalized spread will not be used because it's
 % biased towards fewer ICs

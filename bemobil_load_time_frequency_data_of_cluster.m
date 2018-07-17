@@ -161,6 +161,7 @@ average_time_frequency_data.grand_average.n_epochs_mean = grand_average_n_epochs
 
 average_time_frequency_data.grand_average.subjects = unique_subjects(grand_average_subjec_indices);
 
+average_time_frequency_data.grand_average.all_epochs_base_power_unnormalized = {grand_averages.all_epochs_base_power_unnormalized};
 
 
 % this is necessary for bootstrapping
@@ -225,6 +226,9 @@ for condition = 1:length(experiment_conditions_to_plot)
     raw_dB_all_subjects.(['condition_' num2str(condition)]) = 10.*log10(cat(3,this_condition_raw_power_all_sub{:}));
     ersp_all_subjects.(['condition_' num2str(condition)]) = 10.*log10(cat(3,this_condition_raw_power_all_sub{:})./cat(3,this_condition_base_power_ersp_all_sub{:}));
     
+    average_time_frequency_data.(['condition_' num2str(condition)]).all_epochs_base_power_unnormalized = {this_condition.all_epochs_base_power_unnormalized};
+
+    
 end
 
 % difference plot if possible
@@ -241,7 +245,7 @@ if length(experiment_conditions_to_plot) == 2
 end
 
 
-if ~isempty(n_permutes) && ~isempty(alpha)
+if ~isempty(n_permutes) && ~n_permutes==0 && ~isempty(alpha)
     disp('Computing significance masks...')
     % grand average
     
