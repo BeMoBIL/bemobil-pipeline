@@ -63,6 +63,9 @@ time_frequency_data.grand_average.condition_title = grand_average_condition;
 grand_average_n_epochs = grand_averages(1).n_epochs;
 time_frequency_data.grand_average.n_epochs = grand_average_n_epochs;
 
+grand_average_n_epochs_baseline = grand_averages(1).n_epochs_baseline;
+time_frequency_data.grand_average.n_epochs_baseline = grand_average_n_epochs_baseline;
+
 time_frequency_data.grand_average.all_epochs_base_power_unnormalized = [grand_averages.all_epochs_base_power_unnormalized];
 
 
@@ -104,6 +107,9 @@ for condition = 1:length(experiment_conditions_to_plot)
     
     this_condition_n_epochs = this_conditions(1).n_epochs;
     time_frequency_data.(['condition_' num2str(condition)]).n_epochs = this_condition_n_epochs;
+    
+    this_condition_n_epochs_baseline = this_conditions(1).n_epochs_baseline;
+    time_frequency_data.(['condition_' num2str(condition)]).n_epochs_baseline = this_condition_n_epochs_baseline;
     
     % Note: The ERSP with grand average baseline (as opposed to the specific condition baseline) can be implemented here
     % as well, but I thought it wasn't necessary...

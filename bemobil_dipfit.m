@@ -1,8 +1,8 @@
 % bemobil_dipfit() - Prepares data for dipole fitting and runs the dipole fitting procedure
 %
 % Usage:
-%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, eeglab_path, RV_threshold, remove_outside_head, fit_bilateral_dipoles)
-%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, eeglab_path, RV_threshold, remove_outside_head, fit_bilateral_dipoles, out_filename, out_filepath)
+%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold, remove_outside_head, fit_bilateral_dipoles)
+%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold, remove_outside_head, fit_bilateral_dipoles, out_filename, out_filepath)
 %
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
@@ -11,7 +11,6 @@
 %   warping_channel_names   - cell array of channel number and corresponding standard 5/10 system
 %       electrode names (e.g. {33,'C5'; 64,'C6'}). Electrodes should cover the head sphere, but not
 %       too many ( e.g. each one frontal, occipital, temporal left/right and central).
-%   eeglab_path             - path to the EEGLAB toolbox folder (e.g. 'C:\toolboxes\eeglab14_1_0b')
 %   RV_threshold            - number percentage of residual variance accepted, default is '15'
 %   remove_outside_head     - 'on' or 'off' to remove dipoles located outside the head
 %   number_of_dipoles       - '1' or '2', 2 meaning bilateral dipole fitting
@@ -29,7 +28,7 @@
 % See also:
 %   EEGLAB, coregister, pop_dipfit_settings, pop_multifit
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, eeglab_path, RV_threshold, remove_outside_head, number_of_dipoles, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold, remove_outside_head, number_of_dipoles, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -43,8 +42,12 @@ if save_file_on_disk
     end
 end
 
+eeglab_complete_path = which('eeglab');
+eeglab_split_path = strsplit(eeglab_complete_path,'\eeglab.m');
+eeglab_base_path = eeglab_split_path{1};
+
 % load some standard data for dipfit
-dipfitdefs; 
+dipfitdefs;
 
 % if strcmp(headmodel, 'evy') % add later when available
 % elseif strcmp(headmodel, 'klaus') % add later when available
@@ -54,25 +57,33 @@ dipfitdefs;
 % change relevant EEG electrode labels so that it matches standard 5/10 template
 
 % build the command for editing channel labels with variable channel editing counts
-command = 'EEG = pop_chanedit(EEG';
-for channel = 1:length(warping_channel_names)
-   command = [command ', ''changefield'',{' num2str(warping_channel_names{channel,1}) ' ''labels'' ''' warping_channel_names{channel,2} '''}'];
+if ~isempty(warping_channel_names)
+    
+    command = 'EEG = pop_chanedit(EEG';
+    for channel = 1:length(warping_channel_names)
+        command = [command ', ''changefield'',{' num2str(warping_channel_names{channel,1}) ' ''labels'' ''' warping_channel_names{channel,2} '''}'];
+    end
+    command = [command ');'];
+    
+    % run it
+    eval(command);
+    
+
+    % warp the locations to the standard head model
+    [newlocs transform] = coregister(EEG.chanlocs, template_models(2).chanfile, 'warp', 'auto', 'manual', 'off');
+
+else
+    transform = [0.83215 -15.6287 2.4114 0.081214 0.00093739 -1.5732 1.1742 1.0601 1.1485];
 end
-command = [command ');'];
-
-% run it
-eval(command);
-
-% warp the locations to the standard head model
-[newlocs transform] = coregister(EEG.chanlocs, template_models(2).chanfile, 'warp', 'auto', 'manual', 'off');
 
 % do the dipole fitting
-EEG = pop_dipfit_settings( EEG, 'hdmfile',[eeglab_path '\\plugins\\dipfit2.3\\standard_BEM\\standard_vol.mat'],...
+EEG = pop_dipfit_settings( EEG, 'hdmfile',[eeglab_base_path '\\plugins\\dipfit2.3\\standard_BEM\\standard_vol.mat'],...
     'coordformat','MNI',...
-    'mrifile',[eeglab_path '\\plugins\\dipfit2.3\\standard_BEM\\standard_mri.mat'],...
-    'chanfile',[eeglab_path '\\plugins\\dipfit2.3\\standard_BEM\\elec\\standard_1005.elc'],...
+    'mrifile',[eeglab_base_path '\\plugins\\dipfit2.3\\standard_BEM\\standard_mri.mat'],...
+    'chanfile',[eeglab_base_path '\\plugins\\dipfit2.3\\standard_BEM\\elec\\standard_1005.elc'],...
     'coord_transform',transform ,...
     'chansel',[1:EEG.nbchan] );
+
 
 EEG = pop_multifit(EEG, [1:size(EEG.icaweights,1)] ,'threshold',RV_threshold,...
     'dipoles', number_of_dipoles, 'rmout', remove_outside_head);

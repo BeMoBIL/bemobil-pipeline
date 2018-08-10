@@ -10,7 +10,7 @@ S = {EEG.event.type};
 [dummy, str_idx] = ismember(string,S);
 
 if str_idx == 0
-    error('Error. Marker not found in dataset')
+    warning(['''' string ''' event not found in dataset'])
     return;
 end
 

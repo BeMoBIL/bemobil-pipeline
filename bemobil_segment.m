@@ -29,12 +29,14 @@ end;
 
 [exp_start_event, stridx, start_sec] = eeg_find_eventidx(EEG, start_segment);
 if isempty(start_sec) 
-    return; 
+    warning('No start index found, using first data point as start!')
+    start_sec = 0;
 end
 
 [exp_end_event, stridx, end_sec] = eeg_find_eventidx(EEG, end_segment);
 if isempty(end_sec)
-    return; 
+    warning('No end index found, using last data point as end!')
+    end_sec=EEG.times(end)/1000;
 end
 
 % get experiment segment

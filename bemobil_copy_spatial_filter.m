@@ -23,6 +23,7 @@
 %   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
 %   EEG_set_to_copy_ICA     - data set that should donate the ICA weights
 %   copy_dipfit             - boolean if a dipfit information should be copied as well or not
+%   copy_reject             - boolean if an IC rejection information should be copied as well or not
 %   out_filename            - output filename (OPTIONAL ARGUMENT)
 %   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
 %       if both a name and a path are provided)
@@ -96,6 +97,7 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
     
     
     if ~all([same_reference,same_interpolated_locations,same_interpolated_channels,same_demixed_channels])
+
         error('Requirements not met. Type ''help bemobil_copy_spatial_filter'' for information!')
     end
     
@@ -149,7 +151,7 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
     end
     
 else
-    error('No data set to copy ICA weights from is provided. The hell?!');
+    error('No data set to copy ICA weights from is provided. Wat?!');
 end
 
 % new data set in EEGLAB

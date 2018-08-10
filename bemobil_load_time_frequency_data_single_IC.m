@@ -93,6 +93,8 @@ time_frequency_data.grand_average.ersp = single(10.*log10(time_frequency_data.gr
 time_frequency_data.grand_average.erspboot = [];
 time_frequency_data.grand_average.condition_title = 'grand average';
 time_frequency_data.grand_average.n_epochs = sum(~logical(epoch_rejections)&experiment_conditions_grand_average);
+time_frequency_data.grand_average.n_epochs_baseline = sum(~logical(epoch_rejections_for_baseline)&experiment_conditions_grand_average);
+
 
 % Compute unnormalized baseline spectrum for all epochs for later plots. THIS DOES NOT CORRESPOND TO THE ACTUALLY USED
 % BASELINES, IF TRIAL NORMALIZATION WAS IN USE!
@@ -162,6 +164,7 @@ for condition = 1:length(experiment_conditions_to_plot)
     time_frequency_data.(['condition_' num2str(condition)]).condition_title = this_condition_title;
     
     time_frequency_data.(['condition_' num2str(condition)]).n_epochs = sum(~logical(epoch_rejections)&(experiment_conditions==condition));
+    time_frequency_data.(['condition_' num2str(condition)]).n_epochs_baseline = sum(~logical(epoch_rejections_for_baseline)&(experiment_conditions==condition));
 end
     
 

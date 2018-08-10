@@ -159,6 +159,15 @@ average_time_frequency_data.grand_average.n_epochs = grand_average_n_epochs;
 grand_average_n_epochs_mean = mean([grand_averages.n_epochs]);
 average_time_frequency_data.grand_average.n_epochs_mean = grand_average_n_epochs_mean;
 
+grand_average_n_epochs_std = std([grand_averages.n_epochs]);
+average_time_frequency_data.grand_average.n_epochs_std = grand_average_n_epochs_std;
+
+grand_average_n_epochs_baseline_mean = mean([grand_averages.n_epochs_baseline]);
+average_time_frequency_data.grand_average.n_epochs_baseline_mean = grand_average_n_epochs_baseline_mean;
+
+grand_average_n_epochs_baseline_std = std([grand_averages.n_epochs_baseline]);
+average_time_frequency_data.grand_average.n_epochs_baseline_std = grand_average_n_epochs_baseline_std;
+
 average_time_frequency_data.grand_average.subjects = unique_subjects(grand_average_subjec_indices);
 
 average_time_frequency_data.grand_average.all_epochs_base_power_unnormalized = {grand_averages.all_epochs_base_power_unnormalized};
@@ -215,6 +224,15 @@ for condition = 1:length(experiment_conditions_to_plot)
     
     this_condition_n_epochs_mean = mean([this_condition.n_epochs]);
     average_time_frequency_data.(['condition_' num2str(condition)]).n_epochs_mean = this_condition_n_epochs_mean;
+    
+    this_condition_n_epochs_std = std([this_condition.n_epochs]);
+    average_time_frequency_data.(['condition_' num2str(condition)]).n_epochs_std = this_condition_n_epochs_std;
+    
+    this_condition_n_epochs_baseline_mean = mean([this_condition.n_epochs_baseline]);
+    average_time_frequency_data.(['condition_' num2str(condition)]).n_epochs_baseline_mean = this_condition_n_epochs_baseline_mean;
+    
+    this_condition_n_epochs_baseline_std = std([this_condition.n_epochs_baseline]);
+    average_time_frequency_data.(['condition_' num2str(condition)]).n_epochs_baseline_std = this_condition_n_epochs_baseline_std;
     
     average_time_frequency_data.(['condition_' num2str(condition)]).subjects = unique_subjects(this_condition_subjects);
     

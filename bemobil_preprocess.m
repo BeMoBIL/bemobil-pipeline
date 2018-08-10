@@ -70,6 +70,14 @@ if ~isempty(channel_locations_filepath)
         {channel_locations_filepath 'filetype' 'autodetect'});
     disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
+else
+    eeglab_path = which('eeglab');
+    eeglab_path_base = strsplit(eeglab_path,'\eeglab.m');
+    standard_channel_locations_path =...
+        [eeglab_path_base{1} '\plugins\dipfit2.3\standard_BESA\standard-10-5-cap385.elp'];
+    
+    EEG=pop_chanedit(EEG,'lookup',standard_channel_locations_path);
+
 end
 
 % 1d) change channel names in standard MoBI montage declaring the EOG

@@ -2,8 +2,6 @@
 % source component of the spatial filter (like Independent Component Analysis). The threshold of a peak is defined as 
 % 1/5 of the maximum of the activity in the component. A refractory period after the peak event can be defined, otherwise
 % a new peak can be detected as soon as the previous' peak's activity is back below half the threshold. 
-% 
-% THIS FUNCTION RELIES ON THE EYE-EEG TOOLBOX OF EEGLAB!
 %
 % Usage:
 %   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_create_peak_events(ALLEEG, EEG, CURRENTSET, component_to_use, event_name, refractory_period)
@@ -96,10 +94,20 @@ while timepoint<=length(component_activity)
 end
 
 % make ur-events (necessary for addevents() )
-EEG = eeg_checkset(EEG,'makeur');
+% EEG = eeg_checkset(EEG,'makeur');
 
-% piggyback on a function created in the EYE-EEG toolbox because I didn't want to code this myself
-EEG = addevents(EEG,event_latencies',{'latency'},event_name);
+
+for latency = event_latencies
+    i = numel(EEG.event) + 1;
+    EEG.event(i).type = event_name;
+    EEG.event(i).latency = latency;
+    EEG.event(i).duration = 1/EEG.srate;
+end
+
+EEG = eeg_checkset(EEG, 'eventconsistency');
+
+% % piggyback on a function created in the EYE-EEG toolbox because I didn't want to code this myself
+% EEG = addevents(EEG,event_latencies',{'latency'},event_name);
 
 % [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);pop_eegplot( EEG, 0, 1, 1);
 % 
