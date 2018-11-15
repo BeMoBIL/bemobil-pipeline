@@ -2,7 +2,7 @@
 % saved on the disk. 
 %
 % Usage:
-% function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
+% function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, channels_to_use_for_study,...
 %     output_foldername, timewarp_latency_loadpath, epochs_info_filename_input, epochs_info_filename_output, recompute, do_timewarp,...
 %     dont_warp_but_cut, n_freqs, n_times )
 % 
@@ -10,7 +10,7 @@
 %   input_path                      - path to the EEG data sets (without the subject number)
 %   input_filename                  - name of the epoch data set
 %   subjects                        - vector of subjects that should be calculated
-%   components_to_use_for_study     - which independent components should be used for calculation
+%   channels_to_use_for_study       - which independent components should be used for calculation
 %   output_foldername               - name of the folder where the ERSPs will be saved 
 %   timewarp_latency_loadpath       - the full path to the timewarp latencies INCLUDING the name
 %   epochs_info_filename_input      - filename of previously stored epochs information. Useful only if you want to
@@ -38,9 +38,9 @@
 %
 % Authors: Marius Klug, 2018
 
-function bemobil_compute_single_trial_ERSPs( input_path , input_filename,  subjects, components_to_use_for_study,...
-    output_foldername, timewarp_latency_loadpath, epochs_info_filename_input, epochs_info_filename_output, recompute, has_timewarp_latencies,...
-    dont_warp_but_cut, n_freqs, n_times )
+function bemobil_compute_single_trial_ERSPs_channels( input_path , input_filename,  subjects, channels_to_use_for_study,...
+    output_foldername, timewarp_latency_loadpath, epochs_info_filename_input, epochs_info_filename_output, recompute,...
+    has_timewarp_latencies, dont_warp_but_cut, n_freqs, n_times )
 
 
 
@@ -53,8 +53,8 @@ fft_options.alpha = NaN;
 fft_options.powbase = NaN;
 
 
-if ~exist('ALLEEG','var'); eeglab; end
-pop_editoptions( 'option_storedisk', 0, 'option_savetwofiles', 1, 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_eegobject', 0, 'option_computeica', 1, 'option_scaleicarms', 1, 'option_rememberfolder', 1, 'option_donotusetoolboxes', 0, 'option_checkversion', 1, 'option_chat', 1);
+% if ~exist('ALLEEG','var'); eeglab; end
+% pop_editoptions( 'option_storedisk', 0, 'option_savetwofiles', 1, 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_eegobject', 0, 'option_computeica', 1, 'option_scaleicarms', 1, 'option_rememberfolder', 1, 'option_donotusetoolboxes', 0, 'option_checkversion', 1, 'option_chat', 1);
 
 if has_timewarp_latencies
     try
@@ -70,16 +70,16 @@ if has_timewarp_latencies
 else
 end
 
-for subject = subjects
+for i_subject = subjects
     STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
     
-    filepath = [input_path num2str(subject) '\'];
+    filepath = [input_path num2str(i_subject) '\'];
     
     EEG = pop_loadset('filename',input_filename,'filepath',filepath);
     
     try 
         % load epoch_info. load stores into a struct, so the first element of the struct has to be taken
-        epochs_info = load([input_path '\' num2str(subject) '\' epochs_info_filename_input]);
+        epochs_info = load([input_path '\' num2str(i_subject) '\' epochs_info_filename_input]);
         epoch_info_fields = fieldnames(epochs_info);
         epochs_info = epochs_info.(epoch_info_fields{1});
 
@@ -90,12 +90,12 @@ for subject = subjects
     end
     
     % compute newtimef data
-    for IC = components_to_use_for_study
+    for i_channel = channels_to_use_for_study
         tic % start checking the time
-        disp(['Subject: ' num2str(subject)])
-        disp(['IC: ' num2str(IC)])
+        disp(['Subject: ' num2str(i_subject)])
+        disp(['Channel: ' num2str(i_channel)])
         
-        output_path = [filepath 'ERSPs\' output_foldername '\IC_' num2str(IC)];
+        output_path = [filepath 'ERSPs\' output_foldername '\Channel_' num2str(i_channel)];
         
         % check if this is already calculated
         directory_content = dir(output_path);
@@ -114,7 +114,7 @@ for subject = subjects
         all_epochs_ersp = nan(length(EEG.epoch),n_freqs,n_times);
         
         if has_timewarp_latencies
-            this_subject_timewarp_latencies = timeWarp(subject).latencies;
+            this_subject_timewarp_latencies = timeWarp(i_subject).latencies;
 
             % for some reason this is necessary, maybe a bug in maketimewarp, anyways, there exist instances, where the
             % last timewarp marker is 1 frame after the end of the epoch...
@@ -138,18 +138,18 @@ for subject = subjects
             end
 
             % not all epochs do have a timewarp, since there might have been a wrong marker order or nonexistent markers
-            for epoch_index = 1:length(timeWarp(subject).epochs) 
+            for i_epoch = 1:length(timeWarp(i_subject).epochs) 
 
                 fprintf('.')
 
-                epoch = timeWarp(subject).epochs(epoch_index); % find the actual epoch number
+                epoch = timeWarp(i_subject).epochs(i_epoch); % find the actual epoch number
 
-                thisTimeWarp = this_subject_timewarp_latencies(epoch_index,:); % this is the timewarp latency for this epoch
+                thisTimeWarp = this_subject_timewarp_latencies(i_epoch,:); % this is the timewarp latency for this epoch
 
                 if dont_warp_but_cut
                     
                     % do the timefreq analysis without timewarp
-                    [full_ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
+                    [full_ersp,~,~,times,freqs,~,~] = newtimef(EEG.data(i_channel,:,epoch),...
                         EEG.pnts,...
                         [EEG.times(1) EEG.times(end)],...
                         EEG.srate,...
@@ -177,7 +177,7 @@ for subject = subjects
                     assert(all(size(thisTimeWarp)==size(latencyMeans)),'The timewarp matrix of this epoch has a different size than the latency means to warp.')
                     
                     % do normal timewarp
-                    [ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
+                    [ersp,~,~,times,freqs,~,~] = newtimef(EEG.data(i_channel,:,epoch),...
                         EEG.pnts,...
                         [EEG.times(1) EEG.times(end)],...
                         EEG.srate,...
@@ -198,11 +198,11 @@ for subject = subjects
                 end
 
                 % store ersp in the data set that will be saved
-                all_epochs_ersp(timeWarp(subject).epochs(epoch_index),:,:) = single(ersp); % single saves disk space
+                all_epochs_ersp(timeWarp(i_subject).epochs(i_epoch),:,:) = single(ersp); % single saves disk space
                 
                 if epochs_info_present
                     % store timewarp latency infos
-                    epochs_info(timeWarp(subject).epochs(epoch_index)).timeWarpLatencies = thisTimeWarp;
+                    epochs_info(timeWarp(i_subject).epochs(i_epoch)).timeWarpLatencies = thisTimeWarp;
                 end
 
             end
@@ -213,7 +213,7 @@ for subject = subjects
                 fprintf('.')
 
                 % do timefreq analysis without timewarp
-                [ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(IC,:,epoch),...
+                [ersp,~,~,times,freqs,~,~] = newtimef(EEG.icaact(i_channel,:,epoch),...
                     EEG.pnts,...
                     [EEG.times(1) EEG.times(end)],...
                     EEG.srate,...
@@ -246,16 +246,16 @@ for subject = subjects
         save([output_path '\all_epochs_ersp'], 'all_epochs_ersp');
         
         lastduration = toc; % stop checking the time and plot estimated time of arrival
-        eta = lastduration * ( length(subjects)*length(components_to_use_for_study)- (((find(subject==subjects)-1)*length(components_to_use_for_study))+IC));
-        disp('\nLast duration:')
-        disp(lastduration)
+        eta = lastduration * ( length(subjects)*length(channels_to_use_for_study)- (((find(i_subject==subjects)-1)*length(channels_to_use_for_study))+i_channel));
+        disp('done.')
+        disp(['Last duration: ' num2str(lastduration) 's'])
         disp('ETA (h):')
         disp(eta/3600)
     end
     
     % this is a little dirty, since the epoch info will be filled each IC again, but it is identical, so won't matter
     if epochs_info_present
-        save([input_path '\' num2str(subject) '\' epochs_info_filename_output], 'epochs_info');
+        save([input_path '\' num2str(i_subject) '\' epochs_info_filename_output], 'epochs_info');
     end
     
 end

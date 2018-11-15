@@ -1,4 +1,4 @@
-function [average_time_frequency_data, time_frequency_data_of_all_subjects] = bemobil_load_time_frequency_data_of_cluster(STUDY, cluster, input_path, epochs_info_filename,...
+function [average_time_frequency_data, time_frequency_data_of_all_subjects] = bemobil_load_time_frequency_data_of_channels(channels, subjects, input_path, epochs_info_filename,...
     timewarp_name, trial_normalization, times, freqs, baseline_start_end, experiment_conditions_to_plot, freqrange, latencyMeans, n_permutes, alpha, do_movement_based_check, do_auto_epoch_cleaning)
 
 
@@ -26,32 +26,14 @@ else
     timeIndices(2) = find(times<latencyMeans(end),1,'last');
 end
 
-
-% the used data sets in the STUDY:
-STUDY_sets = cellfun(@str2num, {STUDY.datasetinfo.subject});
-
-unique_setindices = unique(STUDY.cluster(cluster).sets);
-
-unique_subjects = STUDY_sets(unique_setindices);
-
-all_setindices = STUDY.cluster(cluster).sets;
-
-all_sets = STUDY_sets(all_setindices);
-
-all_comps = STUDY.cluster(cluster).comps;
-
+disp(['Loading ERSP data of subjects ' num2str(subjects)])
 subject_count = 0;
-
-disp(['Loading ERSP data of subjects ' num2str(unique_subjects)])
-
 % load time-freq data per subject
-for subject = unique_subjects
+for i_subject = subjects
     
     subject_count = subject_count + 1;
     
-    subject_comps = all_comps(all_sets==subject);
-    
-    filepath = [input_path num2str(subject) '\'];
+    filepath = [input_path num2str(i_subject) '\'];
     
     % load epoch_info. load stores into a struct, so the first element of the struct has to be taken
     epochs_info = load([filepath '\' epochs_info_filename]);
@@ -65,8 +47,8 @@ for subject = unique_subjects
     try
         % find out which epochs ought to be rejected based on "wrong" movement during the epoch based on merged checks
         if do_movement_based_check
-            epoch_rejections_ersp = for_Marius_extract_removedTrials_MoCap_auto_onsetDetection(subject,epochs_info,[2 3]);
-            epoch_rejections_baseline = for_Marius_extract_removedTrials_MoCap_auto_onsetDetection(subject,epochs_info,[1]);
+            epoch_rejections_ersp = for_Marius_extract_removedTrials_MoCap_auto_onsetDetection(i_subject,epochs_info,[2 3]);
+            epoch_rejections_baseline = for_Marius_extract_removedTrials_MoCap_auto_onsetDetection(i_subject,epochs_info,[1]);
         end
         
     catch
@@ -75,20 +57,11 @@ for subject = unique_subjects
     end
     try
         if do_auto_epoch_cleaning
+            filename_saveBadEpochIndices=['auto_epoch_cleaning\auto_epoch_cleaning_cluster_'  num2str(cluster)]; % -> THIS MUST MATCH THE BASIC SETTINGS OF THE CLEANING!
             
+            load(['P:\Lukas_Gehrke\studies\Spot_Rotation\data\4_single_subject_analysis\ERSPs\outward\' num2str(i_subject) '\' filename_saveBadEpochIndices])
             epoch_rejection_auto_cleaning = zeros(1,length(epochs_info));
-            
-            % edit LG: catch Spot Rotation specific cleaning per cluster
-            if contains(filepath, 'Spot_Rotation')
-                filename_saveBadEpochIndices=['auto_epoch_cleaning\auto_epoch_cleaning_cluster_'  num2str(cluster)]; % -> THIS MUST MATCH THE BASIC SETTINGS OF THE CLEANING!
-                load(['P:\Lukas_Gehrke\studies\Spot_Rotation\data\4_single_subject_analysis\ERSPs\outward\' num2str(subject) '\' filename_saveBadEpochIndices])
-                epoch_rejection_auto_cleaning(auto_epoch_cleaning.bad_epochs_final) = 2;
-            else
-                filename_saveBadEpochIndices= 'epochs_cleaning';
-                load([filepath filename_saveBadEpochIndices]);
-                epoch_rejection_auto_cleaning(bad_epochs) = 2;
-            end
-            
+            epoch_rejection_auto_cleaning(auto_epoch_cleaning.bad_epochs_final) = 2;
             epoch_rejections_ersp = epoch_rejection_auto_cleaning + epoch_rejections_ersp;
             
 %             fprintf('Check rejections only: %d\n', sum(epoch_rejections_ersp==1))
@@ -103,18 +76,17 @@ for subject = unique_subjects
         do_auto_epoch_cleaning = 0;
     end
     
-    time_frequency_data_of_all_subjects(subject_count) = bemobil_load_time_frequency_data_single_subject(input_path, subject, subject_comps, epochs_info,...
+    time_frequency_data_of_all_subjects(subject_count) = bemobil_load_time_frequency_data_single_subject(input_path, i_subject, channels, epochs_info,...
         timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
-        epoch_rejections_ersp, epoch_rejections_baseline);
+        epoch_rejections_ersp, epoch_rejections_baseline,true);
     
 end
 
 % fill output data
 
 average_time_frequency_data.info = time_frequency_data_of_all_subjects.info;
-average_time_frequency_data.info.cluster = cluster;
-average_time_frequency_data.info.subjects_used = unique_subjects;
-average_time_frequency_data.info.ICs_used = all_comps;
+average_time_frequency_data.info.subjects_used = subjects;
+average_time_frequency_data.info.ICs_used = channels;
 average_time_frequency_data.info.latencyMeans = latencyMeans;
 average_time_frequency_data.info.trial_normalization = trial_normalization;
 average_time_frequency_data.info.do_auto_epoch_cleaning = do_auto_epoch_cleaning;
@@ -128,8 +100,8 @@ average_time_frequency_data.times = time_frequency_data_of_all_subjects.times;
 
 % find subjects which have NaN as ERSP, meaning they did not have any epoch of any condition
 grand_average_subjec_indices = false(length(time_frequency_data_of_all_subjects),1);
-for subject = 1:length(time_frequency_data_of_all_subjects)
-    grand_average_subjec_indices(subject) = ~any(any(isnan(time_frequency_data_of_all_subjects(subject).grand_average.ersp)));
+for i_subject = 1:length(time_frequency_data_of_all_subjects)
+    grand_average_subjec_indices(i_subject) = ~any(any(isnan(time_frequency_data_of_all_subjects(i_subject).grand_average.ersp)));
 end
 
 grand_averages = [time_frequency_data_of_all_subjects(grand_average_subjec_indices).grand_average];
@@ -180,7 +152,7 @@ average_time_frequency_data.grand_average.n_epochs_baseline_mean = grand_average
 grand_average_n_epochs_baseline_std = std([grand_averages.n_epochs_baseline]);
 average_time_frequency_data.grand_average.n_epochs_baseline_std = grand_average_n_epochs_baseline_std;
 
-average_time_frequency_data.grand_average.subjects = unique_subjects(grand_average_subjec_indices);
+average_time_frequency_data.grand_average.subjects = subjects(grand_average_subjec_indices);
 
 average_time_frequency_data.grand_average.all_epochs_base_power_unnormalized = {grand_averages.all_epochs_base_power_unnormalized};
 
@@ -194,8 +166,8 @@ for condition = 1:length(experiment_conditions_to_plot)
     
     % find subjects which have NaN as ERSP, meaning they did not have any epoch of any condition
     this_condition_subjects = false(length(time_frequency_data_of_all_subjects),1);
-    for subject = 1:length(time_frequency_data_of_all_subjects)
-        this_condition_subjects(subject) = ~any(any(isnan(time_frequency_data_of_all_subjects(subject).(['condition_' num2str(condition)]).ersp)));
+    for i_subject = 1:length(time_frequency_data_of_all_subjects)
+        this_condition_subjects(i_subject) = ~any(any(isnan(time_frequency_data_of_all_subjects(i_subject).(['condition_' num2str(condition)]).ersp)));
     end
     
     this_condition = [time_frequency_data_of_all_subjects(this_condition_subjects).(['condition_' num2str(condition)])];
@@ -246,7 +218,7 @@ for condition = 1:length(experiment_conditions_to_plot)
     this_condition_n_epochs_baseline_std = std([this_condition.n_epochs_baseline]);
     average_time_frequency_data.(['condition_' num2str(condition)]).n_epochs_baseline_std = this_condition_n_epochs_baseline_std;
     
-    average_time_frequency_data.(['condition_' num2str(condition)]).subjects = unique_subjects(this_condition_subjects);
+    average_time_frequency_data.(['condition_' num2str(condition)]).subjects = subjects(this_condition_subjects);
     
     % Note: The ERSP with grand average baseline (as opposed to the specific condition baseline) can be implemented here
     % as well, but I thought it wasn't necessary...

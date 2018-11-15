@@ -1,10 +1,4 @@
-function [averages_plot, single_subject_plots] = bemobil_plot_ERSPs(average_time_frequency_data,  all_subjects_time_frequency_data, STUDY, ALLEEG, scale)
-
-% find residual variance info for title later
-if ~isfield(STUDY.cluster, 'mean_rv')
-    STUDY = bemobil_dipoles(STUDY,ALLEEG);
-end
-
+function [averages_plot, single_subject_plots] = bemobil_plot_ERSPs_channels(average_time_frequency_data,  all_subjects_time_frequency_data, scale)
 
 
 % find maximum or all ERSPs to plot
@@ -46,13 +40,8 @@ else
     do_vlines = true;
 end
 
-if isempty(STUDY) || isempty(ALLEEG)
-    disp('STUDY or ALLEEG data missing, no dipoles will be plotted.')
     do_dipoles = false;
-else
-    do_dipoles = true;
-    n_subplots = n_subplots+1;
-end
+    
 
 
 % start the plot
@@ -67,7 +56,7 @@ end
 plot_alpha=false;
 % plot average ERSPs
 for ERSP = 1:n_ERSPs+1
-    try
+
         
         if ERSP == 1
             
@@ -100,7 +89,7 @@ for ERSP = 1:n_ERSPs+1
             calculated_statistics = false;
         end
         
-        subplot(n_subplots,1,ERSP+1);
+        subplot(n_subplots,1,ERSP);
         
 %         newfig
 %         surf(average_time_frequency_data.times,...
@@ -168,9 +157,6 @@ for ERSP = 1:n_ERSPs+1
         % plot color scaling bar
         cbar;
         
-    catch
-        warning('Potato error message: U dun fucked up in plot ERSPs.')
-    end
     
 end
 
@@ -178,8 +164,8 @@ ax=axes('Units','Normal','Position',[.075 .075 .85 .85],'Visible','off');
 
 set(get(ax,'Title'),'Visible','on')
 
-plot_title = {['Cluster: ' num2str(average_time_frequency_data.info.cluster) ', ' num2str(length(average_time_frequency_data.info.subjects_used))...
-    ' subjects, ' num2str(length(average_time_frequency_data.info.ICs_used)) ' ICs'] };
+plot_title = {['Channels: ' num2str(average_time_frequency_data.info.ICs_used) ', ' num2str(length(average_time_frequency_data.info.subjects_used))...
+    ' subjects']};
 
 if do_dipoles
     plot_title{end+1} = ['Mean residual variance: ' num2str(round(STUDY.cluster(average_time_frequency_data.info.cluster).mean_rv,3)*100) '%'];
@@ -191,6 +177,7 @@ end
 
 plot_title{end+1} = ['Trial normalization : ' num2str(average_time_frequency_data.info.trial_normalization) ', auto epoch cleaning: ' num2str(average_time_frequency_data.info.do_auto_epoch_cleaning)];
 
+plot_title{end+1} = ' ';
 title(plot_title);
 
 disp('done')

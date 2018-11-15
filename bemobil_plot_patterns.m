@@ -19,6 +19,8 @@
 %       titles - cell of pattern subplot titles (default: pattern numbers)
 %       camzoom - patterns will be zoomed in/out by this much by default,
 %                 allowing a tighter fit (default: 1.15)
+%       minweight - minimal weight necessary for patterns to be plotted 
+%                   (default: 0)
 %
 % Out:  
 %       h - handle of the generated figure
@@ -33,6 +35,7 @@
 %   - Added custom scale option
 %   - Added colorbar
 % 2018-03-19 First version
+% 2018 adjustments by Marius Klug
 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -62,6 +65,7 @@ addParamValue(ip, 'colorbar', [], @isnumeric);
 addParamValue(ip, 'weights', ones(1, size(patterns, 2)), @isnumeric);
 addParamValue(ip, 'titles', num2cell(1:size(patterns, 2)), @iscell);
 addParamValue(ip, 'camzoom', 1.15, @isnumeric);
+addParamValue(ip, 'minweight', 0, @isnumeric);
 
 parse(ip, patterns, chanlocs, varargin{:})
 
@@ -70,11 +74,24 @@ chanlocs = ip.Results.chanlocs;
 scale = ip.Results.scale;
 fixscale = ip.Results.fixscale;
 plotcolorbar = ip.Results.colorbar;
-weights = abs(ip.Results.weights) ./ max(abs(ip.Results.weights)) .* ip.Results.camzoom;
+% weights = abs(ip.Results.weights) ./ max(abs(ip.Results.weights)) .* ip.Results.camzoom;
+weights = abs(ip.Results.weights);
+this_camzoom = ip.Results.camzoom;
 weightsign = sign(ip.Results.weights);
 titles = ip.Results.titles;
+minweight = ip.Results.minweight;
 
 weights(weights<1e-10) = 1e-10;
+
+weights_too_low = weights < minweight;
+
+patternNumbersToPlot = find(~weights_too_low);
+
+weights(weights_too_low)=[];
+patterns(:,weights_too_low)=[];
+
+% standardizing weights
+weights = weights./max(weights).*this_camzoom;
 
 % setting scale
 if fixscale
@@ -98,14 +115,14 @@ h = figure;
 % creating subplots
 ncols = ceil(sqrt(size(patterns, 2)));
 nrows = ceil(size(patterns, 2)/ncols);
-fprintf('Plotting pattern ');
+fprintf('Plotting %d of %d patterns: ', length(weights), length(weights_too_low));
 for p = 1:size(patterns, 2)
-    fprintf('%d ', p);
+    fprintf('%d ', patternNumbersToPlot(p));
     subplot(nrows, ncols, p, 'parent', h);
     
     % adding asterisk to title if weight is negative
     if weightsign(p) == -1, titles{p} = [num2str(titles{p}), '*']; end
-    title(titles{p});
+    title(titles{patternNumbersToPlot(p)});
     
     % calling topoplot
     if samescale, evalc('topoplot(patterns(:,p), chanlocs, ''electrodes'', ''off'', ''maplimits'', [scalemin, scalemax])');

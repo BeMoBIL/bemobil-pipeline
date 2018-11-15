@@ -1,21 +1,28 @@
-function time_frequency_data = bemobil_load_time_frequency_data_single_subject(input_path, subject, ICs, epochs_info,...
+function time_frequency_data = bemobil_load_time_frequency_data_single_subject(input_path, subject, channels, epochs_info,...
     timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
-    epoch_rejections, epoch_rejections_for_baseline)
+    epoch_rejections, epoch_rejections_for_baseline,use_channel_data)
 
+if ~exist('use_channel_data','var'); use_channel_data = false; end
 
-IC_count = 0;
-fprintf('Subject: %d, ICs: ',subject)
+channel_count = 0;
+fprintf('Subject: %d, channels: ',subject)
 
-for IC = ICs
+for i_channel = channels
     
-    IC_count = IC_count + 1;
+    channel_count = channel_count + 1;
     
-    fprintf('%d, ',IC)
+    fprintf('%d, ',i_channel)
     
-    time_frequency_data_single_ICs(IC_count) = bemobil_load_time_frequency_data_single_IC(input_path, subject, IC,...
-        epochs_info, timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
-        epoch_rejections, epoch_rejections_for_baseline);
-    
+    if use_channel_data
+        time_frequency_data_single_ICs(channel_count) = bemobil_load_time_frequency_data_single_channel(input_path, subject, i_channel,...
+            epochs_info, timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
+            epoch_rejections, epoch_rejections_for_baseline);
+        
+    else
+        time_frequency_data_single_ICs(channel_count) = bemobil_load_time_frequency_data_single_IC(input_path, subject, i_channel,...
+            epochs_info, timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
+            epoch_rejections, epoch_rejections_for_baseline);
+    end
     
 end
 fprintf('\n')

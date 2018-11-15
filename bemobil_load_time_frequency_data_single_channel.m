@@ -1,8 +1,8 @@
-function time_frequency_data = bemobil_load_time_frequency_data_single_IC(input_path, subject, IC, epochs_info,...
+function time_frequency_data = bemobil_load_time_frequency_data_single_channel(input_path, subject, IC, epochs_info,...
     timewarp_name, trial_normalization, times, timeIndices, freqs, freqIndices, baseline_start_end, experiment_conditions_to_plot,...
     epoch_rejections, epoch_rejections_for_baseline)
 
-filepath_ersp_data = [input_path num2str(subject) '\ERSPs\' timewarp_name '\IC_' num2str(IC) '\'];
+filepath_ersp_data = [input_path num2str(subject) '\ERSPs\' timewarp_name '\channel_' num2str(IC) '\'];
 
 load([filepath_ersp_data 'all_epochs_ersp'],'all_epochs_ersp')
 
@@ -24,8 +24,16 @@ subject_ersp_thisIC_all_epochs_power = 10.^(all_epochs_ersp/10);
 subject_ersp_thisIC_all_epochs_power_unnormalized = subject_ersp_thisIC_all_epochs_power;
 
 if trial_normalization
+    subject_ersp_thisIC_all_epochs_power_corrected = zeros(size(subject_ersp_thisIC_all_epochs_power));
     full_trial_baselines = nanmean(subject_ersp_thisIC_all_epochs_power,3);
     subject_ersp_thisIC_all_epochs_power = subject_ersp_thisIC_all_epochs_power ./ full_trial_baselines;
+    for i_epoch = 1:size(full_trial_baselines,1)
+        ftb_epoch = full_trial_baselines(i_epoch,:)';
+        power_epoch = squeeze(subject_ersp_thisIC_all_epochs_power(i_epoch,:,:));
+        ftb_corrected_epoch = power_epoch ./ ftb_epoch;
+        subject_ersp_thisIC_all_epochs_power_corrected(i_epoch,:,:) = ftb_corrected_epoch;
+    end
+
 end
 
 

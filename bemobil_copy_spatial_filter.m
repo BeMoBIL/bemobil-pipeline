@@ -141,13 +141,20 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
             if isfield(EEG_set_to_copy_spatial_filter.reject,'SASICA')
                 EEG.reject.SASICA=EEG_set_to_copy_spatial_filter.reject.SASICA;
             else
-                warning('Attempted to copy SASICA information in EEG.reject but they were not present!')
+                disp('Attempted to copy SASICA information in EEG.reject but they were not present.')
             end
             
         else
-            warning('Attempted to copy component rejection information, but it was empty!')
+            disp('Attempted to copy component rejection information, but it was empty!')
         end
         
+    end
+    
+    % copy ICLabel results (if existing)
+    if isfield(EEG_set_to_copy_spatial_filter.etc,'ic_classification')
+        EEG.etc.ic_classification=EEG_set_to_copy_spatial_filter.etc.ic_classification;
+    else
+        disp('Attempted to copy ICLabel information in EEG.reject but they were not present.')
     end
     
 else
