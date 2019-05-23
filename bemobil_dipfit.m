@@ -42,9 +42,7 @@ if save_file_on_disk
     end
 end
 
-eeglab_complete_path = which('eeglab');
-eeglab_split_path = strsplit(eeglab_complete_path,'\eeglab.m');
-eeglab_base_path = eeglab_split_path{1};
+eeglab_base_path = fileparts(which('eeglab'));
 
 % load some standard data for dipfit
 dipfitdefs;

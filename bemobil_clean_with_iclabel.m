@@ -26,7 +26,7 @@
 % See also:
 %   EEGLAB, pop_iclabel, bemobil_plot_patterns
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classes_to_keep, threshold_to_keep, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classes_to_keep, threshold_to_keep, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -58,18 +58,26 @@ classifications = EEG.etc.ic_classification.ICLabel.classifications;
 % artifacts = find(all(classifications(:,[1 7])'<0.5));
 
 summed_scores_to_keep = sum(classifications(:,classes_to_keep),2);
-classes_to_keep_summed = find(summed_scores_to_keep>threshold_to_keep);
+ICs_keep = find(summed_scores_to_keep>threshold_to_keep);
 
-bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_keep,'minweight',threshold_to_keep);
-% title(['Classes to keep: ' num2str(classes_to_keep) ', Threshold: ' num2str(threshold_to_keep)]);
+fig1 = bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_keep,'minweight',threshold_to_keep);
+% title(['Classes to keep: ' num2str(classes_to_keep) ', Threshold: ' num2str(threshold_to_keep)]); % doesn't work since it titles only one the last plot, not the figure
 
-artifacts_from_summed = find(summed_scores_to_keep<threshold_to_keep);
+
+ICs_throw = find(summed_scores_to_keep<threshold_to_keep);
 summed_scores_to_throw = 1 - summed_scores_to_keep;
 
-bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_throw,'minweight',1 - threshold_to_keep);
+fig2 = bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_throw,'minweight',1 - threshold_to_keep);
 % title(['Classes to throw out: ' num2str(artifacts_from_summed) ', Threshold: ' num2str(1 - threshold_to_keep)]);
 
-EEG_clean = pop_subcomp( EEG, artifacts_from_summed);
+
+EEG_clean = pop_subcomp( EEG, ICs_throw);
+
+EEG_clean.etc.ic_cleaning.classes_to_keep = classes_to_keep;
+EEG_clean.etc.ic_cleaning.threshold_to_keep = threshold_to_keep;
+EEG_clean.etc.ic_cleaning.summed_scores_to_keep = summed_scores_to_keep;
+EEG_clean.etc.ic_cleaning.ICs_keep = ICs_keep;
+EEG_clean.etc.ic_cleaning.ICs_throw = ICs_throw;
 
 
 %% new data set in EEGLAB
@@ -80,4 +88,6 @@ EEG = eeg_checkset( EEG );
 if save_file_on_disk
     EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', out_filepath);
     disp('...done');
+	savefig(fig1,fullfile(out_filepath,'ICs_kept'))
+	savefig(fig2,fullfile(out_filepath,'ICs_thrown_out'))
 end

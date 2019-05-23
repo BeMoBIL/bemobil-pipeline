@@ -60,7 +60,20 @@ else
 end
 
 % Compute average reference
-EEG = pop_reref( EEG, []);
+
+EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
+EEG_channels = 1:EEG.nbchan;
+EEG_channels = EEG_channels(EEG_channels_bool);
+
+
+if ~any(EEG_channels_bool)
+    warning('No channel types in EEG.chanlocs.type are ''EEG''. Continuing with average reference to all channels!')
+    EEG = pop_reref( EEG, []);
+	 EEG.etc.bemobil_reref = [];
+else
+    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
+	 EEG.etc.bemobil_reref = EEG_channels;
+end
 disp('Rereferencing done.');
 
 % new data set in EEGLAB

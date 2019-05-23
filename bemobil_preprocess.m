@@ -33,7 +33,7 @@
 %
 % Authors: Lukas Gehrke, Marius Klug, 2017
 
-function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, resample_freq, out_filename, out_filepath)
+function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, resample_freq, out_filename, out_filepath, rename_channels)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
@@ -62,6 +62,15 @@ if ~isempty(channels_to_remove)
     end
 else
     disp('No channels to remove specified, skipping this step.')
+end
+
+% 1b2) rename channels if specified
+for i_pair = 1:size(rename_channels,1)
+		
+	old_chanidx = find(strcmp({EEG.chanlocs.labels},rename_channels{i_pair,1}));
+
+	EEG=pop_chanedit(EEG, 'changefield',{old_chanidx 'labels' rename_channels{i_pair,2}});
+
 end
 
 % 1c) import chanlocs and copy to urchanlocs
