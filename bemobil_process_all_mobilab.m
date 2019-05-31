@@ -69,8 +69,9 @@ for i_filename = 1:length(bemobil_config.filenames)
 	
 	% now load
 	mobilab.allStreams = dataSourceXDF(input_filepath_mobilab,output_filepath_mobilab);
+    
 	all_mobilab_streams = [mobilab.allStreams().item];
-	mobilab.refresh
+    refresh;
 	
 	disp('...done.');
 	
@@ -105,8 +106,7 @@ for i_filename = 1:length(bemobil_config.filenames)
 				eulers.timeDerivative(bemobil_config.rigidbody_derivatives);
 				
 				% update GUI
-				mobilab.refresh
-				
+				refresh
 				
 				% store names for exporting
 				processed_rb_stream_names{end+1} = eulers.name;
@@ -173,7 +173,13 @@ for i_filename = 1:length(bemobil_config.filenames)
 	[ALLEEG, EEG, CURRENTSET, EEG_split_sets] = bemobil_split_MoBI_set(ALLEEG, MoBI_EEG, CURRENTSET);
 	
 	for i_splitset = 1:length(EEG_split_sets)
-		EEG = pop_saveset( EEG_split_sets(i_splitset), 'filename',[full_filename '_'...
+        
+        if strcmp(EEG_split_sets(i_splitset).chanlocs(1).type,'MOCAP')   
+            EEG_split_sets(i_splitset) = pop_resample(EEG_split_sets(i_splitset),bemobil_config.resample_freq);
+            disp(['Resampled MOCAP data to: ', num2str(bemobil_config.resample_freq), 'Hz.']);    
+        end
+        
+        EEG = pop_saveset( EEG_split_sets(i_splitset), 'filename',[full_filename '_'...
 			EEG_split_sets(i_splitset).chanlocs(1).type],'filepath', output_filepath);
 		disp('...done');
 	end
