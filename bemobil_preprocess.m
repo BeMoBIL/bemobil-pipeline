@@ -67,9 +67,9 @@ end
 % 1b2) rename channels if specified
 for i_pair = 1:size(rename_channels,1)
 		
-	old_chanidx = find(strcmp({EEG.chanlocs.labels},rename_channels{i_pair,1}));
+	old_chanidx = find(strcmp({EEG.chanlocs(:).labels},rename_channels{i_pair,1}));
 
-	EEG=pop_chanedit(EEG, 'changefield',{old_chanidx 'labels' rename_channels{i_pair,2}});
+	EEG = pop_chanedit(EEG, 'changefield',{old_chanidx 'labels' rename_channels{i_pair,2}});
 
 end
 
@@ -83,7 +83,7 @@ else
     eeglab_path = which('eeglab');
     eeglab_path_base = strsplit(eeglab_path,'\eeglab.m');
     standard_channel_locations_path =...
-        [eeglab_path_base{1} '\plugins\dipfit2.3\standard_BESA\standard-10-5-cap385.elp'];
+        [eeglab_path_base{1} '\plugins\dipfit2.3\standard_BESA\standard-10-5-cap385_VEOG_left.elp'];
     
     EEG=pop_chanedit(EEG,'lookup',standard_channel_locations_path);
 
