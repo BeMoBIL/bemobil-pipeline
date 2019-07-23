@@ -46,7 +46,7 @@ end
 % unnecessary to recompute if present already
 if ~isfield(EEG.etc,'ic_classification')
 
-    EEG = pop_iclabel(EEG);
+    EEG = iclabel(EEG,'lite');
 
 end
 % ICs x classes

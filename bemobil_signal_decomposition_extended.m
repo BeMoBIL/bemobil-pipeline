@@ -220,48 +220,48 @@ switch algorithm
         end 
         
         [W, A, lambda, C_s, X_ssd]  = ssd(EEG_data, opt.ssd_freq, opt.ssd_sampling_freq, opt.ssd_filter_order, opt.ssd_epoch_indices);       
-        EEG.etc.ssd.W = W;
-        EEG.etc.ssd.A = A;
-        EEG.etc.ssd.lamda = lambda;
-        EEG.etc.ssd.C_s = C_s;
-        EEG.etc.ssd.X_ssd = X_ssd;
-        EEG.etc.ssd.ssd_freq = opt.ssd_freq;
+        EEG.etc.spatial_filter.ssd.W = W;
+        EEG.etc.spatial_filter.ssd.A = A;
+        EEG.etc.spatial_filter.ssd.lamda = lambda;
+        EEG.etc.spatial_filter.ssd.C_s = C_s;
+        EEG.etc.spatial_filter.ssd.X_ssd = X_ssd;
+        EEG.etc.spatial_filter.ssd.ssd_freq = opt.ssd_freq;
     
     case 'SPOC_LAMBDA'
         
         [W, A, lambda_values, p_values_lambda, Cxx, Cxxz, Cxxe] = spoc(EEG_data, opt.Z_target, 'n_spoc_components', opt.n_spoc_components, 'n_bootstrapping_iterations', opt.n_bootstrapping_iterations, 'pca_X_var_explained', opt.pca_X_var_explained);
-        EEG.etc.spoc.type = 'SPOC_LAMBDA';
-        EEG.etc.spoc.W = W;
-        EEG.etc.spoc.A = A;
-        EEG.etc.spoc.lambda_values = lambda_values;
-        EEG.etc.spoc.p_values_lamda = p_values_lambda;
-        EEG.etc.spoc.Cxx = Cxx;
-        EEG.etc.spoc.Cxxz = Cxxz;
-        EEG.etc.spoc.Cxxe = Cxxe;
+        EEG.etc.spatial_filter.spoc.type = 'SPOC_LAMBDA';
+        EEG.etc.spatial_filter.spoc.W = W;
+        EEG.etc.spatial_filter.spoc.A = A;
+        EEG.etc.spatial_filter.spoc.lambda_values = lambda_values;
+        EEG.etc.spatial_filter.spoc.p_values_lamda = p_values_lambda;
+        EEG.etc.spatial_filter.spoc.Cxx = Cxx;
+        EEG.etc.spatial_filter.spoc.Cxxz = Cxxz;
+        EEG.etc.spatial_filter.spoc.Cxxe = Cxxe;
         
     case 'SPOC_R2' 
         
         [W, A, Cxx, Cxxz, Cxxe, r2_values, r_values, lambda_values, ~] = spoc_r2(EEG_data, opt.Z_target, 'n_spoc_components', opt.n_spoc_components, 'pca_X_var_explained', opt.pca_X_var_explained);
-        EEG.etc.spoc.type = 'SPOC_R2';
-        EEG.etc.spoc.W = W;
-        EEG.etc.spoc.A = A;
-        EEG.etc.spoc.lambda_values = lambda_values;
-        EEG.etc.spoc.r2_values = r2_values;
-        EEG.etc.spoc.r_values = r_values;
-        EEG.etc.spoc.Cxx = Cxx;
-        EEG.etc.spoc.Cxxz = Cxxz;
-        EEG.etc.spoc.Cxxe = Cxxe;
+        EEG.etc.spatial_filter.spoc.type = 'SPOC_R2';
+        EEG.etc.spatial_filter.spoc.W = W;
+        EEG.etc.spatial_filter.spoc.A = A;
+        EEG.etc.spatial_filter.spoc.lambda_values = lambda_values;
+        EEG.etc.spatial_filter.spoc.r2_values = r2_values;
+        EEG.etc.spatial_filter.spoc.r_values = r_values;
+        EEG.etc.spatial_filter.spoc.Cxx = Cxx;
+        EEG.etc.spatial_filter.spoc.Cxxz = Cxxz;
+        EEG.etc.spatial_filter.spoc.Cxxe = Cxxe;
         
     case 'MSPOC'
          opt.n_spoc_components = min(rank(EEG_data()))
         
          [W, Wy, Wtau, A, Ay, ~] = mspoc(EEG_data, opt.Z_target,'n_component_sets', opt.n_spoc_components);
-         EEG.etc.spoc.type = 'MSPOC';
-         EEG.etc.spoc.W = W;
-         EEG.etc.spoc.Wy = Wy;
-         EEG.etc.spoc.Wtau = Wtau;
-         EEG.etc.spoc.A = A;
-         EEG.etc.spoc.Ay = Ay;
+         EEG.etc.spatial_filter.spoc.type = 'MSPOC';
+         EEG.etc.spatial_filter.spoc.W = W;
+         EEG.etc.spatial_filter.spoc.Wy = Wy;
+         EEG.etc.spatial_filter.spoc.Wtau = Wtau;
+         EEG.etc.spatial_filter.spoc.A = A;
+         EEG.etc.spatial_filter.spoc.Ay = Ay;
          
     case 'CCA'
         
@@ -273,8 +273,8 @@ switch algorithm
         [W,~] = canoncorr(EEG_data,opt.Z_target); 
         %W are conncor weights maping EEG to optimially correlated subspace
         A = pinv(W');   
-        EEG.etc.cca.W = W;
-        EEG.etc.cca.A = A;
+        EEG.etc.spatial_filter.cca.W = W;
+        EEG.etc.spatial_filter.cca.A = A;
 end
 
 
@@ -289,13 +289,17 @@ if not(strcmp(algorithm, 'AMICA'))
     else
         EEG.icawinv = A;
     end
-    EEG.spocweights = W; 
+%     EEG.spocweights = W; 
     
-    EEG = compute_filter_activations(EEG);
+%     EEG = compute_filter_activations(EEG);
     %dummy values to pass EEG checkset
-    EEG.icasphere = zeros(size(EEG.icawinv.')); 
-    EEG.icaweights = zeros(size(EEG.icawinv,2));
-    EEG.icachansind = [1:size(EEG.icawinv,1)];    
+%     EEG.icasphere = zeros(size(EEG.icawinv.')); 
+%     EEG.icaweights = zeros(size(EEG.icawinv,2));
+
+    EEG.icachansind = 1:size(EEG.icawinv,1);    
+	
+	EEG.icaweights = eye(size(W,2));
+	EEG.icasphere = W';
 end
 
 

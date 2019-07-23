@@ -59,7 +59,7 @@ else
     EEG.etc.interpolated_channels = channels_to_interpolate;
 end
 
-% Compute average reference
+% Compute average reference for all EEG channels
 
 EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
 EEG_channels = 1:EEG.nbchan;
@@ -67,13 +67,26 @@ EEG_channels = EEG_channels(EEG_channels_bool);
 
 
 if ~any(EEG_channels_bool)
-    warning('No channel types in EEG.chanlocs.type are ''EEG''. Continuing with average reference to all channels!')
-    EEG = pop_reref( EEG, []);
-	 EEG.etc.bemobil_reref = [];
-else
-    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
-	 EEG.etc.bemobil_reref = EEG_channels;
+	
+	EEG_channels = [];
+	
 end
+	
+
+if isempty(EEG.chanlocs(1).ref)
+	% no ref was declared during preprocessing, use full rank averef (without needing dependency)
+	% Apply average reference after adding initial reference, see fullrankaveref by Makoto Miakoshi (2017)
+	EEG.nbchan = EEG.nbchan+1;
+	EEG.data(end+1,:) = zeros(1, EEG.pnts);
+	EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
+	EEG = pop_reref(EEG, EEG_channels);
+	EEG = pop_select( EEG,'nochannel',{'initialReference'});
+else
+	% ref was declared, keep it as channel
+	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
+end
+
+EEG.etc.bemobil_reref = EEG_channels;
 disp('Rereferencing done.');
 
 % new data set in EEGLAB
