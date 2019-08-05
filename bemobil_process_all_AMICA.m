@@ -132,7 +132,7 @@ if ~force_recompute
 	end
 end
 
-if ~exist('EEG_AMICA_no_eyes','var')
+if ~exist('EEG_AMICA_no_eyes','var') 
 	
 	% iclabel
 	disp('Determine (ICLabel) eye components and project out...');
@@ -157,11 +157,12 @@ if ~exist('EEG_AMICA_no_eyes','var')
 	pop_saveset(EEG_AMICA_no_eyes, 'filename', [bemobil_config.filename_prefix num2str(subject) '_'...
 		bemobil_config.amica_chan_no_eye_filename_output], 'filepath', output_filepath);
 	disp('... done!')
+    
+end
 	
+if ~isfield(EEG_AMICA_no_eyes,'auto_continuous_cleaning')
 	
-	
-	
-	%% determine automatic time domain cleaning boundaries on the channel level
+	% determine automatic time domain cleaning boundaries on the channel level
 	
 	input_filepath = [bemobil_config.study_folder bemobil_config.spatial_filters_folder...
 		bemobil_config.spatial_filters_folder_AMICA bemobil_config.filename_prefix num2str(subject)];

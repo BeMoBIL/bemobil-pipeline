@@ -105,7 +105,7 @@ if ~exist('EEG_merged','var')
 				% zipping of small text files is fast
 				warning('Could not delete all old MoBI files, a zip file with the old logfile and notes will remain.')
 			end
-		elseif ~isempty(files_in_mobifolder) && ~force_recompute
+		elseif length({files_in_mobifolder.name})>4 && ~force_recompute
 			warning('MoBI folder already existed, using old file!')
 			continue
 		end
@@ -294,7 +294,7 @@ tmp = which('getPipelineDefaults');
 if isempty(tmp)
 	myPath = fileparts(which('prepPipeline'));
 	addpath(genpath(myPath));
-end;
+end
 
 % use prep pipeline subfunction to determine noisy channels
 disp('Detecting bad channels...')
