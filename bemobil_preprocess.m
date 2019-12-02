@@ -81,7 +81,7 @@ if exist('rename_channels','var') && ~isempty(rename_channels)
 end
 
 % 1b3) add ref channel as zero if specified
-if exist('ref_channel','var')
+if exist('ref_channel','var') && ~isempty(ref_channel)
 	disp('Adding reference channel with zeros...')
 	
 	EEG.nbchan = EEG.nbchan + 1;
@@ -105,7 +105,6 @@ else
 		[eeglab_path_base{1} '\plugins\dipfit2.3\standard_BESA\standard-10-5-cap385.elp'];
 	
 	EEG=pop_chanedit(EEG,'lookup',standard_channel_locations_path);
-	
 end
 
 % this has to happen after loading chanlocs because chanlocs are being completely overwritten in the process
@@ -123,6 +122,9 @@ for n = 1:length(EEG.chanlocs)
 	if ismember(EEG.chanlocs(n).labels, eog_channels)
 		EEG.chanlocs(n).type = strcat('EOG');
 		disp(['Added channel type: ', EEG.chanlocs(n).labels, ' is EOG electrode!!']);
+	elseif ismember(EEG.chanlocs(n).labels, ref_channel)
+		EEG.chanlocs(n).type = strcat('REF');
+		disp(['Added channel type: ', EEG.chanlocs(n).labels, ' is REF electrode!!']);
 	else
 		EEG.chanlocs(n).type = strcat('EEG');
 		disp(['Added channel type: ', EEG.chanlocs(n).labels, ' is EEG electrode.']);
