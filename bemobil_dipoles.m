@@ -87,10 +87,17 @@ function STUDY = bemobil_dipoles(STUDY,ALLEEG)
         % store residual variances
         
         for ICind = 1:length(STUDY.cluster(clsind(clust)).comps)
-            subject = STUDY.cluster(clsind(clust)).sets(ICind);
-            IC = STUDY.cluster(clsind(clust)).comps(ICind);
+            thisICdatasets = STUDY.cluster(clsind(clust)).sets(:,ICind);
+            IC = STUDY.cluster(clsind(clust)).comps(ICind);           
             
-            residual_variances(ICind) = ALLEEG(subject).dipfit.model(IC).rv;
+            RV_temp = 0;
+            for dataSet = 1:length(thisICdatasets)
+                RV_temp(dataSet) = ALLEEG(thisICdatasets(dataSet)).dipfit.model(IC).rv;
+            end
+            
+            assert(sum(diff(RV_temp))==0,'RVs of the same IC seem to be different between conditions!')
+            residual_variances(ICind) = RV_temp(1);
+            
         end
         median_rv = median(residual_variances);
         mean_rv = mean(residual_variances);

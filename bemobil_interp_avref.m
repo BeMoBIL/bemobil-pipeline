@@ -79,7 +79,7 @@ if isempty(EEG.chanlocs(1).ref)
 	EEG.nbchan = EEG.nbchan+1;
 	EEG.data(end+1,:) = zeros(1, EEG.pnts);
 	EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
-	EEG = pop_reref(EEG, EEG_channels);
+	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
 	EEG = pop_select( EEG,'nochannel',{'initialReference'});
 else
 	% ref was declared, keep it as channel

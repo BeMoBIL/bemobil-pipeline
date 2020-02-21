@@ -98,7 +98,7 @@ if amica
 
     if maxx_threads == 0
     
-        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads of your CPU. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+        error('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads of your CPU. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
         disp('Continuing with default EEGLAB runica() ...');
         amica = 0;
         other_algorithm = 'runica';

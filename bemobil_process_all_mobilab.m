@@ -138,7 +138,7 @@ if ~exist('EEG_merged','var')
 					% a smooth curve for filtering, though
 					unflipped = mobilab.allStreams().item{mobilab_rb_index}.unflipSigns();
 					
-					% lowpass filter with the respective frequency (e.g. 6 Hz)
+					% lowpass filter with the respective frequency (e.g. 6 Hz), zero-lag FIR filter
 					filtered = unflipped.lowpass(bemobil_config.mocap_lowpass);
 					
 					% transform quaternion values into Euler angles
@@ -251,8 +251,16 @@ if ~exist('EEG_merged','var')
 	
 	% merges all files currently loaded in EEGLAB into one file and stores
 	% the original filenames in EEG.etc.appended_files
-	[ALLEEG, EEG_merged, CURRENTSET] = bemobil_merge(ALLEEG,EEG,CURRENTSET,1:length(ALLEEG),...
-		[bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.merged_filename], output_filepath);
+    % added LG 02.10.2019
+    % in case there is only 1 file do not merge
+    if size(ALLEEG,2)>1
+    [ALLEEG, EEG_merged, CURRENTSET] = bemobil_merge(ALLEEG,EEG,CURRENTSET,1:length(ALLEEG),...
+        [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.merged_filename], output_filepath);
+    else
+        EEG_merged = EEG;
+    end
+        
+        
 	disp('Entire mobilab loading, processing, and exporting done!')
 	disp('You can start the EEGLAB processing now, using the merged dataset.')
 end
