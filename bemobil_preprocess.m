@@ -122,7 +122,7 @@ for n = 1:length(EEG.chanlocs)
 	if ismember(EEG.chanlocs(n).labels, eog_channels)
 		EEG.chanlocs(n).type = strcat('EOG');
 		disp(['Added channel type: ', EEG.chanlocs(n).labels, ' is EOG electrode!!']);
-	elseif ismember(EEG.chanlocs(n).labels, ref_channel)
+	elseif strcmp(EEG.chanlocs(n).labels, ref_channel)
 		EEG.chanlocs(n).type = strcat('REF');
 		disp(['Added channel type: ', EEG.chanlocs(n).labels, ' is REF electrode!!']);
 	else
