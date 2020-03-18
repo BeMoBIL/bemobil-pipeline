@@ -311,11 +311,16 @@ noisyOut = findNoisyChannels(filteredEEG);
 chans_to_interp = noisyOut.noisyChannels.all;
 disp({EEG_preprocessed.chanlocs(chans_to_interp).labels})
 
-% take EOG out of the channels to interpolate
+% take EOG and REF out of the channels to interpolate
 disp('Ignoring EOG channels for interpolation:')
 
 disp({EEG_preprocessed.chanlocs(chans_to_interp(strcmp({EEG_preprocessed.chanlocs(chans_to_interp).type},'EOG'))).labels})
 chans_to_interp(strcmp({EEG_preprocessed.chanlocs(chans_to_interp).type},'EOG'))=[];
+
+disp('Ignoring REF channel for interpolation:')
+
+disp({EEG_preprocessed.chanlocs(chans_to_interp(strcmp({EEG_preprocessed.chanlocs(chans_to_interp).type},'REF'))).labels})
+chans_to_interp(strcmp({EEG_preprocessed.chanlocs(chans_to_interp).type},'REF'))=[];
 
 %% do the interpolation and average referencing (reference is not considering EOGs)
 

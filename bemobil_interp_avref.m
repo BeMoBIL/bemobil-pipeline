@@ -62,8 +62,9 @@ end
 % Compute average reference for all EEG channels
 
 EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
+REF_channels_bool = strcmp({EEG.chanlocs.type},'REF');
 EEG_channels = 1:EEG.nbchan;
-EEG_channels = EEG_channels(EEG_channels_bool);
+EEG_channels = EEG_channels(EEG_channels_bool | REF_channels_bool);
 
 
 if ~any(EEG_channels_bool)
