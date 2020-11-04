@@ -69,7 +69,7 @@ end
 if ~isempty(lowerPassbandEdge)
    
     figure;
-    [EEG, com, b] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
+    [EEG, com, ~] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
     
     if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_highpass']); end

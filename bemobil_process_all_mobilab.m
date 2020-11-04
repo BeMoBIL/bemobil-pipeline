@@ -311,7 +311,10 @@ noisyOut = findNoisyChannels(filteredEEG);
 chans_to_interp = noisyOut.noisyChannels.all;
 disp({EEG_preprocessed.chanlocs(chans_to_interp).labels})
 
-% take EOG and REF out of the channels to interpolate
+% take EOG and REF out of the channels to interpolate: EOG is very likely
+% to be different from the others but rightfully so, and the REF channel is
+% currently empty, since it was added new with zeros to be filled after
+% rereferencing
 disp('Ignoring EOG channels for interpolation:')
 
 disp({EEG_preprocessed.chanlocs(chans_to_interp(strcmp({EEG_preprocessed.chanlocs(chans_to_interp).type},'EOG'))).labels})
@@ -327,3 +330,4 @@ chans_to_interp(strcmp({EEG_preprocessed.chanlocs(chans_to_interp).type},'REF'))
 disp('Interpolating bad channels...')
 [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_interp_avref( EEG_preprocessed , ALLEEG, CURRENTSET, chans_to_interp,...
 	[bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.interpolated_avRef_filename], output_filepath);
+

@@ -51,7 +51,10 @@ for solution = 1:(length(fields(clustering_solutions))-1)
     % find closest cluster to ROI
     for cluster = 3:length(STUDY.cluster) % cluster 1 contains all ICs and cluster 2 contains the outliers
         
-        tmp_distance = sqrt((STUDY.cluster(cluster).dipole.posxyz(1) - cluster_ROI_talairach.x)^2 + (STUDY.cluster(cluster).dipole.posxyz(2) - cluster_ROI_talairach.y)^2 + (STUDY.cluster(cluster).dipole.posxyz(3) - cluster_ROI_talairach.z)^2);
+		% Pythagoras in 3D
+        tmp_distance = sqrt((STUDY.cluster(cluster).dipole.posxyz(1) - cluster_ROI_talairach.x)^2 +...
+							(STUDY.cluster(cluster).dipole.posxyz(2) - cluster_ROI_talairach.y)^2 +...
+							(STUDY.cluster(cluster).dipole.posxyz(3) - cluster_ROI_talairach.z)^2);
         
         if tmp_distance < best_fitting_cluster_distance(solution)
             % declare this cluster to be the best fitting cluster of this solution

@@ -75,15 +75,22 @@ end
 	
 
 if isempty(EEG.chanlocs(1).ref)
-	% no ref was declared during preprocessing, use full rank averef (without needing dependency)
-	% Apply average reference after adding initial reference, see fullrankaveref by Makoto Miakoshi (2017)
+	% no ref was declared during preprocessing, use full rank averef
+	% (without needing dependency) Apply average reference after adding
+	% initial reference, see fullrankaveref by Makoto Miakoshi (2017) This
+	% adds an empty new channel, rereferences, then removes the excess
+	% channel again, so the rank is still intact. The reference channel,
+	% however, is gone and can't be used fr analyses, so in case Cz was
+	% used as reference during recording, it is inaccessible.
 	EEG.nbchan = EEG.nbchan+1;
 	EEG.data(end+1,:) = zeros(1, EEG.pnts);
 	EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
 	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
 	EEG = pop_select( EEG,'nochannel',{'initialReference'});
 else
-	% ref was declared, keep it as channel
+	% ref was declared, keep it as channel. this means we have an extra
+	% channel, e.g. 129 instead of 128 electrodes, and the former reference
+	% carries information. however, the rank is still EEG.nbchan - 1, so 128!
 	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
 end
 

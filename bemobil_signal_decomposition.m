@@ -36,10 +36,12 @@
 %
 % Authors: Lukas Gehrke, Marius Klug, 2017
 
-function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath)
+function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
+	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject, AMICA_n_rej)
 
 % only save a file on disk if both a name and a path are provided
-save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
+save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var') && ...
+	~isempty(out_filename) && ~isempty(out_filepath));
 
 % check if file already exist and show warning if it does
 if save_file_on_disk
@@ -55,6 +57,15 @@ else
 end
 
 if amica
+	
+	if ~exist('AMICA_autoreject', 'var')
+		AMICA_autoreject = 0;
+	end
+	
+	if ~exist('AMICA_n_rej', 'var')
+		AMICA_n_rej = 3;
+	end
+	
     if isfield(EEG,'datfile') && length(EEG.datfile) > 0
         disp('Found datfile.');
         data = [EEG.filepath '\' EEG.datfile];
@@ -79,7 +90,9 @@ if amica
                 'outdir', [out_filepath '\' out_filename '_AMICA'],...
                 'num_chans', EEG.nbchan,...
                 'writestep', 2000,...
-                'pcakeep',data_rank);
+                'pcakeep',data_rank,...
+				'do_reject',AMICA_autoreject,...
+				'numrej',AMICA_n_rej);
             disp('AMICA successfull, storing weights and sphere.');
             EEG.etc.spatial_filter.algorithm = 'AMICA';
             EEG.etc.spatial_filter.AMICAmods = mods;
