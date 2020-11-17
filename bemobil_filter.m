@@ -35,7 +35,8 @@
 % 
 % Authors: Marius Klug, 2020
 
-function [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, lowerPassbandEdge, higherPassbandEdge, out_filename, out_filepath, highPassFilterOrder, lowPassFilterOrder)
+function [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, lowerPassbandEdge, higherPassbandEdge,...
+    out_filename, out_filepath, highPassFilterOrder, lowPassFilterOrder)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var')) && ~isempty(out_filename) && ~isempty(out_filepath);
@@ -69,14 +70,14 @@ end
 if ~isempty(lowerPassbandEdge)
    
     figure;
-    [EEG, com, ~] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
+    [EEG, com, b] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
     
     if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_highpass']); end
     
     split1 = strsplit(com, ' ');
     split2 = strsplit(split1{4}, ',');
-	highpass_order = str2num(split2{3});
+	highpass_order = str2num(split2{6});
     highpass_passband = lowerPassbandEdge;
 	
 	if isempty(highPassFilterOrder)
@@ -132,7 +133,7 @@ if ~isempty(higherPassbandEdge)
 	
 	split1 = strsplit(com, ' ');
     split2 = strsplit(split1{4}, ',');
-	lowpass_order = str2num(split2{3});
+	lowpass_order = str2num(split2{6});
     lowpass_passband = higherPassbandEdge;
 	
 	if isempty(lowPassFilterOrder)

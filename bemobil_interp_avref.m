@@ -72,7 +72,7 @@ if ~any(EEG_channels_bool)
 	EEG_channels = [];
 	
 end
-	
+
 
 if isempty(EEG.chanlocs(1).ref)
 	% no ref was declared during preprocessing, use full rank averef
@@ -87,11 +87,17 @@ if isempty(EEG.chanlocs(1).ref)
 	EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
 	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
 	EEG = pop_select( EEG,'nochannel',{'initialReference'});
+
+    % rank is the number of channels, since we have full rank averef, minus the number of interpolated channels
+    EEG.etc.rank = EEG.nbchan - length(EEG.etc.interpolated_channels);
 else
 	% ref was declared, keep it as channel. this means we have an extra
 	% channel, e.g. 129 instead of 128 electrodes, and the former reference
-	% carries information. however, the rank is still EEG.nbchan - 1, so 128!
+	% carries information. however, the original rank is still EEG.nbchan - 1, so 128!
 	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
+    
+    % rank is the number of channels - 1, minus the number of interpolated channels
+    EEG.etc.rank = EEG.nbchan - 1 - length(EEG.etc.interpolated_channels);
 end
 
 EEG.etc.bemobil_reref = EEG_channels;
