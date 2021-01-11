@@ -118,14 +118,14 @@ if p.adaptiveNremove == 1
 % 	significant for noisier datasets which menas that clean datasets get more components removed which defeats the
 % 	purpose
     
-    [nremove, ~] = bemobil_iterative_threshold_detection(scores);
+    [adaptiveNremove, ~] = bemobil_iterative_threshold_detection(scores);
     
-	fprintf('Using adaptive outlier detection instead of predefined nremove. Removing artifact in %d components. This does not reduce the data rank!\n',nremove);
-    
-    if nremove == 0
-        y = x;
-        yy=x-y;
-        return
+	
+    if adaptiveNremove >= nremove
+        fprintf('Adaptive score outlier detection found %d components, predefined nremove is %d. Removing %d components. This does not reduce the data rank!\n',adaptiveNremove,nremove,adaptiveNremove);
+        nremove = adaptiveNremove;
+    else
+        fprintf('Adaptive score outlier detection found %d components, which is LESS than predefined nremove (%d). Using predefined removal to remove %d components. This does not reduce the data rank!\n',adaptiveNremove,nremove,nremove);
     end
     
 end

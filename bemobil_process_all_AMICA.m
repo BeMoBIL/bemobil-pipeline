@@ -56,17 +56,6 @@ end
 
 if ~exist('EEG_single_subject_final','var')
     
-    %% highpass filter for AMICA
-    
-    [ALLEEG, EEG_filtered_for_AMICA, CURRENTSET] = bemobil_filter(ALLEEG, EEG_interp_avRef, CURRENTSET,...
-        bemobil_config.filter_lowCutoffFreqAMICA, bemobil_config.filter_highCutoffFreqAMICA,...
-    [], [], bemobil_config.filter_AMICA_highPassOrder, bemobil_config.filter_AMICA_lowPassOrder);
-    
-    % save RAM and disk space of ICA results, since events are irrelevant here and in mobi datasets can be a lot
-    EEG_filtered_for_AMICA.event = [];
-    
-    %% AMICA
-    
     output_filepath = [bemobil_config.study_folder bemobil_config.spatial_filters_folder...
         bemobil_config.spatial_filters_folder_AMICA bemobil_config.filename_prefix num2str(subject)];
     
@@ -85,8 +74,27 @@ if ~exist('EEG_single_subject_final','var')
     
     if ~exist('EEG_AMICA_cleaned','var')
         
+        %% highpass filter for AMICA
         
+        [ALLEEG, EEG_filtered_for_AMICA, CURRENTSET] = bemobil_filter(ALLEEG, EEG_interp_avRef, CURRENTSET,...
+            bemobil_config.filter_lowCutoffFreqAMICA, bemobil_config.filter_highCutoffFreqAMICA,...
+            [], [], bemobil_config.filter_AMICA_highPassOrder, bemobil_config.filter_AMICA_lowPassOrder);
+        
+        % save RAM and disk space of ICA results, since events are irrelevant here and in mobi datasets can be a lot
+        EEG_filtered_for_AMICA.event = [];
+        EEG_filtered_for_AMICA.urevent = [];
+        
+        %% AMICA
         % running signal decomposition with automatic rejection is recommended
+        
+%         turns out the data rank reduction due to bridges does not really solve the issue of a high D value when
+%         computing AMICA, and since PCA before ICA was shown the be problematic, I removed it again: Artoni, F.,
+%         Delorme, A., & Makeig, S. (2018) Applying dimension reduction to EEG data by Principal Component Analysis
+%         reduces the quality of its subsequent Independent Component decomposition. Neuroimage, 175, 176–187.
+
+%         data_rank = EEG_filtered_for_AMICA.etc.rank;
+%         [rank_reduction_of_bridges,EEG_filtered_for_AMICA] = bemobil_find_gel_bridges(EEG_filtered_for_AMICA,0.98);
+%         data_rank = data_rank - rank_reduction_of_bridges;
         
         [ALLEEG, EEG_AMICA_cleaned, CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG_filtered_for_AMICA, ...
             CURRENTSET, true, bemobil_config.num_models, bemobil_config.max_threads, EEG_filtered_for_AMICA.etc.rank, [], ...
@@ -95,18 +103,31 @@ if ~exist('EEG_single_subject_final','var')
         
         % add information about AMICA autorejected time points
         
-        EEG_AMICA_cleaned.etc.bad_samples = EEG_AMICA_cleaned.etc.spatial_filter.AMICAmods.Lt == 0;
+        sample_mask = EEG_AMICA_cleaned.etc.spatial_filter.AMICAmods.Lt == 0;
+        EEG_AMICA_cleaned.etc.bad_samples = sample_mask;
         EEG_AMICA_cleaned.etc.bad_samples_percent = sum(EEG_AMICA_cleaned.etc.bad_samples) / length(EEG_AMICA_cleaned.etc.bad_samples) * 100;
+        
+        % find latency of regions
+        remove_data_intervals = reshape(find(diff([false sample_mask false])),2,[])';
+        remove_data_intervals(:,2) = remove_data_intervals(:,2)-1;
+        EEG_AMICA_cleaned.etc.remove_data_intervals = remove_data_intervals;
+        
+        % save again
+        EEG_AMICA_cleaned = pop_saveset( EEG_AMICA_cleaned,...
+            'filename',[bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.amica_filename_output],...
+            'filepath', output_filepath);
+        disp('...done');
+        
         
         % plot autorejection
         data2plot = EEG_AMICA_cleaned.data(1:round(EEG_AMICA_cleaned.nbchan/10):EEG_AMICA_cleaned.nbchan,:)';
-        figure; 
+        figure;
         set(gcf,'color','w','Position', get(0,'screensize'));
         plot(data2plot,'g');
         data2plot(~EEG_AMICA_cleaned.etc.bad_samples,:) = NaN;
         hold on
         plot(data2plot,'r');
-        xlim([-10000 EEG.pnts+10000])
+        xlim([-10000 EEG_AMICA_cleaned.pnts+10000])
         ylim([-1000 1000])
         title(['AMICA autorejection, removed ' num2str(round(EEG_AMICA_cleaned.etc.bad_samples_percent,2)) '% of the samples'])
         xlabel('Samples')
@@ -117,10 +138,12 @@ if ~exist('EEG_single_subject_final','var')
         print(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject.png']),'-dpng')
         close
         
+        
+        % save RAM
+        clear EEG_filtered_for_AMICA
+        
     end
     
-    % save RAM
-    clear EEG_filtered_for_AMICA
     
     %% Warping of locations and dipole fitting, plus runing ICLabel
     % renames the specified channels, warps the chanlocs on a standard head model and fits dipoles for

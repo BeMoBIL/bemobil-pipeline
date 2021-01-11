@@ -27,7 +27,7 @@
 % See also:
 %   EEGLAB, pop_iclabel, bemobil_plot_patterns
 
-function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classifier_version,...
+function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw,fig1] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classifier_version,...
     classes_to_keep, threshold_to_keep, out_filename, out_filepath)
 
 if ~exist('classifier_version','var') || isempty(classifier_version)
@@ -80,8 +80,20 @@ if threshold_to_keep ~= -1
     ICs_keep = find(summed_scores_to_keep>threshold_to_keep);
     ICs_throw = find(summed_scores_to_keep<threshold_to_keep);
     
-    pop_viewprops(EEG, 0,ICs_keep');
-    fig1 = gcf;
+    summed_scores_to_keep(ICs_throw) = 0;
+%     pop_viewprops(EEG, 0,ICs_keep');
+%     fig1 = gcf;
+%     pop_viewprops(EEG, 0,ICs_throw');
+%     fig2 = gcf;
+
+    titles = {};
+    for i_title = 1:size(EEG.icawinv,2)
+        titles{i_title} = [num2str(i_title) ': ' num2str(round(summed_scores_to_keep(i_title),3))];
+    end
+    fig1 = bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_keep,'minweight',0.01,'titles',titles);
+    
+%     pop_viewprops(EEG, 0,ICs_keep');
+%     fig1 = gcf;
 %     fig1 = bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_keep,'minweight',threshold_to_keep);
 %     % title(['Classes to keep: ' num2str(classes_to_keep) ', Threshold: ' num2str(threshold_to_keep)]); % doesn't work since it titles only one the last plot, not the figure
 %     
@@ -89,19 +101,26 @@ if threshold_to_keep ~= -1
 %     % title(['Classes to throw out: ' num2str(artifacts_from_summed) ', Threshold: ' num2str(1 - threshold_to_keep)]);
 else
     ICs_keep = zeros(length(classes),1);
+    summed_scores_to_keep = zeros(size(EEG.icawinv,2),1);
     for class_to_keep = classes_to_keep
         ICs_keep(classes == class_to_keep) = 1;
+        summed_scores_to_keep = summed_scores_to_keep + EEG.etc.ic_classification.ICLabel.classifications(:,1);
     end
     
     ICs_throw = find(~ICs_keep);
     ICs_keep = find(ICs_keep);
     
-    pop_viewprops(EEG, 0,ICs_keep');
-    fig1 = gcf;
+    summed_scores_to_keep(ICs_throw) = 0;
+%     pop_viewprops(EEG, 0,ICs_keep');
+%     fig1 = gcf;
 %     pop_viewprops(EEG, 0,ICs_throw');
 %     fig2 = gcf;
-%     EEG_clean = pop_subcomp( EEG, ICs_throw);
-%     fig1 = bemobil_plot_patterns(EEG_clean.icawinv,EEG_clean.chanlocs,'weights',summed_scores_to_keep(ICs_keep));
+
+    titles = {};
+    for i_title = 1:size(EEG.icawinv,2)
+        titles{i_title} = [num2str(i_title) ': ' num2str(round(summed_scores_to_keep(i_title),3))];
+    end
+    fig1 = bemobil_plot_patterns(EEG.icawinv,EEG.chanlocs,'weights',summed_scores_to_keep,'minweight',0.01,'titles',titles);
     % title(['Classes to keep: ' num2str(classes_to_keep) ', Threshold: ' num2str(threshold_to_keep)]); % doesn't work since it titles only one the last plot, not the figure
     
 %     EEG_clean = pop_subcomp( EEG, ICs_keep);
@@ -110,6 +129,7 @@ else
 end
 
 EEG_clean = pop_subcomp( EEG, ICs_throw);
+set(fig1,'color','w','position',get(0,'screensize'))
 
 %%
 EEG_clean.etc.ic_cleaning.classes_to_keep = classes_to_keep;

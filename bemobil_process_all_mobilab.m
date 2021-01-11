@@ -70,7 +70,7 @@ if ~force_recompute
         return
     end
     
-    % check if at least the mobilab part was done already
+    % check if the full merged EEG file exists
     try
         
         EEG = pop_loadset('filename', [bemobil_config.filename_prefix num2str(subject) '_'...
@@ -84,138 +84,174 @@ end
 %% run MoBILAB
 
 if ~exist('EEG_merged','var')
+    
+    
+    % check if at least the mobilab part was done already and all MoBI
+    % files exist
+    mobi_files_exist = zeros(size(bemobil_config.filenames));
     for i_filename = 1:length(bemobil_config.filenames)
+        
+        % get rid of memory mapped object storage
+        try
+            pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+        catch
+            warning('Could NOT edit EEGLAB memory options!!');
+        end
         
         full_filename = [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.filenames{i_filename}];
         
-        %% import from mobilab
-        disp(['Importing file: "' full_filename '.xdf" ...']);
-        
-        input_filepath_mobilab = fullfile(input_filepath, [full_filename '.xdf']);
-        
-        % this suffix needs to be changed if you redo it and want to keep the old files
-        output_filepath_mobilab = fullfile(output_filepath_mobi, [full_filename '_MoBI']);
-        
-        files_in_mobifolder = dir(output_filepath_mobilab);
-        
-        if ~isempty(files_in_mobifolder) && force_recompute
-            
-            % if old files exist, mobilab attempts to zip them, which takes ages, so they are deleted here
-            warning('MoBI folder already existed, deleting!')
-            
-            status = rmdir(output_filepath_mobilab,'s');
-            
-            if ~status
-                % zipping of small text files is fast
-                warning('Could not delete all old MoBI files, a zip file with the old logfile and notes will remain.')
-            end
-        elseif length({files_in_mobifolder.name})>4 && ~force_recompute
-            warning('MoBI folder already existed, using old file!')
-            continue
+        try
+            MoBI_EEG = pop_loadset('filename',[full_filename '_MoBI.set'],'filepath', output_filepath);
+            mobi_files_exist(i_filename) = 1;
+        catch
+            mobi_files_exist(i_filename) = 0;
         end
-        
-        % now load
-        mobilab.allStreams = dataSourceXDF(input_filepath_mobilab,output_filepath_mobilab);
-        all_mobilab_streams = [mobilab.allStreams().item];
-        mobilab.refresh
-        
-        disp('...done.');
-        
-        
-        %% do rigidbody processing
-        
-        % variable for storing the stream names for exporting later
-        processed_rb_stream_names = {};
-        
-        for i_rigidbody_stream = 1:length(bemobil_config.rigidbody_streams)
-            
-            % find out the index of this rb stream
-            for i_stream = 1:length(all_mobilab_streams)
-                
-                if regexp(lower(all_mobilab_streams{i_stream}.name),lower(bemobil_config.rigidbody_streams{i_rigidbody_stream}))
-                    
-                    mobilab_rb_index = i_stream;
-                    
-                    % process mocap channels
-                    
-                    % quaternion values can flip their signs, which does indicate the same orientation. we need them to be
-                    % a smooth curve for filtering, though
-                    unflipped = mobilab.allStreams().item{mobilab_rb_index}.unflipSigns();
-                    
-                    % lowpass filter with the respective frequency (e.g. 6 Hz), zero-lag FIR filter
-                    filtered = unflipped.lowpass(bemobil_config.mocap_lowpass);
-                    
-                    % transform quaternion values into Euler angles
-                    eulers = filtered.quaternionsToEuler();
-                    
-                    % compute derivatives (e.g. 2 -> velocity and acceleration)
-                    eulers.timeDerivative(bemobil_config.rigidbody_derivatives);
-                    
-                    % update GUI
-                    mobilab.refresh
-                    
-                    
-                    % store names for exporting
-                    processed_rb_stream_names{end+1} = eulers.name;
-                    
-                    % 		child names don't need to be stored since they contain the eulers names and regexp is used later
-                    % 		for i_child = 1:bemobil_config.rigidbody_derivatives
-                    %
-                    % 			processed_rb_stream_names{end+1} = eulers.children{i_child}.name;
-                    %
-                    % 		end
-                    
-                    break
-                end
-                
-            end
-            
-        end
-        
-        %% find out the index of all data and event streams
-        
-        
-        all_data_stream_names = [bemobil_config.unprocessed_data_streams,processed_rb_stream_names];
-        all_data_stream_indices = [];
-        all_event_stream_indices = [];
-        
-        all_mobilab_streams = [mobilab.allStreams().item];
-        
-        for i_data_stream = 1:length(all_data_stream_names)
-            for i_stream = 1:length(all_mobilab_streams)
-                if regexp(lower(all_mobilab_streams{i_stream}.name),lower(all_data_stream_names{i_data_stream}))
-                    
-                    all_data_stream_indices(end+1) = i_stream;
-                    
-                end
-            end
-        end
-        
-        for i_event_stream = 1:length(bemobil_config.event_streams)
-            for i_stream = 1:length(all_mobilab_streams)
-                if regexp(lower(all_mobilab_streams{i_stream}.name),lower(bemobil_config.event_streams{i_event_stream}))
-                    
-                    all_event_stream_indices(end+1) = i_stream;
-                    
-                end
-            end
-        end
-        
-        %% export MoBI dataset, split into unique channel types
-        
-        disp('Exporting MoBI dataset. This may take a while!')
-        exported_EEG = mobilab.allStreams().export2eeglab(all_data_stream_indices,all_event_stream_indices);
-        
-        % clear RAM
-        mobilab.allStreams = [];
-        
-        mkdir(output_filepath)
-        pop_saveset( exported_EEG, 'filename',[full_filename '_MoBI'],'filepath', output_filepath);
-        disp('...done');
-        clear exported_EEG
-        
     end
     
+    if all(mobi_files_exist)
+        warning('Old MoBI files already existed, using these files!')
+        % skipping the mobilab part
+    else
+        % doing the mobilab part
+        for i_filename = 1:length(bemobil_config.filenames)
+            
+            full_filename = [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.filenames{i_filename}];
+            
+            %% import from mobilab
+            disp(['Importing file: "' full_filename '.xdf" ...']);
+            
+            input_filepath_mobilab = fullfile(input_filepath, [full_filename '.xdf']);
+            
+            % this suffix needs to be changed if you redo it and want to keep the old files
+            output_filepath_mobilab = fullfile(output_filepath_mobi, [full_filename '_MoBI']);
+            
+            files_in_mobifolder = dir(output_filepath_mobilab);
+            
+            if ~isempty(files_in_mobifolder) && force_recompute
+                
+                % if old files exist, mobilab attempts to zip them, which takes ages, so they are deleted here
+                warning('MoBI folder already existed, deleting!')
+                
+                status = rmdir(output_filepath_mobilab,'s');
+                
+                if ~status
+                    % zipping of small text files is fast
+                    warning('Could not delete all old MoBI files, a zip file with the old logfile and notes will remain.')
+                end
+            elseif length({files_in_mobifolder.name})>4 && ~force_recompute
+                warning('MoBI folder already existed, using old file!')
+                continue
+            end
+            
+            % now load
+            mobilab.allStreams = dataSourceXDF(input_filepath_mobilab,output_filepath_mobilab);
+            all_mobilab_streams = [mobilab.allStreams().item];
+            mobilab.refresh
+            
+            disp('...done.');
+            
+            
+            %% do rigidbody processing
+            
+            % variable for storing the stream names for exporting later
+            processed_rb_stream_names = {};
+            
+            for i_rigidbody_stream = 1:length(bemobil_config.rigidbody_streams)
+                
+                % find out the index of this rb stream
+                for i_stream = 1:length(all_mobilab_streams)
+                    
+                    if regexp(lower(all_mobilab_streams{i_stream}.name),lower(bemobil_config.rigidbody_streams{i_rigidbody_stream}))
+                        
+                        mobilab_rb_index = i_stream;
+                        
+                        % process mocap channels
+                        
+                        % quaternion values can flip their signs, which does indicate the same orientation. we need them to be
+                        % a smooth curve for filtering, though
+                        unflipped = mobilab.allStreams().item{mobilab_rb_index}.unflipSigns();
+                        
+                        % lowpass filter with the respective frequency (e.g. 6 Hz), zero-lag FIR filter
+                        filtered = unflipped.lowpass(bemobil_config.mocap_lowpass);
+                        
+                        % transform quaternion values into Euler angles
+                        eulers = filtered.quaternionsToEuler();
+                        
+                        % compute derivatives (e.g. 2 -> velocity and acceleration)
+                        eulers.timeDerivative(bemobil_config.rigidbody_derivatives);
+                        
+                        % update GUI
+                        mobilab.refresh
+                        
+                        
+                        % store names for exporting
+                        processed_rb_stream_names{end+1} = eulers.name;
+                        
+                        % 		child names don't need to be stored since they contain the eulers names and regexp is used later
+                        % 		for i_child = 1:bemobil_config.rigidbody_derivatives
+                        %
+                        % 			processed_rb_stream_names{end+1} = eulers.children{i_child}.name;
+                        %
+                        % 		end
+                        
+                        break
+                    end
+                    
+                end
+                
+            end
+            
+            %% find out the index of all data and event streams
+            
+            all_data_stream_names = [bemobil_config.unprocessed_data_streams,processed_rb_stream_names];
+            all_data_stream_indices = [];
+            all_event_stream_indices = [];
+            
+            all_mobilab_streams = [mobilab.allStreams().item];
+            
+            for i_data_stream = 1:length(all_data_stream_names)
+                for i_stream = 1:length(all_mobilab_streams)
+                    if regexp(lower(all_mobilab_streams{i_stream}.name),lower(all_data_stream_names{i_data_stream}))
+                        
+                        all_data_stream_indices(end+1) = i_stream;
+                        
+                    end
+                end
+            end
+            
+            for i_event_stream = 1:length(bemobil_config.event_streams)
+                for i_stream = 1:length(all_mobilab_streams)
+                    if regexp(lower(all_mobilab_streams{i_stream}.name),lower(bemobil_config.event_streams{i_event_stream}))
+                        
+                        all_event_stream_indices(end+1) = i_stream;
+                        
+                    end
+                end
+            end
+            
+            %% export MoBI dataset
+            % get rid of memory mapped object storage
+            
+            disp('Exporting MoBI dataset. This may take a while!')
+            exported_EEG = mobilab.allStreams().export2eeglab(all_data_stream_indices,all_event_stream_indices);
+            
+            % clear RAM
+            mobilab.allStreams = [];
+            
+            mkdir(output_filepath)
+            
+            try
+                pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+            catch
+                warning('Could NOT edit EEGLAB memory options!!');
+            end
+            
+            pop_saveset( exported_EEG, 'filename',[full_filename '_MoBI'],'filepath', output_filepath);
+            disp('...done');
+            clear exported_EEG
+            
+        end
+    end
     % get rid of memory mapped object storage
     try
         pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
@@ -229,8 +265,16 @@ if ~exist('EEG_merged','var')
         
         MoBI_EEG = pop_loadset('filename',[full_filename '_MoBI.set'],'filepath', output_filepath);
         
+        if ~isempty(bemobil_config.MOBI_functions{i_filename})
+            % this allows for custom functions to happen before splitting the MOBI dataset
+            MoBI_EEG = feval(bemobil_config.MOBI_functions{i_filename}, MoBI_EEG, full_filename, output_filepath);
+        end
+        
         % split MoBI dataset into unique channel types
         [~, ~, ~, EEG_split_sets] = bemobil_split_MoBI_set(ALLEEG, MoBI_EEG, CURRENTSET);
+        
+        % clear RAM
+        STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[]; MoBI_EEG=[];
         
         for i_splitset = 1:length(EEG_split_sets)
             pop_saveset( EEG_split_sets(i_splitset), 'filename',[full_filename '_'...
@@ -239,7 +283,7 @@ if ~exist('EEG_merged','var')
         end
         
         % clear RAM
-        STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[]; EEG_split_sets=[];
+        EEG_split_sets=[];
         
     end
     
@@ -275,6 +319,9 @@ if ~exist('EEG_merged','var')
     
     disp('Entire mobilab loading, processing, and exporting done!')
     disp('You can start the EEGLAB processing now, using the merged dataset.')
+    
+    clear mobilab
+    STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
 end
 
 %% preprocess
@@ -305,7 +352,8 @@ if ~exist('EEG_preprocessed','var')
     [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_preprocess(ALLEEG, EEG_merged, CURRENTSET, channel_locations_filepath,...
         bemobil_config.channels_to_remove, bemobil_config.eog_channels, bemobil_config.resample_freq,...
         [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.preprocessed_filename], output_filepath,...
-        bemobil_config.rename_channels, bemobil_config.ref_channel, bemobil_config.linefreqs, bemobil_config.zapline_n_remove);
+        bemobil_config.rename_channels, bemobil_config.ref_channel, bemobil_config.linefreqs, bemobil_config.zapline_n_remove,...
+        bemobil_config.zapline_plot);
     
     disp('Preprocessing done!')
     
@@ -316,7 +364,7 @@ end
 
 EEG = EEG_preprocessed;
 
-
+%%
 disp('Computing average reference for bad channel detection...')
 % Compute average reference for all EEG channels
 
@@ -350,17 +398,18 @@ else
     EEG = pop_reref( EEG, EEG_channels,'keepref','on');
 end
 
+disp('...done! Detecting bad channels...')
+
 % remove bad channels, use default values of clean_artifacts, but specify just in case they may change
 [EEG_chan_removed,EEG_highpass,~,chans_to_interp] = clean_artifacts(EEG,...
     'burst_crit','off','window_crit','off',...
-    'chancorr_crit',bemobil_config.chancorr_crit,'line_crit',4,'highpass_band',[0.25 0.75],'flatline_crit',5);
+    'chancorr_crit',bemobil_config.chancorr_crit,'line_crit',4,'highpass_band',[0.25 0.75],'flatline_crit','off');
 chans_to_interp = find(chans_to_interp); % transform logical array to indices
 
 disp('Detected bad channels: ')
 disp({EEG.chanlocs(chans_to_interp).labels})
 
-% take EOG and REF out of the channels to interpolate: EOG is very likely to be different from the others but rightfully
-% so
+% take EOG out of the channels to interpolate: EOG is very likely to be different from the others but rightfully so
 disp('Ignoring EOG channels for interpolation:')
 
 disp({EEG.chanlocs(chans_to_interp(strcmp({EEG.chanlocs(chans_to_interp).type},'EOG'))).labels})
@@ -374,8 +423,9 @@ EEG_chan_removed.etc.clean_channel_mask = true(EEG_highpass.nbchan,1);
 EEG_chan_removed.etc.clean_channel_mask(chans_to_interp) = deal(0);
 
 % display 1/10 of the data in the middle (save disk space when saving figure)
-vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',[round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000); 
+vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',[round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
 
+%%
 set(gcf, 'Position', get(0,'screensize'))
 
 savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_bad_channels.fig']))
