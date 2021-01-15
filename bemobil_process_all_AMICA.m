@@ -49,7 +49,7 @@ if ~force_recompute
             bemobil_config.copy_weights_interpolate_avRef_filename], 'filepath', output_filepath);
         [ALLEEG, EEG_single_subject_final, CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
         
-        warning('Old cleaned AMICA file already existed, using that file!')
+        warning('Old single subject file with interpolated channels, avref, and AMICA data already existed, using that file!')
         
     end
 end
@@ -67,7 +67,7 @@ if ~exist('EEG_single_subject_final','var')
                 bemobil_config.amica_filename_output], 'filepath', output_filepath);
             [ALLEEG, EEG_AMICA_cleaned, CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
             
-            warning('Old cleaned AMICA file already existed, using that file!')
+            warning('Old AMICA file already existed, using that file!')
             
         end
     end

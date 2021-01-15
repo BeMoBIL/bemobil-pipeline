@@ -152,11 +152,11 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
    end
    
    % copy bad sample AMICA autoreject results (if existing)
-   if isfield(EEG_AMICA_cleaned.etc,'bad_samples')
+   if isfield(EEG_set_to_copy_spatial_filter.etc,'bad_samples')
       disp('Copying bad samples information into new dataset...')
-      EEG.etc.bad_samples=EEG_AMICA_cleaned.etc.bad_samples;
-      EEG.etc.bad_samples_percent=EEG_AMICA_cleaned.etc.bad_samples_percent;
-      EEG.etc.remove_data_intervals=EEG_AMICA_cleaned.etc.remove_data_intervals;
+      EEG.etc.bad_samples=EEG_set_to_copy_spatial_filter.etc.bad_samples;
+      EEG.etc.bad_samples_percent=EEG_set_to_copy_spatial_filter.etc.bad_samples_percent;
+      EEG.etc.remove_data_intervals=EEG_set_to_copy_spatial_filter.etc.remove_data_intervals;
    else
       disp('Attempted to copy AMICA autoreject bad sample information but they were not present.')
    end
