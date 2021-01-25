@@ -67,8 +67,7 @@ else
     disp('No channels to remove specified, skipping this step.')
 end
 
-% Resample/downsample to 250 Hz if no other resampling frequency is
-% provided
+% Resample if frequency is provided
 if ~isempty(resample_freq)
     EEG = pop_resample(EEG, resample_freq);
     EEG = eeg_checkset( EEG );
@@ -183,7 +182,7 @@ if exist('linefreqs','var') && ~isempty(linefreqs)
             x = EEG.data';
             y = NaN(size(x));
             length_chunks = 60;
-            n_chunks = floor(size(x,1)/250/length_chunks); % last chunk must be larger than the others, to ensure fft works
+            n_chunks = floor(size(x,1)/EEG.srate/length_chunks); % last chunk must be larger than the others, to ensure fft works
             scores = NaN(n_chunks,size(x,2));
             for i_chunk = 1:n_chunks
                 if mod(i_chunk,round(n_chunks/10))==0
