@@ -75,13 +75,13 @@ if ~isempty(resample_freq)
     disp(['Resampled data to: ', num2str(resample_freq), 'Hz.']);
 end
 
-%% Clean line noise with ZapLine: de Cheveigné, A. (2020) ZapLine: a simple and effective method to remove power line
-% artifacts. Neuroimage, 1, 1–13.
+%% Clean line noise with ZapLine: de Cheveign??, A. (2020) ZapLine: a simple and effective method to remove power line
+% artifacts. Neuroimage, 1, 1???13.
 if exist('linefreqs','var') && ~isempty(linefreqs)
     
     disp('Removing frequency artifacts using ZapLine with adaptations for automatic component selection.')
     disp('---------------- PLEASE CITE ------------------')
-    disp('de Cheveigné, A. (2020) ZapLine: a simple and effective method to remove power line artifacts. Neuroimage, 1, 1–13.')
+    disp('de Cheveign??, A. (2020) ZapLine: a simple and effective method to remove power line artifacts. Neuroimage, 1, 1???13.')
     disp('---------------- PLEASE CITE ------------------')
     
     if ~exist('zapline_n_remove','var') || isempty(zapline_n_remove)
@@ -183,7 +183,7 @@ if exist('linefreqs','var') && ~isempty(linefreqs)
             x = EEG.data';
             y = NaN(size(x));
             length_chunks = 60;
-            n_chunks = floor(size(x,1)/250/length_chunks); % last chunk must be larger than the others, to ensure fft works
+            n_chunks = floor(size(x,1)/EEG.srate/length_chunks); % last chunk must be larger than the others, to ensure fft works
             scores = NaN(n_chunks,size(x,2));
             for i_chunk = 1:n_chunks
                 if mod(i_chunk,round(n_chunks/10))==0
