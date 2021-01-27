@@ -67,8 +67,7 @@ else
     disp('No channels to remove specified, skipping this step.')
 end
 
-% Resample/downsample to 250 Hz if no other resampling frequency is
-% provided
+% Resample if frequency is provided
 if ~isempty(resample_freq)
     EEG = pop_resample(EEG, resample_freq);
     EEG = eeg_checkset( EEG );
