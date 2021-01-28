@@ -68,7 +68,7 @@ if amica
 	
     if isfield(EEG,'datfile') && length(EEG.datfile) > 0
         disp('Found datfile.');
-        data = [EEG.filepath '\' EEG.datfile];
+        data = fullfile(EEG.filepath, EEG.datfile);
         
         
     else
@@ -78,7 +78,7 @@ if amica
     end
     
     % delete potentially preexistent folder since it will interfere in case AMICA crashes
-    if ~isempty(dir([out_filepath '\' out_filename '_AMICA'])); rmdir([out_filepath '\' out_filename '_AMICA'],'s'); end
+    if ~isempty(dir(fullfile(out_filepath, out_filename, '_AMICA'))); rmdir(fullfile(out_filepath, out_filename, '_AMICA'),'s'); end
     
     disp('Starting AMICA...');
     while maxx_threads > 0
@@ -156,7 +156,7 @@ EEG.icaweights = w;
 EEG.icasphere = s;
 EEG = eeg_checkset(EEG);
 
-EEG.etc.spatial_filter.original_data_path = [out_filepath '\' out_filename];
+EEG.etc.spatial_filter.original_data_path = fullfile(out_filepath, out_filename);
 
 % new data set in EEGLAB
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
