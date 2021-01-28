@@ -74,13 +74,13 @@ if ~isempty(resample_freq)
     disp(['Resampled data to: ', num2str(resample_freq), 'Hz.']);
 end
 
-%% Clean line noise with ZapLine: de Cheveigné, A. (2020) ZapLine: a simple and effective method to remove power line
-% artifacts. Neuroimage, 1, 1–13.
+%% Clean line noise with ZapLine: de Cheveign??, A. (2020) ZapLine: a simple and effective method to remove power line
+% artifacts. Neuroimage, 1, 1???13.
 if exist('linefreqs','var') && ~isempty(linefreqs)
     
     disp('Removing frequency artifacts using ZapLine with adaptations for automatic component selection.')
     disp('---------------- PLEASE CITE ------------------')
-    disp('de Cheveigné, A. (2020) ZapLine: a simple and effective method to remove power line artifacts. Neuroimage, 1, 1–13.')
+    disp('de Cheveign??, A. (2020) ZapLine: a simple and effective method to remove power line artifacts. Neuroimage, 1, 1???13.')
     disp('---------------- PLEASE CITE ------------------')
     
     if ~exist('zapline_n_remove','var') || isempty(zapline_n_remove)
