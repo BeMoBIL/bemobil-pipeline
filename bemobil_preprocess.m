@@ -338,12 +338,10 @@ if ~isempty(channel_locations_filepath)
     disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
 else
-    eeglab_path = which('eeglab');
-    eeglab_path_base = strsplit(eeglab_path,'\eeglab.m');
     standard_channel_locations_path =...
-        [eeglab_path_base{1} '\plugins\dipfit2.3\standard_BESA\standard-10-5-cap385.elp'];
+        fullfile(fileparts(which('dipfitdefs')),'standard_BESA','standard-10-5-cap385.elp');
     
-    EEG=pop_chanedit(EEG,'lookup',standard_channel_locations_path);
+    EEG = pop_chanedit(EEG,'lookup',standard_channel_locations_path);
 end
 
 % this has to happen after loading chanlocs because chanlocs are being completely overwritten in the process
