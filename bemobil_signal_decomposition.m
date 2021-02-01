@@ -58,6 +58,8 @@ else
     out_filename = EEG.filename;
 end
 
+amica_crashed = false; 
+
 if amica
 	
 	if ~exist('AMICA_autoreject', 'var')
