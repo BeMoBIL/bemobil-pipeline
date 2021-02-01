@@ -73,7 +73,7 @@ if ~isempty(lowerPassbandEdge)
     [EEG, ~, b] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
     
-    if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_highpass']); end
+    if save_file_on_disk; saveas(gcf,fullfile(out_filepath, 'filter_response_highpass')); end
     
 	highpass_order = length(b)-1;
     highpass_passband = lowerPassbandEdge;
