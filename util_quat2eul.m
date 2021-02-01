@@ -70,8 +70,8 @@ switch upper(seq)
     case 'ZYZ'
         % Need to convert to intermediate rotation matrix here to avoid
         % singularities
-        R = quat2rotm(q);
-        eul = rotm2eul(R, 'ZYZ');
+        R = util_quat2rotm(q);
+        eul = util_rotm2eul(R, 'ZYZ');
 end
 
 % Check for complex numbers
