@@ -263,7 +263,7 @@ if ~exist('EEG_merged','var') || force_recompute
         MoBI_EEG = pop_loadset('filename',[full_filename '_MoBI.set'],'filepath', output_filepath);
         
         if isfield(bemobil_config, 'MOBI_functions')
-            if ~ isempty(bemobil_config.MOBI_functinos{i_filename})
+            if ~isempty(bemobil_config.MOBI_functions{i_filename})
                 % this allows for custom functions to happen before splitting the MOBI dataset
                 MoBI_EEG = feval(bemobil_config.MOBI_functions{i_filename}, MoBI_EEG, full_filename, output_filepath);
             end
