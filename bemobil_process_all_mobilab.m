@@ -46,7 +46,9 @@ input_filepath = [bemobil_config.study_folder bemobil_config.raw_data_folder bem
 output_filepath_mobi = [bemobil_config.study_folder bemobil_config.mobilab_data_folder bemobil_config.filename_prefix num2str(subject)];
 output_filepath = [bemobil_config.study_folder bemobil_config.raw_EEGLAB_data_folder bemobil_config.filename_prefix num2str(subject)];
 
-% get rid of memory mapped object storage
+% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+% larger than 2gb)
+% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
 try
     pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
 catch
@@ -226,7 +228,6 @@ if ~exist('EEG_merged','var') || force_recompute
         end
         
         %% export MoBI dataset
-        % get rid of memory mapped object storage
         
         disp('Exporting MoBI dataset. This may take a while!')
         exported_EEG = mobilab.allStreams().export2eeglab(all_data_stream_indices,all_event_stream_indices);
@@ -236,6 +237,9 @@ if ~exist('EEG_merged','var') || force_recompute
         
         mkdir(output_filepath)
         
+        % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+        % larger than 2gb)
+        % mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
         try
             pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
         catch
@@ -246,10 +250,12 @@ if ~exist('EEG_merged','var') || force_recompute
         disp('...done');
         clear exported_EEG
         
-    end
+    end % mobilab loops
     
     %% load and merge MoBI files
-    % get rid of memory mapped object storage
+    % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+    % larger than 2gb)
+    % mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
     try
         pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
     catch
@@ -274,7 +280,8 @@ if ~exist('EEG_merged','var') || force_recompute
         [~, ~, ~, EEG_split_sets] = bemobil_split_MoBI_set(ALLEEG, MoBI_EEG, CURRENTSET);
         
         % clear RAM
-        STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[]; MoBI_EEG=[];
+        STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[];
+        MoBI_EEG=[];
         
         for i_splitset = 1:length(EEG_split_sets)
             pop_saveset( EEG_split_sets(i_splitset), 'filename',[full_filename '_'...
@@ -293,13 +300,6 @@ if ~exist('EEG_merged','var') || force_recompute
     
     % make sure EEGLAB has no files other than the ones to be merged
     STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
-    
-    % get rid of memory mapped object storage
-    try
-        pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
-    catch
-        warning('Could NOT edit EEGLAB memory options!!');
-    end
     
     EEG = pop_loadset('filename', strcat(strcat(bemobil_config.filename_prefix, num2str(subject), '_',...
         bemobil_config.filenames,'_EEG.set')), 'filepath', input_filepath);
@@ -323,8 +323,19 @@ if ~exist('EEG_merged','var') || force_recompute
     clear mobilab
     STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
     %%
-end
+end % loading and splitting data to get merged EEG 
+
 %% preprocess
+
+% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+% larger than 2gb)
+% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
+try
+    pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!');
+end
+
 try
     
     EEG_preprocessed = pop_loadset('filename', [bemobil_config.filename_prefix num2str(subject) '_'...

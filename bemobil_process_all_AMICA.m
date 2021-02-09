@@ -32,6 +32,15 @@
 
 function [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute)
 
+% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+% larger than 2gb)
+% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
+try
+    pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!');
+end
+
 if ~exist('force_recompute','var')
     force_recompute = false;
 end
