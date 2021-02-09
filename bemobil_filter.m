@@ -127,7 +127,7 @@ if ~isempty(higherPassbandEdge)
     figure;
     [EEG, ~, b] = pop_eegfiltnew(EEG, 0, higherPassbandEdge, lowPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
-    if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_lowpass']); end
+    if save_file_on_disk; saveas(gcf,fullfile(out_filepath, 'filter_response_lowpass')); end
     
 	lowpass_order = length(b)-1;
     lowpass_passband = higherPassbandEdge;

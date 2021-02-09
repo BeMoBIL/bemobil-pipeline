@@ -42,9 +42,9 @@ end
 
 disp(['Subject #' num2str(subject)]);
 
-input_filepath = [bemobil_config.study_folder bemobil_config.raw_data_folder bemobil_config.filename_prefix num2str(subject)];
-output_filepath_mobi = [bemobil_config.study_folder bemobil_config.mobilab_data_folder bemobil_config.filename_prefix num2str(subject)];
-output_filepath = [bemobil_config.study_folder bemobil_config.raw_EEGLAB_data_folder bemobil_config.filename_prefix num2str(subject)];
+input_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
+output_filepath_mobi = fullfile(bemobil_config.study_folder, bemobil_config.mobilab_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
+output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
 
 % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
 % larger than 2gb)
@@ -350,11 +350,11 @@ end
 
 if ~exist('EEG_preprocessed','var')
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.raw_EEGLAB_data_folder bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
     if ~isempty(bemobil_config.channel_locations_filename)
-        channel_locations_filepath = [bemobil_config.study_folder bemobil_config.raw_data_folder...
-            bemobil_config.filename_prefix num2str(subject) '\' bemobil_config.filename_prefix num2str(subject) '_'...
-            bemobil_config.channel_locations_filename];
+        channel_locations_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder,...
+            [bemobil_config.filename_prefix num2str(subject)], [bemobil_config.filename_prefix num2str(subject) '_'...
+            bemobil_config.channel_locations_filename]);
     else
         channel_locations_filepath = [];
     end

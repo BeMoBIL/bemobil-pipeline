@@ -49,7 +49,7 @@ if force_recompute
 end
 
 % check if the entire processing was done already
-output_filepath = [bemobil_config.study_folder bemobil_config.single_subject_analysis_folder bemobil_config.filename_prefix num2str(subject)];
+output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.single_subject_analysis_folder, [bemobil_config.filename_prefix num2str(subject)]);
 
 if ~force_recompute
     try
@@ -65,8 +65,8 @@ end
 
 if ~exist('EEG_single_subject_final','var')
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.spatial_filters_folder...
-        bemobil_config.spatial_filters_folder_AMICA bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.spatial_filters_folder,...
+        bemobil_config.spatial_filters_folder_AMICA, [bemobil_config.filename_prefix num2str(subject)]);
     
     % check if the part was done already
     if ~force_recompute
@@ -158,8 +158,8 @@ if ~exist('EEG_single_subject_final','var')
     % renames the specified channels, warps the chanlocs on a standard head model and fits dipoles for
     % each IC below the threshold of residual variance
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.spatial_filters_folder...
-        bemobil_config.spatial_filters_folder_AMICA bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.spatial_filters_folder,...
+        bemobil_config.spatial_filters_folder_AMICA, [bemobil_config.filename_prefix num2str(subject)]);
     
     % check if the part was done already
     if ~force_recompute
@@ -194,7 +194,8 @@ if ~exist('EEG_single_subject_final','var')
     
     %% Final step: copy the spatial filter data into the raw full data set for further single subject processing
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.single_subject_analysis_folder bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.single_subject_analysis_folder,...
+        [bemobil_config.filename_prefix num2str(subject)]);
     
     disp('Copying all information into full length dataset for single subject processing...');
     [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_copy_spatial_filter(EEG_interp_avRef, ALLEEG, CURRENTSET,...
