@@ -70,7 +70,7 @@ if amica
 		AMICA_n_rej = 3;
 	end
 	
-    if isfield(EEG,'datfile') && isempty(EEG.datfile)
+    if isfield(EEG,'datfile') && ~isempty(EEG.datfile)
         disp('Found datfile.');
         data = fullfile(EEG.filepath, EEG.datfile);
         
