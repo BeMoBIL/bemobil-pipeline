@@ -84,6 +84,11 @@ if isempty(EEG.chanlocs(1).ref)
 	% used as reference during recording, it is inaccessible.
 	EEG.nbchan = EEG.nbchan+1;
 	EEG.data(end+1,:) = zeros(1, EEG.pnts);
+
+    if size(EEG.chanlocs,1)>1
+        EEG.chanlocs = EEG.chanlocs';
+    end
+
 	EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
 	EEG = pop_reref( EEG, EEG_channels,'keepref','on');
 	EEG = pop_select( EEG,'nochannel',{'initialReference'});
