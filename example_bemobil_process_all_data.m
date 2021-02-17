@@ -50,34 +50,7 @@ for subject = subjects
     end
     
 % 	start the processing pipeline for AMICA
-	[ALLEEG, EEG, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avref, CURRENTSET, subject, bemobil_config, force_recomp);
-
-	STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[]; EEG_interp_avref = [];
-
-
-	%% clean with IClabel
-	
-    disp('Cleaning data with ICLabel')
-    
-	EEG = pop_loadset('filename',[ bemobil_config.filename_prefix num2str(subject) '_'...
-		bemobil_config.copy_weights_interpolate_avRef_filename], 'filepath', input_filepath);
-	
-	% clean now, save files and figs
-	[ALLEEG, ~, CURRENTSET, ICs_keep, ICs_throw,fig_clean] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, 'lite',...
-        [1], bemobil_config.brain_threshold,...
-		[ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
-	close(fig_clean)
-	
-    
-	% plot dipoles
-	pop_dipplot( EEG, ICs_keep,...
-		'mri',[fileparts(which('dipfitdefs')) '\standard_BEM\standard_mri.mat'],'normlen','on');
-
-	% save fig
-	savefig(fullfile(output_filepath,'brain_dipoles'))
-	close
-    
-    disp('...done.')
+	bemobil_process_all_AMICA(ALLEEG, EEG_interp_avref, CURRENTSET, subject, bemobil_config, force_recomp);
 
 end
 

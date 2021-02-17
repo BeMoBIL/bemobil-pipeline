@@ -192,16 +192,29 @@ if ~exist('EEG_single_subject_final','var')
     % save RAM
     clear EEG_AMICA_cleaned
     
-    %% Final step: copy the spatial filter data into the raw full data set for further single subject processing
+    %% Copy the spatial filter data into the raw full data set for further single subject processing
     
     output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.single_subject_analysis_folder,...
         [bemobil_config.filename_prefix num2str(subject)]);
     
     disp('Copying all information into full length dataset for single subject processing...');
-    [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_copy_spatial_filter(EEG_interp_avRef, ALLEEG, CURRENTSET,...
+    [ALLEEG, EEG_single_subject_copied, CURRENTSET] = bemobil_copy_spatial_filter(EEG_interp_avRef, ALLEEG, CURRENTSET,...
         EEG_AMICA_final, [bemobil_config.filename_prefix num2str(subject) '_'...
         bemobil_config.copy_weights_interpolate_avRef_filename], output_filepath);
     
+    % save RAM
+    clear EEG_interp_avRef EEG_AMICA_final
+    %% clean with IClabel
+	
+    disp('Cleaning data with ICLabel')
+	
+	% clean now, save files and figs
+	[ALLEEG, EEG_single_subject_final, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG_single_subject_copied ,...
+        ALLEEG, CURRENTSET, bemobil_config.iclabel_classifier,...
+        bemobil_config.iclabel_classes, bemobil_config.iclabel_threshold,...
+		[ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
+
+    disp('...done.')
 end
 
-disp('Entire processing done!');
+disp('Entire AMICA processing done!');
