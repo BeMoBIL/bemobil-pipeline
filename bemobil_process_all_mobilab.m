@@ -439,7 +439,8 @@ EEG_chan_removed.etc.clean_channel_mask = true(EEG_highpass.nbchan,1);
 EEG_chan_removed.etc.clean_channel_mask(chans_to_interp) = deal(0);
 
 % display 1/10 of the data in the middle (save disk space when saving figure)
-vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',[round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
+vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',...
+    [round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
 
 %%
 set(gcf, 'Position', get(0,'screensize'))
@@ -454,3 +455,17 @@ disp('Interpolating bad channels and compute final average reference, ignoring E
 [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_interp_avref( EEG_preprocessed , ALLEEG, CURRENTSET, chans_to_interp,...
     [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.interpolated_avRef_filename], output_filepath);
 
+%% plot interpolated filtered, for analytics
+
+EEG = pop_eegfiltnew(EEG_interp_avRef, 'locutoff',0.5);
+EEG.filename = [bemobil_config.filename_prefix num2str(3) '_interpAveRef_highpass'];
+
+vis_artifacts(EEG,EEG,'show_events',0,'time_subset',...
+    [round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
+
+%%
+set(gcf, 'Position', get(0,'screensize'))
+
+savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.fig']))
+print(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.png']),'-dpng')
+close
