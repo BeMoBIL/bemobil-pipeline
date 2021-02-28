@@ -27,7 +27,7 @@
 % See also:
 %   EEGLAB, pop_iclabel, bemobil_plot_patterns
 
-function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw,fig1] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classifier_version,...
+function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classifier_version,...
     classes_to_keep, threshold_to_keep, out_filename, out_filepath)
 
 if ~exist('classifier_version','var') || isempty(classifier_version)
@@ -131,6 +131,11 @@ end
 EEG_clean = pop_subcomp( EEG, ICs_throw);
 set(fig1,'color','w','position',get(0,'screensize'))
 
+% plot dipoles
+pop_dipplot( EEG_clean, ICs_keep,...
+    'mri',fullfile(fileparts(which('dipfitdefs')), 'standard_BEM','standard_mri.mat'),'normlen','on');
+view(30,30)
+
 %%
 EEG_clean.etc.ic_cleaning.classes_to_keep = classes_to_keep;
 EEG_clean.etc.ic_cleaning.threshold_to_keep = threshold_to_keep;
@@ -143,7 +148,13 @@ EEG = eeg_checkset( EEG );
 
 % save on disk
 if save_file_on_disk
-    print(fig1,fullfile(out_filepath,'ICs_kept.png'),'-dpng')
+    
+    % save dipole fig
+    print(gcf,fullfile(out_filepath,[out_filename '_brain_dipoles']),'-dpng')
+    savefig(fullfile(out_filepath,[out_filename '_brain_dipoles']))
+    close
+    print(fig1,fullfile(out_filepath,[out_filename '_ICs_kept.png']),'-dpng')
+    close
     EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', out_filepath);
     disp('...done');
 end

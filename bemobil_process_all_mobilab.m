@@ -376,40 +376,11 @@ end
 EEG = EEG_preprocessed;
 
 %%
-disp('Computing average reference for bad channel detection...')
-% Compute average reference for all EEG channels
 
-EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
-REF_channels_bool = strcmp({EEG.chanlocs.type},'REF');
-EEG_channels = 1:EEG.nbchan;
-EEG_channels = EEG_channels(EEG_channels_bool | REF_channels_bool);
+% compute average reference before finding bad channels 
+[ALLEEG, EEG, CURRENTSET] = bemobil_avref( EEG , ALLEEG, CURRENTSET);
 
-
-if ~any(EEG_channels_bool)
-    
-    EEG_channels = [];
-    
-end
-
-
-if isempty(EEG.chanlocs(1).ref)
-    % no ref was declared during preprocessing, use full rank averef (without needing dependency) Apply average
-    % reference after adding initial reference, see fullrankaveref by Makoto Miakoshi (2017) This adds an empty new
-    % channel, rereferences, then removes the excess channel again, so the rank is still intact. The reference channel,
-    % however, is gone and can't be used fr analyses, so in case Cz was used as reference during recording, it is
-    % inaccessible.
-    EEG.nbchan = EEG.nbchan+1;
-    EEG.data(end+1,:) = zeros(1, EEG.pnts);
-    EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
-    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
-    EEG = pop_select( EEG,'nochannel',{'initialReference'});
-else
-    % ref was declared, keep it as channel. this means we have an extra channel, e.g. 129 instead of 128 electrodes, and
-    % the former reference carries information. however, the rank is still EEG.nbchan - 1, so 128 in that case!
-    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
-end
-
-disp('...done! Detecting bad channels...')
+disp('Detecting bad channels...')
 
 % remove bad channels, use default values of clean_artifacts, but specify just in case they may change
 [EEG_chan_removed,EEG_highpass,~,chans_to_interp] = clean_artifacts(EEG,...
@@ -434,7 +405,8 @@ EEG_chan_removed.etc.clean_channel_mask = true(EEG_highpass.nbchan,1);
 EEG_chan_removed.etc.clean_channel_mask(chans_to_interp) = deal(0);
 
 % display 1/10 of the data in the middle (save disk space when saving figure)
-vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',[round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
+vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',...
+    [round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
 
 %%
 set(gcf, 'Position', get(0,'screensize'))
@@ -449,3 +421,17 @@ disp('Interpolating bad channels and compute final average reference, ignoring E
 [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_interp_avref( EEG_preprocessed , ALLEEG, CURRENTSET, chans_to_interp,...
     [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.interpolated_avRef_filename], output_filepath);
 
+%% plot interpolated filtered, for analytics
+
+EEG = pop_eegfiltnew(EEG_interp_avRef, 'locutoff',0.5);
+EEG.filename = [bemobil_config.filename_prefix num2str(3) '_interpAveRef_highpass'];
+
+vis_artifacts(EEG,EEG,'show_events',0,'time_subset',...
+    [round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
+
+%%
+set(gcf, 'Position', get(0,'screensize'))
+
+savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.fig']))
+print(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.png']),'-dpng')
+close

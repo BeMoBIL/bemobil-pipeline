@@ -56,7 +56,16 @@ else
     disp('Interpolating channels that are indicated...');
     EEG = pop_interp(EEG, channels_to_interpolate, 'spherical');
     disp('...done');
-    EEG.etc.interpolated_channels = channels_to_interpolate;
+end
+
+EEG.etc.interpolated_channels = channels_to_interpolate;
+
+if ~isfield(EEG.etc,'rank') 
+    % rank is the number of channels, since we have full rank averef, minus the number of interpolated channels
+    EEG.etc.rank = EEG.nbchan - length(channels_to_interpolate);
+else
+    % rank is reduced by the number of interpolated channels
+    EEG.etc.rank = EEG.etc.rank - length(channels_to_interpolate);
 end
 
 % new data set in EEGLAB
