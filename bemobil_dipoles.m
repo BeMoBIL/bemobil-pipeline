@@ -73,11 +73,15 @@ function STUDY = bemobil_dipoles(STUDY,ALLEEG)
         STUDY.cluster(clsind(clust)).dipole = centroid{clust}.dipole;
         STUDY.cluster(clsind(clust)).all_diplocs = all_diplocs;
         
-        % compute spread (squared deviation from centroid)
+        % compute spread (sum of squared deviation from centroid)
         squared_deviations = 0;
         for IC = 1:size(all_diplocs,1)
 
-            dist_this_IC = sqrt((all_diplocs(IC,1) - centroid{clust}.dipole.posxyz(1))^2 + (all_diplocs(IC,2) - centroid{clust}.dipole.posxyz(2))^2 + (all_diplocs(IC,3) - centroid{clust}.dipole.posxyz(3))^2);
+			% Pythagoras in 3D
+            dist_this_IC = sqrt((all_diplocs(IC,1) - centroid{clust}.dipole.posxyz(1))^2 +...
+								(all_diplocs(IC,2) - centroid{clust}.dipole.posxyz(2))^2 +...
+								(all_diplocs(IC,3) - centroid{clust}.dipole.posxyz(3))^2);
+			% square and add
             squared_deviations = squared_deviations + dist_this_IC^2;
 
         end
@@ -87,10 +91,17 @@ function STUDY = bemobil_dipoles(STUDY,ALLEEG)
         % store residual variances
         
         for ICind = 1:length(STUDY.cluster(clsind(clust)).comps)
-            subject = STUDY.cluster(clsind(clust)).sets(ICind);
-            IC = STUDY.cluster(clsind(clust)).comps(ICind);
+            thisICdatasets = STUDY.cluster(clsind(clust)).sets(:,ICind);
+            IC = STUDY.cluster(clsind(clust)).comps(ICind);           
             
-            residual_variances(ICind) = ALLEEG(subject).dipfit.model(IC).rv;
+            RV_temp = 0;
+            for dataSet = 1:length(thisICdatasets)
+                RV_temp(dataSet) = ALLEEG(thisICdatasets(dataSet)).dipfit.model(IC).rv;
+            end
+            
+            assert(sum(diff(RV_temp))==0,'RVs of the same IC seem to be different between conditions!')
+            residual_variances(ICind) = RV_temp(1);
+            
         end
         median_rv = median(residual_variances);
         mean_rv = mean(residual_variances);

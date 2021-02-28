@@ -151,6 +151,16 @@ if ~isempty(EEG_set_to_copy_spatial_filter)
       disp('Attempted to copy ICLabel information but they were not present.')
    end
    
+   % copy bad sample AMICA autoreject results (if existing)
+   if isfield(EEG_set_to_copy_spatial_filter.etc,'bad_samples')
+      disp('Copying bad samples information into new dataset...')
+      EEG.etc.bad_samples=EEG_set_to_copy_spatial_filter.etc.bad_samples;
+      EEG.etc.bad_samples_percent=EEG_set_to_copy_spatial_filter.etc.bad_samples_percent;
+      EEG.etc.remove_data_intervals=EEG_set_to_copy_spatial_filter.etc.remove_data_intervals;
+   else
+      disp('Attempted to copy AMICA autoreject bad sample information but they were not present.')
+   end
+   
 else
    error('No data set to copy ICA weights from is provided. Wat?!');
 end

@@ -51,7 +51,10 @@ for solution = 1:(length(fields(clustering_solutions))-1)
     % find closest cluster to ROI
     for cluster = 3:length(STUDY.cluster) % cluster 1 contains all ICs and cluster 2 contains the outliers
         
-        tmp_distance = sqrt((STUDY.cluster(cluster).dipole.posxyz(1) - cluster_ROI_talairach.x)^2 + (STUDY.cluster(cluster).dipole.posxyz(2) - cluster_ROI_talairach.y)^2 + (STUDY.cluster(cluster).dipole.posxyz(3) - cluster_ROI_talairach.z)^2);
+		% Pythagoras in 3D
+        tmp_distance = sqrt((STUDY.cluster(cluster).dipole.posxyz(1) - cluster_ROI_talairach.x)^2 +...
+							(STUDY.cluster(cluster).dipole.posxyz(2) - cluster_ROI_talairach.y)^2 +...
+							(STUDY.cluster(cluster).dipole.posxyz(3) - cluster_ROI_talairach.z)^2);
         
         if tmp_distance < best_fitting_cluster_distance(solution)
             % declare this cluster to be the best fitting cluster of this solution
@@ -62,7 +65,7 @@ for solution = 1:(length(fields(clustering_solutions))-1)
             best_fitting_cluster_x(solution) = STUDY.cluster(cluster).dipole.posxyz(1);
             best_fitting_cluster_y(solution) = STUDY.cluster(cluster).dipole.posxyz(2);
             best_fitting_cluster_z(solution) = STUDY.cluster(cluster).dipole.posxyz(3);
-            best_fitting_cluster_n_subjects(solution) = length(unique(STUDY.cluster(cluster).sets));
+            best_fitting_cluster_n_subjects(solution) = length(unique(STUDY.cluster(cluster).sets(1,:)));
             best_fitting_cluster_n_ICs(solution) = length(STUDY.cluster(cluster).comps);
             best_fitting_cluster_spread(solution) = STUDY.cluster(cluster).squared_deviations;
             best_fitting_cluster_mean_rv(solution) = STUDY.cluster(cluster).mean_rv;

@@ -101,7 +101,7 @@ filename_clustering_solutions_with_path = [filepath_clustering_solutions '\' fil
 
 if do_clustering
     
-    clustering_solutions = bemobil_repeated_clustering(STUDY,ALLEEG, n_iterations, n_clust, outlier_sigma,STUDY.bemobil.clustering.preclustparams);
+    clustering_solutions = bemobil_repeated_clustering(STUDY,ALLEEG, n_iterations, n_clust, outlier_sigma, STUDY.bemobil.clustering.preclustparams);
     
     disp('Saving clustering solutions...')
     save(filename_clustering_solutions_with_path,'clustering_solutions','-v7.3')

@@ -14,8 +14,8 @@
 %   EEG                     - current EEGLAB EEG structure
 %   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
 %   amica                   - Boolean value (1/0) to use amica or not
-%   num_models              - number of models to learn, default is 1
-%   max_threads             - maximum of CPU threads to be used for AMICA
+%   numb_models             - number of models to learn, default is 1
+%   maxx_threads            - maximum of CPU threads to be used for AMICA
 %   data_rank               - rank of the data matrix (= number of channels minus number of interpolated
 %       channels minus 1, if average referenced)
 %   other_algorithm         - currently (20.6.2017) not yet implemented, hopefully SSD and JD will
@@ -23,6 +23,8 @@
 %   out_filename            - output filename (OPTIONAL ARGUMENT)
 %   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
 %       if both a name and a path are provided)
+%   AMICA_autoreject        - flag for doing rejection of time points, def=0
+%   AMICA_n_rej             - for rejection, number of rejections to perform, def=3
 %
 % Outputs:
 %   ALLEEG                  - complete EEGLAB data set structure
@@ -36,10 +38,12 @@
 %
 % Authors: Lukas Gehrke, Marius Klug, 2017
 
-function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath)
+function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
+	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject, AMICA_n_rej)
 
 % only save a file on disk if both a name and a path are provided
-save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));
+save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var') && ...
+	~isempty(out_filename) && ~isempty(out_filepath));
 
 % check if file already exist and show warning if it does
 if save_file_on_disk
@@ -54,11 +58,21 @@ else
     out_filename = EEG.filename;
 end
 
+amica_crashed = false; 
+
 if amica
-    if isfield(EEG,'datfile') && length(EEG.datfile) > 0
+	
+	if ~exist('AMICA_autoreject', 'var')
+		AMICA_autoreject = 0;
+	end
+	
+	if ~exist('AMICA_n_rej', 'var')
+		AMICA_n_rej = 3;
+	end
+	
+    if isfield(EEG,'datfile') && isempty(EEG.datfile)
         disp('Found datfile.');
-        data = [EEG.filepath '\' EEG.datfile];
-        
+        data = fullfile(EEG.filepath, EEG.datfile);
         
     else
         disp('No datfile field found in EEG structure. Will write temp file in current directory.');
@@ -67,10 +81,11 @@ if amica
     end
     
     % delete potentially preexistent folder since it will interfere in case AMICA crashes
-    if ~isempty(dir([out_filepath '\' out_filename '_AMICA'])); rmdir([out_filepath '\' out_filename '_AMICA'],'s'); end
+    if ~isempty(dir(fullfile(out_filepath, out_filename, '_AMICA'))); rmdir(fullfile(out_filepath, out_filename, '_AMICA'),'s'); end
     
     disp('Starting AMICA...');
     while maxx_threads > 0
+        
         % try/catch loop because AMICA can crash dependent on the data set and the number of threads
         try
             [w, s, mods] = runamica15(data,...
@@ -79,7 +94,14 @@ if amica
                 'outdir', [out_filepath '\' out_filename '_AMICA'],...
                 'num_chans', EEG.nbchan,...
                 'writestep', 2000,...
-                'pcakeep',data_rank);
+                'pcakeep',data_rank,...
+				'do_reject',AMICA_autoreject,...
+				'numrej',AMICA_n_rej,...
+                'write_nd',1,...
+                'do_history',0,...
+                'histstep',2,...
+                'min_dll',1e-9,...
+                'min_grad_norm',0.0000005);
             disp('AMICA successfull, storing weights and sphere.');
             EEG.etc.spatial_filter.algorithm = 'AMICA';
             EEG.etc.spatial_filter.AMICAmods = mods;
@@ -87,7 +109,7 @@ if amica
             % if successful, get out of the loop
             break 
             
-        catch
+        catch error_message
             
             % if error, reduce threads by one
             maxx_threads = maxx_threads - 1;
@@ -98,20 +120,21 @@ if amica
 
     if maxx_threads == 0
     
-        warning('AMICA crashed with all possible maximum thread options. Try increasing the maximum usable threads of your CPU. If the maximum number of threads has already been tried, you''re pretty much fucked. Ask Jason Palmer, the creator of AMICA.');
+        % throw error message from runamica15 as warning
+        warning(error_message.message)
+        
+        % potential issue with number of threads
+        warning('AMICA crashed with all possible maximum thread options. Check the warning above for what caused it to crash or try increasing the maximum usable threads of your CPU.');        
         disp('Continuing with default EEGLAB runica() ...');
-        amica = 0;
+        amica_crashed   = true; 
         other_algorithm = 'runica';
     
     end
     
-    
 end
 
-if ~amica
-    % this can't be as the else statement, because the amica can fail and
-    % be 0 after having been 1 before
-    
+if ~amica || amica_crashed
+
     if isempty(other_algorithm)
         other_algorithm = 'runica';
     end
@@ -120,12 +143,11 @@ if ~amica
     switch other_algorithm
         
         case 'runica'
-            
             [w,s] = runica(EEG.data);
             disp('runica successfull, storing weights and sphere.');
             EEG.etc.spatial_filter.algorithm = 'RUNICA';
         otherwise
-            error('Something''s fucky in the other_algorithm loop of bemobil_signal_decomposition...')
+            error('Invalid definition of input other_algorithm.')
             
     end
     
@@ -138,7 +160,7 @@ EEG.icaweights = w;
 EEG.icasphere = s;
 EEG = eeg_checkset(EEG);
 
-EEG.etc.spatial_filter.original_data_path = [out_filepath '\' out_filename];
+EEG.etc.spatial_filter.original_data_path = fullfile(out_filepath, out_filename);
 
 % new data set in EEGLAB
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
