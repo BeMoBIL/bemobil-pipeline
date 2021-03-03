@@ -1,23 +1,29 @@
-# Introduction 
+# BeMoBIL BIDS tools  
 
 ## Before you try to convert .xdf to BIDS...  
 
-The .xdf to BIDS conversion scripts are intended to be used internally within the Berlin brain body imaging lab.
+The .xdf to BIDS conversion scripts introduced here are intended to be used internally within the Berlin Mobile Brain Body Imaging Lab.
 As much as I want to make it more general, it is inevitable becasue it relies on how channels and streams in the .xdf files are named and this may vary from setup to setup.
-But hopefully they can be used for other setups well with some adjustments. 
+The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through at the time of implementation and keep each other informed. 
+The hope is still that these scripts can be used for other setups that use .xdf with some adjustments. 
 
-use additional tools, especially data2bids and xdf2fieldtrip 
+Some caution regarding dependencies 
 
-FieldTrip     - currently data2bids and xdf2fieldtrip versions used here are not in the standard release. Working on it.   
-natsortorder  - a tool to aid in sorting files according to the natural order 
+1.FieldTrip     - currently data2bids and xdf2fieldtrip versions used here are not in the standard release (now they are here https://github.com/sjeung/fieldtrip/tree/motion2bids).  
+2.natsortorder  - a tool to aid in sorting files according to the natural order 
   
-As of now the components in Bemobids tool are as follows
+As of now the components in BeMoBIL BIDS tool are as follows
 
-bemobil_xdf2bids.m  
-bemobil_bidsconfig_general.m
-bemobil_bidsconfig_participant.m
-bemobil_bidsconfig_motion.m
-bemobil_bidsconfig_eeg.m
+1.bemobil_xdf2bids.m  
+  this is the main function that calls other configuration scripts below
+2.bemobil_bidsconfig_general.m
+  contains configurations that apply to all participants and all modalities
+3.bemobil_bidsconfig_participant.m
+  contains participant or file-specific configuration 
+4.bemobil_bidsconfig_motion.m
+  contains motion specific configuration  
+5.bemobil_bidsconfig_eeg.m
+  contains eeg specific configuration
 
 # How to use 
 
