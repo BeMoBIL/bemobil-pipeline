@@ -26,10 +26,12 @@ As of now the components in BeMoBIL BIDS tool are as follows
 Dependencies
 
 - **FieldTrip**     
-  currently data2bids and xdf2fieldtrip versions used here are not in the standard release  
+currently data2bids and xdf2fieldtrip versions used here are not in the standard release  
 (now they are [here]( https://github.com/sjeung/fieldtrip/tree/motion2bids)).  
+
 - **natsortorder**  
-  a tool to aid in sorting files according to the natural order 
+a tool to aid in sorting files according to the natural order 
+Stephen Cobeldick (2021). [Natural-Order Filename Sort](https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
   
 
 There is no dependency on the rest of the BeMoBIL pipeline as long as the configuration is correct. 
@@ -78,6 +80,24 @@ But this is of course a redundant restriction if one is only interested in conve
 Some caution is required when the source .xdf files are split into multiple runs. 
 At the moment, we consider these runs to be split parts of a continuous recording. 
 So those run files in a single session will be merged downstream. 
+
+
+Entries in bemobil_config.filenames will search through the raw data directory of the participant and group together .xdf files with matching keyword in the name into one session. If there are multiple files in one session, they will be given separate 'run' numbers in the file name
+
+         
+The order of runs rely on incremental name sorting using the "Nature Order File Sorting Tool" - Stephen Cobeldick (2021). Natural-Order Filename Sort (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
+
+for example,
+                   sub-1\sub-1_VNE1_VR_rec1.xdf
+                   sub-1\sub-1_VNE1_VR_rec2.xdf
+                   sub-1\sub-1_VNE1_desktop.xdf
+                   
+will be organized into
+
+                   sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-1_eeg.bdf
+                   sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-2_eeg.bdf
+                   sub-001\ses-desktop\sub-001_ses-desktop_task-VNE1_eeg.bdf
+
 
 ## Selecting streams by other methods
 
