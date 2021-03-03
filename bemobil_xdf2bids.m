@@ -84,7 +84,7 @@ addpath(genpath(sourceDataPath))
 % range of (effective) sampling rate of data, used for identifying streams
 % in .xdf
 motionStreamNames                       = bemobil_config.rigidbody_streams;
-eegStreamName                           = bemobil_config.bids_eegstream_name;
+eegStreamName                           = bemobil_config.bids_eegkeyword;
 
 % funcions that resolve dataset-specific problems
 motionCustom                            = 'bemobil_bidsmotion';
