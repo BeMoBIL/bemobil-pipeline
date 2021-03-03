@@ -109,6 +109,7 @@ Entries in **bemobil_config.filenames** will search through the raw data directo
 The order of runs rely on incremental name sorting using the "Nature Order File Sorting Tool" - Stephen Cobeldick (2021). Natural-Order Filename Sort (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
 
 for example,
+
                    sub-1\sub-1_VNE1_VR_rec1.xdf
                    sub-1\sub-1_VNE1_VR_rec2.xdf
                    sub-1\sub-1_VNE1_VR_rec11.xdf
