@@ -121,7 +121,15 @@ will be organized into
                    sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-2_eeg.bdf
                    sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-11_eeg.bdf
                    sub-001\ses-desktop\sub-001_ses-desktop_task-VNE1_eeg.bdf
+               
+and then be merged into one .set file later in that order (*'run-1, run-2, run-11'*), instead of (*'run-1, run-11, run-2'*).
 
+This is why it is important to name the .xdf files correctly. You would not want the merged file to have random order.
+This below is a bad example as the order is 1) not clear to human readers and 2) can be shuffled in the merged file
+
+                   sub-1\sub-1_VNE1_VR_first.xdf  % don't do this!      
+                   sub-1\sub-1_VNE1_VR_old1.xdf   % don't do this!
+                   sub-1\sub-1_VNE1_VR_test.xdf   % don't do this!
 
 ## Selecting streams by other methods
 
