@@ -2,7 +2,7 @@
 
 ## To convert .xdf to BIDS...  
 
-The .xdf to BIDS conversion scripts introduced here are intended to be used internally within the Berlin Mobile Brain Body Imaging Lab. As much as I want to make it more general, it is inevitable becasue it relies on how channels and streams in the .xdf files are named and this may vary from setup to setup. The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through at the time of implementation and keep each other informed.  The hope is still that these scripts can be used for other setups that use .xdf with some adjustments. 
+The .xdf to BIDS conversion scripts introduced here are intended to be used internally within the Berlin Mobile Brain Body Imaging Lab. As much as we want to make it more general, it is inevitable becasue it relies on how channels and streams in the .xdf files are named and this may vary from setup to setup. The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through at the time of implementation and keep each other informed.  The hope is still that these scripts can be used for other setups that use .xdf with some adjustments. 
 
 Not that, although the EEG part is meant to pass the BIDS validator already, the motion part is not included in the current BIDS version and will change along with the specs for motion data. 
 
