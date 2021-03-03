@@ -51,20 +51,44 @@ Below is the list of fields in bemobil_config that are used by the batch of scri
        bemobil_config.raw_EEGLAB_data_folder   = '2_basic-EEGLAB\';
        bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; 
        bemobil_config.filenames                = {'VR' 'desktop'}; 
-       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
-       **bemobil_config.bids_rbsessions        = [1,1; 1,1; 0,1; 0,1; 0,1]; 
-       **bemobil_config.eeg_stream             = {'BrainVision'};
+       bemobil_config.rigidbody_streams        = {'playerTransform','rightHand', 'leftHand', 'Torso'};
+       **bemobil_config.bids_rbsessions        = [1,1,1,1 ; 1,0,0,0]; 
+       **bemobil_config.eeg_streamkeyword      = {'BrainVision'};
                                                   a unique keyword used to identify the eeg stream in the .xdf file             
        **bemobil_config.bids_tasklabel         = 'VNE1';
 
 Here the starred fields are used speficially for bids processing.
-So, you can skip them if you go the direct path from .xdf to .set!
+So, you can leave them unspecified if you go the direct path from .xdf to .set!
 
-       bemobil_config.bids_data_folder       = '1_BIDS-data\';     
-       bemobil_config.bids_rbsessions        = [1,1; 1,1; 0,1; 0,1; 0,1]; 
-       bemobil_config.eeg_stream             = {'BrainVision'};
-       bemobil_config.bids_tasklabel         = 'VNE1';
+       bemobil_config.bids_data_folder     = '1_BIDS-data\';  
 
+type : *STRING*
+default value : *'1_BIDS-data\'* 
+
+This is the folder in which all files are going to be written.
+                                          
+       bemobil_config.bids_rbsessions       = [1,1,1,1 ; 1,0,0,0];  
+
+type : *LOGICALS* of size numel(filenames) X numel(rigidbody_streams)  
+default value : *[]*   
+
+This indicates which streams are included in repective recording sessions. For instance, in the example above, playerTransform might only be present in session 'VR', so the first row '1,1,1,1' means all rigidbody streams are present in 'VR' session but the '1,0,0,0' in the second row means only the first type of rigidbody is in session 'desktop'.
+       
+       bemobil_config.eeg_streamkeyword     = {'BrainVision'}; 
+       
+type : *Cell*
+default value : *{'BrainVision'}*
+
+A cell containing the keyword to be used to identify EEG stream
+
+       bemobil_config.bids_tasklabel        = 'VNE1';
+
+type : *STRING*
+default value : *'taskname'*
+
+Task label to be used in constructing bids filenames with no '_' or '-' character
+  
+  
 
 Once all the config fields are filled out, you can simply call function **bemobil_xdf2bids.m** with only one additional input. 
 
@@ -82,7 +106,7 @@ At the moment, we consider these runs to be split parts of a continuous recordin
 So those run files in a single session will be merged downstream. 
 
 
-Entries in bemobil_config.filenames will search through the raw data directory of the participant and group together .xdf files with matching keyword in the name into one session. If there are multiple files in one session, they will be given separate 'run' numbers in the file name
+Entries in **bemobil_config.filenames** will search through the raw data directory of the participant and group together .xdf files with matching keyword in the name into one session. If there are multiple files in one session, they will be given separate 'run' numbers in the file name
 
          
 The order of runs rely on incremental name sorting using the "Nature Order File Sorting Tool" - Stephen Cobeldick (2021). Natural-Order Filename Sort (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
@@ -90,12 +114,14 @@ The order of runs rely on incremental name sorting using the "Nature Order File 
 for example,
                    sub-1\sub-1_VNE1_VR_rec1.xdf
                    sub-1\sub-1_VNE1_VR_rec2.xdf
+                   sub-1\sub-1_VNE1_VR_rec11.xdf
                    sub-1\sub-1_VNE1_desktop.xdf
                    
 will be organized into
 
                    sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-1_eeg.bdf
                    sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-2_eeg.bdf
+                   sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-11_eeg.bdf
                    sub-001\ses-desktop\sub-001_ses-desktop_task-VNE1_eeg.bdf
 
 
