@@ -1,6 +1,8 @@
 function bemobil_xdf2bids(bemobil_config, numericalIDs)
 
 % Examaple script for converting .xdf recordings to BIDS
+% see bemobil_bidstools.md 
+% 
 % Inputs : 
 %   bemobil_config
 %   example fields 
