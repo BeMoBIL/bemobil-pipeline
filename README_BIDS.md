@@ -9,21 +9,21 @@ The hope is still that these scripts can be used for other setups that use .xdf 
 
 Some caution regarding dependencies 
 
--FieldTrip     - currently data2bids and xdf2fieldtrip versions used here are not in the standard release  
+-**FieldTrip**     - currently data2bids and xdf2fieldtrip versions used here are not in the standard release  
 (now they are [here]( https://github.com/sjeung/fieldtrip/tree/motion2bids)).  
--natsortorder  - a tool to aid in sorting files according to the natural order 
+-**natsortorder**  - a tool to aid in sorting files according to the natural order 
   
 As of now the components in BeMoBIL BIDS tool are as follows
 
--bemobil_xdf2bids.m  
+-**bemobil_xdf2bids.m**  
   this is the main function that calls other configuration scripts below  
--bemobil_bidsconfig_general.m  
+-**bemobil_bidsconfig_general.m**   
   contains configurations that apply to all participants and all modalities  
--bemobil_bidsconfig_participant.m  
+-**bemobil_bidsconfig_participant.m**  
   contains participant or file-specific configuration   
--bemobil_bidsconfig_motion.m   
+-**bemobil_bidsconfig_motion.m**   
   contains motion specific configuration    
--bemobil_bidsconfig_eeg.m  
+-**bemobil_bidsconfig_eeg.m**  
   contains eeg specific configuration  
 
 
