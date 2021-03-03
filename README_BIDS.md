@@ -98,9 +98,9 @@ But this is of course a redundant restriction if one is only interested in conve
 
 ## Multi-session, multi-run cases
 
-Some caution is required when the source .xdf files are split into multiple runs. 
-At the moment, we consider these runs to be split parts of a continuous recording. 
-So those run files in a single session will be merged downstream. 
+Some caution is required when the source .xdf files are split into multiple runs.  
+At the moment, we consider these runs to be split parts of a continuous recording.  
+So those run files in a single session will be first saved as different run files in BIDS but will be merged when you import from BIDS to .set using BeMoBIL tools. 
 
 
 Entries in **bemobil_config.filenames** will search through the raw data directory of the participant and group together .xdf files with matching keyword in the name into one session. If there are multiple files in one session, they will be given separate 'run' numbers in the file name
