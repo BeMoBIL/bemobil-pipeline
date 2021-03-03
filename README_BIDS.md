@@ -58,7 +58,7 @@ Below is the list of fields in bemobil_config that are used by the batch of scri
        **bemobil_config.bids_tasklabel         = 'VNE1';
 
 Here the starred fields are used speficially for bids processing.
-So, you can leave them unspecified if you go the direct path from .xdf to .set!
+So, you can leave them unspecified if you go the direct path from .xdf to .set and don't need to use BeMoBIL BIDS tools.
 
 Now some more detailed description of BIDS specific fields below...
 
