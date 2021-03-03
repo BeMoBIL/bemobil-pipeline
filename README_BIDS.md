@@ -60,6 +60,8 @@ Below is the list of fields in bemobil_config that are used by the batch of scri
 Here the starred fields are used speficially for bids processing.
 So, you can leave them unspecified if you go the direct path from .xdf to .set!
 
+Now some more detailed description of BIDS specific fields below...
+
        bemobil_config.bids_data_folder     = '1_BIDS-data\';  
 
 type : STRING  
