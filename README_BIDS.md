@@ -111,7 +111,7 @@ So those run files in a single session will be first saved as different run file
 Entries in **bemobil_config.filenames** will search through the raw data directory of the participant and group together .xdf files with matching keyword in the name into one session. If there are multiple files in one session, they will be given separate 'run' numbers in the file name
 
          
-The order of runs rely on incremental name sorting using the ["Nature Order File Sorting Tool"] (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
+The order of runs rely on incremental name sorting using the ["Nature Order File Sorting Tool"](https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
 for example,
 
                    sub-1\sub-1_VNE1_VR_rec1.xdf
