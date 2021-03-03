@@ -111,8 +111,7 @@ So those run files in a single session will be first saved as different run file
 Entries in **bemobil_config.filenames** will search through the raw data directory of the participant and group together .xdf files with matching keyword in the name into one session. If there are multiple files in one session, they will be given separate 'run' numbers in the file name
 
          
-The order of runs rely on incremental name sorting using the "Nature Order File Sorting Tool" - Stephen Cobeldick (2021). Natural-Order Filename Sort (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
-
+The order of runs rely on incremental name sorting using the ["Nature Order File Sorting Tool"] (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
 for example,
 
                    sub-1\sub-1_VNE1_VR_rec1.xdf
@@ -138,13 +137,17 @@ This below is a bad example as the order is 1) not clear to human readers and 2)
 
 ## Selecting streams by other methods
 
+To use these methods you would have to modify the scripts on your own. They are just briefly described here. 
+
+- effective sampling rate 
 You may also want to select streams using the range of effective sampling rate, if your stream names are tricky to work with.
 
-It is also possible to use numerical indices of the streams. 
-However, this seems to differ from session to session. 
+- numerical indices of the stream
+It is also possible to use numerical indices of the streams. However, this seems to differ from session to session. 
 
-If you do NOT specify any stream, it will automatically assume that the stream of the highest sampling rate is eeg and will also try to import all other streams to be put in a single file.
-This might be fine if you only have EEG data in your .xdf file but complicates things downstream when you have more modalities. 
+- automatic 
+If you do NOT specify any stream, it will automatically assume that the stream of the highest sampling rate is eeg and will also try to import all other streams to be put in a single file. This might be fine if you only have EEG data in your .xdf file but complicates things downstream when you have more modalities. 
 
 ## For other modalities than EEG and motion 
 
+There is a plan to also support some other modalities that are often used in MoBI research. 
