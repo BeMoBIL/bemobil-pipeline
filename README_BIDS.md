@@ -73,7 +73,7 @@ This is the folder in which all files are going to be written.
        bemobil_config.bids_rbsessions       = [1,1,1,1 ; 1,0,0,0];  
 
 type : LOGICALS of size numel(filenames) X numel(rigidbody_streams)      
-default value : []       
+default value : LOGICAL ones of size numel(filenames) X numel(rigidbody_streams)       
 This indicates which streams are included in repective recording sessions. For instance, in the example above, playerTransform might only be present in session 'VR', so the first row '1,1,1,1' means all rigidbody streams are present in 'VR' session but the '1,0,0,0' in the second row means only the first type of rigidbody is in session 'desktop'.
        
       
@@ -87,7 +87,7 @@ A cell containing the keyword to be used to identify EEG stream
        bemobil_config.bids_tasklabel        = 'VNE1';
 
 type : STRING  
-default value : 'taskname'  
+default value : 'defaulttask'  
 Task label to be used in constructing bids filenames with no '_' or '-' character
   
   
