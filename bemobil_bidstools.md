@@ -34,6 +34,7 @@ a tool to aid in sorting files according to the natural order
 Stephen Cobeldick (2021). [Natural-Order Filename Sort](https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
   
 
+It also uses the homemade quat2eul conversion function utils_quat2eul.m.
 There is no dependency on the rest of the BeMoBIL pipeline as long as the configuration is correct. 
 
 We do hope to make your life easier, not harder.  
