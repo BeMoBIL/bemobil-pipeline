@@ -58,6 +58,7 @@ subDirList      = subDirList(dirFlagArray & nameFlagArray);
 for iSub = 1:numel(subDirList)
     
     subjectDir      = subDirList(iSub).name;
+    
     sesDirList      = dir([targetDir subjectDir]);
     
     % check if data set contains multiple sessions
@@ -66,6 +67,7 @@ for iSub = 1:numel(subDirList)
     if isMultiSession
         
         % if multisession, iterate over sessions and concatenate files in EEG folder
+        
         dirFlagArray    = [sesDirList.isdir];
         nameArray       = {sesDirList.name};
         nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
@@ -109,7 +111,6 @@ for iSub = 1:numel(subDirList)
         end
         
         bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr) '_' strjoin(bidsNameSplit(2:end-1),'_') '_' bemobilModality extension];
-        
         if isMultiSession
             for iSes = 1:numel(sesDirList)
                 sesDir      = sesDirList(iSes);
@@ -147,5 +148,3 @@ for iSub = 1:numel(subDirList)
 end
 
 end
-
-
