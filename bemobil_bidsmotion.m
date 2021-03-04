@@ -38,9 +38,8 @@ for ni = 1:numel(objects)
     end
     
     % convert from quaternions to euler angles
-    % (use custom script when robotics toolbox is not available)
     orientationInQuaternion    = dataPre(quaternionIndices,:)';
-    orientationInEuler         = quat2eul(orientationInQuaternion);
+    orientationInEuler         = util_quat2eul(orientationInQuaternion);    % the BeMoBIL util script
     orientationInEuler         = orientationInEuler';
     position                   = dataPre(cartIndices,:);
     
@@ -60,7 +59,7 @@ for ni = 1:numel(objects)
         motion.label{6*(oi-1) + 3 + ci}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
         motion.hdr.label{6*(oi-1) + 3 + ci}             = [objects{ni} '_cart_' cartCoordinates{ci}];
         motion.hdr.chantype{6*(oi-1) + 3 + ci}          = 'position';
-        motion.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'vm';
+        motion.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'meters';
     end
     
 end

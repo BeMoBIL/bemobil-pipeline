@@ -24,4 +24,4 @@ cfg.InstitutionName                         = 'Technische Universitaet zu Berlin
 cfg.InstitutionalDepartmentName             = 'Biological Psychology and Neuroergonomics';
 cfg.InstitutionAddress                      = 'Strasse des 17. Juni 135, 10623, Berlin, Germany';
 cfg.TaskDescription                         = 'Here description of your task.';
-cfg.task                                    = 'taskname';                   % this is the string to describe your task, to go in file names
+cfg.task                                    = bemobil_config.bids_taskname;                   % this is the string to describe your task, to go in file names
