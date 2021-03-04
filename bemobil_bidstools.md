@@ -59,8 +59,8 @@ This also talks about what to do when one continuous recording has been broken d
 But now moving on with a single-subject, single-file case. 
 BIDS has this field called 'task label' that will look like this in the BIDS-formatted file below. 
 
-![alt text](https://github.com/sjeung/bemobil-pipeline/tree/bemobil_bids/resources/bidstools/unises2.png "Example unisession BIDS data")
 
+<img src="/resources/bidstools/unises2.png" width="600">
 
 Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
 The point is that this label can differ from the 'filenames' entry, which can be confusing.  
@@ -71,8 +71,8 @@ For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not all
 
 And then, if you later convert the unisession BIDS data to BeMoBIL compatible .seg files, it will look like this. 
 
-![alt text](https://github.com/sjeung/bemobil-pipeline/tree/bemobil_bids/resources/bidstools/unises3.png "Example unisession BeMoBIL .set data")
 
+<img src="/resources/bidstools/unises3.png" width="300">
 
 That explanation may sound vague, but you can forget about it for now.  
 To sum up, we recommend you to 
