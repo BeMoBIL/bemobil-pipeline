@@ -128,10 +128,10 @@ default value : LOGICAL ones of size numel(filenames) X numel(rigidbody_streams)
 This indicates which streams are included in repective recording sessions. For instance, in the example above, playerTransform might only be present in session 'VR', so the first row '1,1,1,1' means all rigidbody streams are present in 'VR' session but the '1,0,0,0' in the second row means only the first type of rigidbody is in session 'desktop'.
        
       
-      bemobil_config.eeg_streamkeyword     = {'BrainVision'}; 
+      bemobil_config.eeg_streamkeyword     = {'EEG'}; 
        
 type : Cell  
-default value : {'BrainVision'}  
+default value : {'EEG'}  
 A cell containing the keyword to be used to identify EEG stream
 
 
