@@ -48,7 +48,7 @@ But there is notable difference between BeMoBIL and BIDS conventions in how file
 
 If you have been using the standard import in the pipeline already, your source data would look something like this :   
 
-![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/unises1.png "Example unisession source data")
+![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises1.png "Example unisession source data")
 
 The components come from bemobil config fields 'filename_prefix' and 'filenames'. 
 Note that we are now assuming that there is the entry in 'filenames' is a cell that contains only one name.   
@@ -59,7 +59,7 @@ This also talks about what to do when one continuous recording has been broken d
 But now moving on with a single-subject, single-file case. 
 BIDS has this field called 'task label' that will look like this in the BIDS-formatted file below. 
 
-![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/unises2.png "Example unisession BIDS data")
+![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises2.png "Example unisession BIDS data")
 
 
 Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
@@ -71,7 +71,7 @@ For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not all
 
 And then, if you later convert the unisession BIDS data to BeMoBIL compatible .seg files, it will look like this. 
 
-![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/unises3.png "Example unisession BIDS data")
+![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises3.png "Example unisession BIDS data")
 
 
 That explanation may sound vague, but you can forget about it for now.  
