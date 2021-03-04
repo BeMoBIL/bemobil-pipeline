@@ -48,7 +48,9 @@ But there is notable difference between BeMoBIL and BIDS conventions in how file
 
 If you have been using the standard import in the pipeline already, your source data would look something like this :   
 
-![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises1.png "Example unisession source data")
+
+<img src="/resources/bidstools/unises1.png" width="300">
+
 
 The components come from bemobil config fields 'filename_prefix' and 'filenames'. 
 Note that we are now assuming that there is the entry in 'filenames' is a cell that contains only one name.   
@@ -59,8 +61,9 @@ This also talks about what to do when one continuous recording has been broken d
 But now moving on with a single-subject, single-file case. 
 BIDS has this field called 'task label' that will look like this in the BIDS-formatted file below. 
 
-![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises2.png "Example unisession BIDS data")
 
+
+<img src="/resources/bidstools/unises2.png" width="500">
 
 Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
 The point is that this label can differ from the 'filenames' entry, which can be confusing.  
@@ -71,14 +74,17 @@ For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not all
 
 And then, if you later convert the unisession BIDS data to BeMoBIL compatible .seg files, it will look like this. 
 
-![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises3.png "Example unisession BIDS data")
+
+
+<img src="/resources/bidstools/unises3.png" width="350">
+
 
 
 That explanation may sound vague, but you can forget about it for now.  
 To sum up, we recommend you to 
 
-> set field entries in 'filenames' and 'bids_tasklabel' to be identical in uni-session case. 
-> otherwise, use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions. 
+> set field entries in 'filenames' and 'bids_tasklabel' to be identical in uni-session case.  
+> Otherwise, use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions. 
 
 If you still have questions like "So what about broken recording sessions?" or "How are sessions and runs different and how should that be reflected in my file names?"
 Please do scroll down and check out the bit on multi-session and multi-run handing 
