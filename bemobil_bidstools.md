@@ -146,7 +146,7 @@ Task label to be used in constructing bids filenames with no '_' or '-' characte
 Once all the config fields are filled out, you can simply call function **bemobil_xdf2bids.m** with only one additional input, namely the **numericalIDs**. 
 
 
-        numericalIDS            = [1,2,3,5,10]; 
+        numericalIDs             = [1,2,3,5,10]; 
         bemobil_xdf2bids(bemobil_config, numericalIDs)
 
 The IDs are assumed to be numerical, as it will make things easier when we convert BIDS to .set to use in the pipeline.
