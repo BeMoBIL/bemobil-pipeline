@@ -2,9 +2,9 @@
 
 ## To convert .xdf to BIDS...  
 
-The .xdf to BIDS conversion scripts introduced here are intended to be used *internally* within the **Berlin Mobile Brain Body Imaging Lab**. As much as we want to make it more general, it is inevitable becasue it relies on how channels and streams in the .xdf files are named and this may vary from setup to setup. The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through at the time of implementation and keep each other informed.  The hope is still that these scripts can be used for other setups that use .xdf with some adjustments. 
+The .xdf to BIDS conversion scripts introduced here are intended to be used *internally* within the **Berlin Mobile Brain Body Imaging Lab**. On the user side, it will be less work compared to directly using standard conversion scripts (provicded by [FieldTrip](https://github.com/fieldtrip) or [EEGlab](https://github.com/sccn/bids-matlab-tools)), as the tool deals with all the idiosyncrasies of BeMoBIL recording setup. On the other hand this means that it makes a lot of assumptions about how the source data is formatted. Especially processing the motion data relies on how channels and streams in the .xdf files are named. The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through *at the time of implementation* and keep each other informed. It is a trade-off between generalizability and ease. Now all we try to put most weight on the "ease" side. The hope is still that these scripts can be used for other setups that use .xdf with some adjustment and become more flexible over time. 
 
-Not that, although the EEG part is meant to pass the BIDS validator already, the motion part is not included in the current BIDS version and will change along with the specs for motion data. 
+Note that, although the EEG part is meant to pass the BIDS validator already, the motion part is not included in the current BIDS version and will change along with the specs for motion data ([BEP029](https://bids.neuroimaging.io/get_involved.html#extending-the-bids-specification)). 
 
 
 As of now the components in BeMoBIL BIDS tool are as follows
@@ -35,9 +35,53 @@ Stephen Cobeldick (2021). [Natural-Order Filename Sort](https://www.mathworks.co
   
 
 There is no dependency on the rest of the BeMoBIL pipeline as long as the configuration is correct. 
-For any questions/suggestions regarding BeMoBIL BIDS tools pleaase don't hesitate to contact <seinjeung@gmail.com>.
+
+We do hope to make your life easier, not harder.  
+So if you are confused by anything, and have any suggestions regarding BeMoBIL BIDS tools pleaase don't hesitate to contact <seinjeung@gmail.com>.
 
 # How to use 
+
+## Naming and organizing your files
+
+Assuming that you have some experience with BeMoBIL pipelne and know how to organize your data so that the standard mobilab import can deal with it, you are good to go. 
+But there is notable difference between BeMoBIL and BIDS conventions in how file names are broken down to different components.
+
+If you have been using the standard import in the pipeline already, your source data would look something like this :   
+
+![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises1.png "Example unisession source data")
+
+The components come from bemobil config fields 'filename_prefix' and 'filenames'. 
+Note that we are now assuming that there is the entry in 'filenames' is a cell that contains only one name.   
+For multi-session and multi-run cases, please scroll down this page and read the corresponding subsection.
+This also talks about what to do when one continuous recording has been broken down into multiple files. 
+
+
+But now moving on with a single-subject, single-file case. 
+BIDS has this field called 'task label' that will look like this in the BIDS-formatted file below. 
+
+![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises2.png "Example unisession BIDS data")
+
+
+Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
+The point is that this label can differ from the 'filenames' entry, which can be confusing.  
+It is because the 'filenames' entries can be interpreted as session labels (for example, when you have one VR and one desktop session per participant, filenames can be 'VR' and 'Destkop' but the task label can be 'Navigationtask'), which is detailed later in the document. 
+This field also exists because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels.  
+For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not allow 'task-VN_E1'. 
+
+
+And then, if you later convert the unisession BIDS data to BeMoBIL compatible .seg files, it will look like this. 
+
+![alt text](https://github.comsjeung/bemobil-pipeline/edit/bemobil_bids/resources/bidstools/unises3.png "Example unisession BIDS data")
+
+
+That explanation may sound vague, but you can forget about it for now.  
+To sum up, we recommend you to 
+
+> set field entries in 'filenames' and 'bids_tasklabel' to be identical in uni-session case. 
+> otherwise, use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions. 
+
+If you still have questions like "So what about broken recording sessions?" or "How are sessions and runs different and how should that be reflected in my file names?"
+Please do scroll down and check out the bit on multi-session and multi-run handing 
 
 ## A very standard usage 
 
