@@ -2,7 +2,7 @@
 
 ## To convert .xdf to BIDS...  
 
-The .xdf to BIDS conversion scripts introduced here are intended to be used *internally* within the **Berlin Mobile Brain Body Imaging Lab**. On the user side, it will be less work compared to directly using standard conversion scripts (provicded by [FieldTrip](https://github.com/fieldtrip) or [EEGlab](https://github.com/sccn/bids-matlab-tools)), as the tool deals with all the idiosyncrasies of BeMoBIL recording setup. On the other hand this means that it makes a lot of assumptions about how the source data is formatted. Especially processing the motion data relies on how channels and streams in the .xdf files are named. The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through *at the time of implementation* and keep each other informed. It is a trade-off between generalizability and ease. Now all we try to put most weight on the "ease" side. The hope is still that these scripts can be used for other setups that use .xdf with some adjustment and become more flexible over time. 
+The .xdf to BIDS conversion scripts introduced here are intended to be used *internally* within the **Berlin Mobile Brain Body Imaging Lab**. On the user side, it will be less work compared to directly using standard conversion scripts (provicded by [FieldTrip](https://github.com/fieldtrip) or [EEGlab](https://github.com/sccn/bids-matlab-tools)), as the tool deals with all the idiosyncrasies of BeMoBIL recording setup. On the other hand this means that it makes a lot of assumptions about how the source data is formatted and collected. Especially processing the motion data relies on how channels and streams in the .xdf files are named. The scripts were written for data set that contains streams collected using HTC Vive for instance. The diversity in naming convention for lsl outlets can even be an issue within the group, so one should think this through *at the time of implementation* and keep each other informed. It is a trade-off between generalizability and ease. Now all we try to put most weight on the "ease" side. The hope is still that these scripts can be used for other setups that use .xdf with some adjustment and become more flexible over time. 
 
 Note that, although the EEG part is meant to pass the BIDS validator already, the motion part is not included in the current BIDS version and will change along with the specs for motion data ([BEP029](https://bids.neuroimaging.io/get_involved.html#extending-the-bids-specification)). 
 
@@ -26,8 +26,8 @@ As of now the components in BeMoBIL BIDS tool are as follows
 Dependencies
 
 - **FieldTrip**     
-currently data2bids and xdf2fieldtrip versions used here are not in the standard release  
-(now they are [here]( https://github.com/sjeung/fieldtrip/tree/motion2bids)).  
+currently data2bids and xdf2fieldtrip versions used here are not in the standard release. 
+(now they are [here]( https://github.com/sjeung/fieldtrip/tree/motion2bids))
 
 - **natsortorder**  
 a tool to aid in sorting files according to the natural order 
@@ -132,7 +132,7 @@ This indicates which streams are included in repective recording sessions. For i
        
 type : Cell  
 default value : {'EEG'}  
-A cell containing the keyword to be used to identify EEG stream
+A cell containing the keyword to be used to identify EEG stream.
 
 
        bemobil_config.bids_tasklabel        = 'VNE1';
@@ -199,6 +199,6 @@ It is also possible to use numerical indices of the streams. However, this seems
 - automatic 
 If you do NOT specify any stream, it will automatically assume that the stream of the highest sampling rate is eeg and will also try to import all other streams to be put in a single file. This might be fine if you only have EEG data in your .xdf file but complicates things downstream when you have more modalities. 
 
-## For other modalities than EEG and motion 
+## For other modalities than EEG and motion and other things still missing
 
 There is a plan to also support some other modalities that are often used in MoBI research. 
