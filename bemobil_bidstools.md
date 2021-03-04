@@ -48,7 +48,9 @@ But there is notable difference between BeMoBIL and BIDS conventions in how file
 
 If you have been using the standard import in the pipeline already, your source data would look something like this :   
 
+
 <img src="/resources/bidstools/unises1.png" width="300">
+
 
 The components come from bemobil config fields 'filename_prefix' and 'filenames'. 
 Note that we are now assuming that there is the entry in 'filenames' is a cell that contains only one name.   
@@ -60,7 +62,8 @@ But now moving on with a single-subject, single-file case.
 BIDS has this field called 'task label' that will look like this in the BIDS-formatted file below. 
 
 
-<img src="/resources/bidstools/unises2.png" width="600">
+
+<img src="/resources/bidstools/unises2.png" width="500">
 
 Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
 The point is that this label can differ from the 'filenames' entry, which can be confusing.  
@@ -72,7 +75,10 @@ For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not all
 And then, if you later convert the unisession BIDS data to BeMoBIL compatible .seg files, it will look like this. 
 
 
-<img src="/resources/bidstools/unises3.png" width="300">
+
+<img src="/resources/bidstools/unises3.png" width="350">
+
+
 
 That explanation may sound vague, but you can forget about it for now.  
 To sum up, we recommend you to 
