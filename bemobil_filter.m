@@ -70,14 +70,12 @@ end
 if ~isempty(lowerPassbandEdge)
    
     figure;
-    [EEG, com, b] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
+    [EEG, ~, b] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
     
     if save_file_on_disk; saveas(gcf,fullfile(out_filepath, 'filter_response_highpass')); end
     
-    split1 = strsplit(com, ' ');
-    split2 = strsplit(split1{4}, ',');
-	highpass_order = str2num(split2{6});
+	highpass_order = length(b)-1;
     highpass_passband = lowerPassbandEdge;
 	
 	if isempty(highPassFilterOrder)
@@ -127,13 +125,11 @@ if ~isempty(higherPassbandEdge)
     end
    
     figure;
-    [EEG, com, b] = pop_eegfiltnew(EEG, 0, higherPassbandEdge, lowPassFilterOrder, 0, [], 1);
+    [EEG, ~, b] = pop_eegfiltnew(EEG, 0, higherPassbandEdge, lowPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
-    if save_file_on_disk; saveas(gcf,[out_filepath '\filter_response_lowpass']); end
-	
-	split1 = strsplit(com, ' ');
-    split2 = strsplit(split1{4}, ',');
-	lowpass_order = str2num(split2{6});
+    if save_file_on_disk; saveas(gcf,fullfile(out_filepath, 'filter_response_lowpass')); end
+    
+	lowpass_order = length(b)-1;
     lowpass_passband = higherPassbandEdge;
 	
 	if isempty(lowPassFilterOrder)

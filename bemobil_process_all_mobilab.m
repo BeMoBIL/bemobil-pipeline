@@ -42,11 +42,13 @@ end
 
 disp(['Subject #' num2str(subject)]);
 
-input_filepath = [bemobil_config.study_folder bemobil_config.raw_data_folder bemobil_config.filename_prefix num2str(subject)];
-output_filepath_mobi = [bemobil_config.study_folder bemobil_config.mobilab_data_folder bemobil_config.filename_prefix num2str(subject)];
-output_filepath = [bemobil_config.study_folder bemobil_config.raw_EEGLAB_data_folder bemobil_config.filename_prefix num2str(subject)];
+input_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
+output_filepath_mobi = fullfile(bemobil_config.study_folder, bemobil_config.mobilab_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
+output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
 
-% get rid of memory mapped object storage
+% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+% larger than 2gb)
+% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
 try
     pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
 catch
@@ -226,7 +228,6 @@ if ~exist('EEG_merged','var') || force_recompute
         end
         
         %% export MoBI dataset
-        % get rid of memory mapped object storage
         
         disp('Exporting MoBI dataset. This may take a while!')
         exported_EEG = mobilab.allStreams().export2eeglab(all_data_stream_indices,all_event_stream_indices);
@@ -236,6 +237,9 @@ if ~exist('EEG_merged','var') || force_recompute
         
         mkdir(output_filepath)
         
+        % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+        % larger than 2gb)
+        % mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
         try
             pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
         catch
@@ -246,10 +250,12 @@ if ~exist('EEG_merged','var') || force_recompute
         disp('...done');
         clear exported_EEG
         
-    end
+    end % mobilab loops
     
     %% load and merge MoBI files
-    % get rid of memory mapped object storage
+    % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+    % larger than 2gb)
+    % mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
     try
         pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
     catch
@@ -263,7 +269,7 @@ if ~exist('EEG_merged','var') || force_recompute
         MoBI_EEG = pop_loadset('filename',[full_filename '_MoBI.set'],'filepath', output_filepath);
         
         if isfield(bemobil_config, 'MOBI_functions')
-            if ~ isempty(bemobil_config.MOBI_functinos{i_filename})
+            if ~isempty(bemobil_config.MOBI_functions{i_filename})
                 % this allows for custom functions to happen before splitting the MOBI dataset
                 MoBI_EEG = feval(bemobil_config.MOBI_functions{i_filename}, MoBI_EEG, full_filename, output_filepath);
             end
@@ -274,7 +280,8 @@ if ~exist('EEG_merged','var') || force_recompute
         [~, ~, ~, EEG_split_sets] = bemobil_split_MoBI_set(ALLEEG, MoBI_EEG, CURRENTSET);
         
         % clear RAM
-        STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[]; MoBI_EEG=[];
+        STUDY = []; CURRENTSTUDY = 0; ALLEEG = [];  CURRENTSET=[];
+        MoBI_EEG=[];
         
         for i_splitset = 1:length(EEG_split_sets)
             pop_saveset( EEG_split_sets(i_splitset), 'filename',[full_filename '_'...
@@ -293,13 +300,6 @@ if ~exist('EEG_merged','var') || force_recompute
     
     % make sure EEGLAB has no files other than the ones to be merged
     STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
-    
-    % get rid of memory mapped object storage
-    try
-        pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
-    catch
-        warning('Could NOT edit EEGLAB memory options!!');
-    end
     
     EEG = pop_loadset('filename', strcat(strcat(bemobil_config.filename_prefix, num2str(subject), '_',...
         bemobil_config.filenames,'_EEG.set')), 'filepath', input_filepath);
@@ -323,8 +323,19 @@ if ~exist('EEG_merged','var') || force_recompute
     clear mobilab
     STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
     %%
-end
+end % loading and splitting data to get merged EEG 
+
 %% preprocess
+
+% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+% larger than 2gb)
+% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
+try
+    pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!');
+end
+
 try
     
     EEG_preprocessed = pop_loadset('filename', [bemobil_config.filename_prefix num2str(subject) '_'...
@@ -339,11 +350,11 @@ end
 
 if ~exist('EEG_preprocessed','var')
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.raw_EEGLAB_data_folder bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
     if ~isempty(bemobil_config.channel_locations_filename)
-        channel_locations_filepath = [bemobil_config.study_folder bemobil_config.raw_data_folder...
-            bemobil_config.filename_prefix num2str(subject) '\' bemobil_config.filename_prefix num2str(subject) '_'...
-            bemobil_config.channel_locations_filename];
+        channel_locations_filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder,...
+            [bemobil_config.filename_prefix num2str(subject)], [bemobil_config.filename_prefix num2str(subject) '_'...
+            bemobil_config.channel_locations_filename]);
     else
         channel_locations_filepath = [];
     end
@@ -365,40 +376,11 @@ end
 EEG = EEG_preprocessed;
 
 %%
-disp('Computing average reference for bad channel detection...')
-% Compute average reference for all EEG channels
 
-EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
-REF_channels_bool = strcmp({EEG.chanlocs.type},'REF');
-EEG_channels = 1:EEG.nbchan;
-EEG_channels = EEG_channels(EEG_channels_bool | REF_channels_bool);
+% compute average reference before finding bad channels 
+[ALLEEG, EEG, CURRENTSET] = bemobil_avref( EEG , ALLEEG, CURRENTSET);
 
-
-if ~any(EEG_channels_bool)
-    
-    EEG_channels = [];
-    
-end
-
-
-if isempty(EEG.chanlocs(1).ref)
-    % no ref was declared during preprocessing, use full rank averef (without needing dependency) Apply average
-    % reference after adding initial reference, see fullrankaveref by Makoto Miakoshi (2017) This adds an empty new
-    % channel, rereferences, then removes the excess channel again, so the rank is still intact. The reference channel,
-    % however, is gone and can't be used fr analyses, so in case Cz was used as reference during recording, it is
-    % inaccessible.
-    EEG.nbchan = EEG.nbchan+1;
-    EEG.data(end+1,:) = zeros(1, EEG.pnts);
-    EEG.chanlocs(1,EEG.nbchan).labels = 'initialReference';
-    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
-    EEG = pop_select( EEG,'nochannel',{'initialReference'});
-else
-    % ref was declared, keep it as channel. this means we have an extra channel, e.g. 129 instead of 128 electrodes, and
-    % the former reference carries information. however, the rank is still EEG.nbchan - 1, so 128 in that case!
-    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
-end
-
-disp('...done! Detecting bad channels...')
+disp('Detecting bad channels...')
 
 % remove bad channels, use default values of clean_artifacts, but specify just in case they may change
 [EEG_chan_removed,EEG_highpass,~,chans_to_interp] = clean_artifacts(EEG,...
@@ -423,7 +405,8 @@ EEG_chan_removed.etc.clean_channel_mask = true(EEG_highpass.nbchan,1);
 EEG_chan_removed.etc.clean_channel_mask(chans_to_interp) = deal(0);
 
 % display 1/10 of the data in the middle (save disk space when saving figure)
-vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',[round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
+vis_artifacts(EEG_chan_removed,EEG,'show_events',0,'time_subset',...
+    [round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
 
 %%
 set(gcf, 'Position', get(0,'screensize'))
@@ -438,3 +421,17 @@ disp('Interpolating bad channels and compute final average reference, ignoring E
 [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_interp_avref( EEG_preprocessed , ALLEEG, CURRENTSET, chans_to_interp,...
     [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.interpolated_avRef_filename], output_filepath);
 
+%% plot interpolated filtered, for analytics
+
+EEG = pop_eegfiltnew(EEG_interp_avRef, 'locutoff',0.5);
+EEG.filename = [bemobil_config.filename_prefix num2str(3) '_interpAveRef_highpass'];
+
+vis_artifacts(EEG,EEG,'show_events',0,'time_subset',...
+    [round(EEG.times(end)/2) round(EEG.times(end)/2+round(EEG.times(end)/10))]/1000);
+
+%%
+set(gcf, 'Position', get(0,'screensize'))
+
+savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.fig']))
+print(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.png']),'-dpng')
+close

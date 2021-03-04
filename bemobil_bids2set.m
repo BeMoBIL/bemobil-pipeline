@@ -26,15 +26,9 @@ function bemobil_bids2set(bemobil_config)
 % author : seinjeung@gmail.com
 %--------------------------------------------------------------------------
 
-% path to the folder containing BIDS data
-bemobil_config.bids_folder                  =  '\\stor1\projects\Sein_Jeung\Project_Virtual_Navigation\Virtual_Navigation_data\data_E1\rawdata';
-
-% this is the target folder in which the data will be written
-bemobil_config.study_folder                 = '\\stor1\projects\Sein_Jeung\Project_Virtual_Navigation\Virtual_Navigation_data\data_E1';
-bemobil_config.raw_EEGLAB_data_folder       = '2_basic-EEGLAB-test\';
-
-% name to be used for the final merged EEG file
-bemobil_config.filenames                    = {'VN_E1'};
+if ~isfield(bemobil_config, 'bids_folder')
+    error('Please specify bemobil_config.bids_folder field as the full path to the bids directory')
+end
 
 % all runs and sessions are merged by default - can be optional e.g., bemobil_config.bids_mergeruns = 1; bemobil_config.bids_mergeses  = 1;
 bidsDir         = bemobil_config.bids_folder;
@@ -42,7 +36,11 @@ targetDir       = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLA
 
 % Import data set in BIDS using the standard eeglab plugin (only EEG)
 %--------------------------------------------------------------------------
-pop_importbids(bidsDir, 'outputdir', targetDir);
+try
+    pop_importbids(bidsDir, 'outputdir', targetDir);
+catch
+    warning('Pop_importbids not working')
+end
 
 % Restructure and rename the output of the import function
 %--------------------------------------------------------------------------
@@ -61,13 +59,15 @@ for iSub = 1:numel(subDirList)
     
     subjectDir      = subDirList(iSub).name;
     
+    sesDirList      = dir([targetDir subjectDir]);
+    
     % check if data set contains multiple sessions
-    isMultiSession = any(strcmp(subjectDir(:).name(1:3),'ses-'));
+    isMultiSession = any(contains({sesDirList(:).name},'ses-'));
     
     if isMultiSession
         
         % if multisession, iterate over sessions and concatenate files in EEG folder
-        sesDirList      = dir(subjectDir);
+        
         dirFlagArray    = [sesDirList.isdir];
         nameArray       = {sesDirList.name};
         nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
@@ -76,19 +76,20 @@ for iSub = 1:numel(subDirList)
         eegFiles        = [];
         for iSes = 1:numel(sesDirList)
             sesDir      = sesDirList(iSes);
-            sesFiles    = dir(sesDir);
+            sesFiles    = dir([targetDir subjectDir sesDir '\eeg']);
             eegFiles    = [eegFiles sesFiles];
         end
         
     else
         
         % for unisession, simply find all files in EEG folder
-        eegFiles       = dir([subjectDir '\eeg']);
+        eegDir          = [targetDir subjectDir '\eeg']; 
+        eegFiles        = dir(eegDir);
         
     end
     
     % select only .set and .fdt files
-    eegFiles = eegFiles(strcmp(eegFiles(:).name(end-3:end),'.set')|| strcmp(eegFiles(:).name(end-3:end),'.fdt')) ;
+    eegFiles = eegFiles(contains({eegFiles(:).name},'.set')| contains({eegFiles(:).name},'.fdt')) ;
     
     for iFile = 1:numel(eegFiles)
         
@@ -96,8 +97,8 @@ for iSub = 1:numel(subDirList)
         bidsName        = eegFiles(iFile).name;                             % 'sub-003_task-VirtualNavigation_eeg.set';
         bidsNameSplit   = regexp(bidsName, '_', 'split');
         subjectNr       = str2double(bidsNameSplit{1}(5:end));
-        bidsModality    = bidsNameSplit{end}(1:end-4);                      % this string includes modality and extension
-        extension       = bidsNameSplit{end}(end-4:end);
+        bidsModality    = bidsNameSplit{end}(1:end-4);                        % this string includes modality and extension
+        extension       = bidsNameSplit{end}(end-3:end);
         
         switch bidsModality
             case 'eeg'
@@ -110,8 +111,39 @@ for iSub = 1:numel(subDirList)
         end
         
         bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr) '_' strjoin(bidsNameSplit(2:end-1),'_') '_' bemobilModality extension];
-        movefile( fullfile(projectdir, bidsName), fullfile(projectdir, bemobilName));
-        
+        if isMultiSession
+            for iSes = 1:numel(sesDirList)
+                sesDir      = sesDirList(iSes);
+                eegDir      = [targetDir, subjectDir, sesDir];
+                % move files and then remove the empty eeg folder
+                newDir     = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]); 
+                if ~isdir(newDir)
+                    mkdir(newDir)
+                end
+                movefile(fullfile(eegDir, bidsName), fullfile(newDir, bemobilName));
+                if numel(dir(eegDir)) == 2
+                    rmdir(eegDir)
+                end
+            end
+            if numel(dir(sesDir)) == 2
+                rmdir(sesDir)
+            end
+        else
+            % move files and then remove the empty eeg folder
+            newDir     = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]);
+            if ~isdir(newDir)
+                mkdir(newDir)
+            end
+            movefile( fullfile(eegDir, bidsName), fullfile(newDir, bemobilName));
+            if numel(dir(eegDir)) == 2
+                rmdir(eegDir)
+            end
+        end
+    end
+    
+    % if empty, also remove the subject directory    
+    if numel(dir([targetDir, subjectDir])) == 2
+        rmdir([targetDir, subjectDir])
     end
 end
 

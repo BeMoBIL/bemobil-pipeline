@@ -39,7 +39,7 @@
 % See also: 
 %   EEGLAB, bemobil_copy_spatial_filter, pop_interp, pop_reref, pop_interp, 
 % 
-% Authors: Lukas Gehrke, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2020
 
 function [ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, channels_to_interpolate, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject, out_filename, out_filepath)
 
@@ -55,104 +55,14 @@ if save_file_on_disk
     end
 end
 
-% Interpolate channels with spherical interpolation
-
-if isempty(channels_to_interpolate)
-    disp('No channel indices provided. Attempting to interpolate missing channels from urchanlocs...');
-    if ~isempty(EEG.urchanlocs)
-        EEG = pop_interp(EEG, EEG.urchanlocs, 'spherical');
-        disp('...done.')
-        EEG = eeg_checkset(EEG);
-    else
-        warning('...no urchanlocs present in dataset. Cannot interpolate.');
-    end
-else
-    disp('Interpolating channels that are indicated...');
-    EEG = pop_interp(EEG, channels_to_interpolate, 'spherical');
-    disp('...done');
-    EEG.etc.interpolated_channels = channels_to_interpolate;
-end
-
-% Compute average reference
-
-EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
-EEG_channels = 1:EEG.nbchan;
-EEG_channels = EEG_channels(EEG_channels_bool);
-
-
-if ~any(EEG_channels_bool)
-    warning('No channel types in EEG.chanlocs.type are ''EEG''. Continuing with average reference to all channels!')
-    EEG = pop_reref( EEG, []);
-	 EEG.etc.bemobil_reref = [];
-else
-    EEG = pop_reref( EEG, EEG_channels,'keepref','on');
-	 EEG.etc.bemobil_reref = EEG_channels;
-end
-disp('Rereferencing done.');
+% Interpolate channels with spherical interpolation, reference to average of EEG channels (ignore EOG)
+[ALLEEG, EEG, CURRENTSET] = bemobil_interp_avref( EEG , ALLEEG, CURRENTSET, channels_to_interpolate);
 
 % Copy spatial filter weights
 if ~isempty(EEG_set_to_copy_spatial_filter) && ~isempty(copy_dipfit) && ~isempty(copy_reject)
     
     [ALLEEG, EEG, CURRENTSET] = bemobil_copy_spatial_filter( EEG , ALLEEG, CURRENTSET, EEG_set_to_copy_spatial_filter, copy_dipfit, copy_reject);
     
-%     % check if the requirements are met
-%     
-%     same_reference = strcmp(EEG.ref,EEG_set_to_copy_spatial_filter.ref);
-%     same_interpolated_locations = true; % initialize as true, because they both might not have the fields, which is fine
-%     same_interpolated_channels = true;
-%     same_interchanged_channels = true;
-%     
-%     % check the fields
-%     if isfield(EEG_set_to_copy_spatial_filter.etc,'interpolated_locations') % one has it
-%         if ~(isfield(EEG.etc,'interpolated_locations') && isequal(EEG.etc.interpolated_locations, EEG_set_to_copy_spatial_filter.etc.interpolated_locations)) % either the other doesn't have it or it's not the same
-%             same_interpolated_locations = false;
-%         end
-%     elseif isfield(EEG.etc,'interpolated_locations')
-%         if ~(isfield(EEG_set_to_copy_spatial_filter.etc,'interpolated_locations') && isequal(EEG.etc.interpolated_locations, EEG_set_to_copy_spatial_filter.etc.interpolated_locations))
-%             same_interpolated_locations = false;
-%         end
-%     end
-%     
-%     if isfield(EEG_set_to_copy_spatial_filter.etc,'interpolated_channels')
-%         if ~(isfield(EEG.etc,'interpolated_channels') && isequal(EEG.etc.interpolated_channels, EEG_set_to_copy_spatial_filter.etc.interpolated_channels))
-%             same_interpolated_channels = false;
-%         end
-%     elseif isfield(EEG.etc,'interpolated_channels')
-%         if ~(isfield(EEG_set_to_copy_spatial_filter.etc,'interpolated_channels') && isequal(EEG.etc.interpolated_channels, EEG_set_to_copy_spatial_filter.etc.interpolated_channels))
-%             same_interpolated_channels = false;
-%         end
-%     end
-%     
-%     if isfield(EEG_set_to_copy_spatial_filter.etc,'interchanged_channels')
-%         if ~(isfield(EEG.etc,'interchanged_channels') && isequal(EEG.etc.interchanged_channels, EEG_set_to_copy_spatial_filter.etc.interchanged_channels))
-%             same_interchanged_channels = false;
-%         end
-%     elseif isfield(EEG.etc,'interchanged_channels')
-%         if ~(isfield(EEG_set_to_copy_spatial_filter.etc,'interchanged_channels') && isequal(EEG.etc.interchanged_channels, EEG_set_to_copy_spatial_filter.etc.interchanged_channels))
-%             same_interchanged_channels = false;
-%         end
-%         
-%     end
-%     
-%     
-%     if ~all([same_reference,same_interpolated_locations,same_interpolated_channels,same_interchanged_channels])
-%         error('Requirements not met. Type ''help bemobil_interp_avref_copy_spatial_filter'' for information!')
-%     end
-%     
-%     % requirements are met!
-%     
-%     disp('Copying ICA weights from provided data set.');
-%     EEG.icaweights = EEG_set_to_copy_spatial_filter.icaweights;
-%     EEG.icasphere = EEG_set_to_copy_spatial_filter.icasphere;
-%     
-%     % recompute the rest of ICA stuff
-%     EEG = eeg_checkset( EEG );
-%     
-%     if isfield(EEG_set_to_copy_spatial_filter.etc,'spatial_filter')
-%         
-%         EEG.etc.spatial_filter = EEG_set_to_copy_spatial_filter.etc.spatial_filter;
-%         
-%     end
 
 else
     disp('No data set to copy ICA weights from or no booleans if copy dipfit and rejections is provided. Skipping this step.');

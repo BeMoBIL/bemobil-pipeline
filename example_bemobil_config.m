@@ -131,9 +131,17 @@ bemobil_config.do_remove_outside_head = 'off';
 bemobil_config.number_of_dipoles = 1;
 
 % IC_label settings
-% -1 uses the popularity classifier, i.e. every IC gets the class with the highest probability. set a specific threshold
-% otherwise, i.e. 0.4 (40% brain probability)
-bemobil_config.brain_threshold = -1; 
+% 'default' classifier did not lead to good classification of muscles (see Klug & Gramann (2020)), 'lite' was better
+% overall.
+bemobil_config.iclabel_classifier = 'lite';
+
+% 'Brain', 'Muscle', 'Eye', 'Heart', 'Line Noise', 'Channel Noise', 'Other'
+bemobil_config.iclabel_classes = [1];
+
+% if the threshold is set to -1, the popularity classifier is used (i.e. every IC gets the class with the highest
+% probability), if it is set to a value, the summed score of the iclabel_classes must be higher than this threshold to
+% keep an IC. Must be in the [0 1] range!
+bemobil_config.iclabel_threshold = -1; 
 
 
 % for SSD analysis (ignore if you don't know)

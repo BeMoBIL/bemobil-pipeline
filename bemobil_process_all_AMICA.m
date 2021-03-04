@@ -32,6 +32,15 @@
 
 function [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute)
 
+% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
+% larger than 2gb)
+% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
+try
+    pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!');
+end
+
 if ~exist('force_recompute','var')
     force_recompute = false;
 end
@@ -40,7 +49,7 @@ if force_recompute
 end
 
 % check if the entire processing was done already
-output_filepath = [bemobil_config.study_folder bemobil_config.single_subject_analysis_folder bemobil_config.filename_prefix num2str(subject)];
+output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.single_subject_analysis_folder, [bemobil_config.filename_prefix num2str(subject)]);
 
 if ~force_recompute
     try
@@ -56,8 +65,8 @@ end
 
 if ~exist('EEG_single_subject_final','var')
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.spatial_filters_folder...
-        bemobil_config.spatial_filters_folder_AMICA bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.spatial_filters_folder,...
+        bemobil_config.spatial_filters_folder_AMICA, [bemobil_config.filename_prefix num2str(subject)]);
     
     % check if the part was done already
     if ~force_recompute
@@ -149,8 +158,8 @@ if ~exist('EEG_single_subject_final','var')
     % renames the specified channels, warps the chanlocs on a standard head model and fits dipoles for
     % each IC below the threshold of residual variance
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.spatial_filters_folder...
-        bemobil_config.spatial_filters_folder_AMICA bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.spatial_filters_folder,...
+        bemobil_config.spatial_filters_folder_AMICA, [bemobil_config.filename_prefix num2str(subject)]);
     
     % check if the part was done already
     if ~force_recompute
@@ -183,15 +192,29 @@ if ~exist('EEG_single_subject_final','var')
     % save RAM
     clear EEG_AMICA_cleaned
     
-    %% Final step: copy the spatial filter data into the raw full data set for further single subject processing
+    %% Copy the spatial filter data into the raw full data set for further single subject processing
     
-    output_filepath = [bemobil_config.study_folder bemobil_config.single_subject_analysis_folder bemobil_config.filename_prefix num2str(subject)];
+    output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.single_subject_analysis_folder,...
+        [bemobil_config.filename_prefix num2str(subject)]);
     
     disp('Copying all information into full length dataset for single subject processing...');
-    [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_copy_spatial_filter(EEG_interp_avRef, ALLEEG, CURRENTSET,...
+    [ALLEEG, EEG_single_subject_copied, CURRENTSET] = bemobil_copy_spatial_filter(EEG_interp_avRef, ALLEEG, CURRENTSET,...
         EEG_AMICA_final, [bemobil_config.filename_prefix num2str(subject) '_'...
         bemobil_config.copy_weights_interpolate_avRef_filename], output_filepath);
     
+    % save RAM
+    clear EEG_interp_avRef EEG_AMICA_final
+    %% clean with IClabel
+	
+    disp('Cleaning data with ICLabel')
+	
+	% clean now, save files and figs
+	[ALLEEG, EEG_single_subject_final, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG_single_subject_copied ,...
+        ALLEEG, CURRENTSET, bemobil_config.iclabel_classifier,...
+        bemobil_config.iclabel_classes, bemobil_config.iclabel_threshold,...
+		[ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
+
+    disp('...done.')
 end
 
-disp('Entire processing done!');
+disp('Entire AMICA processing done!');

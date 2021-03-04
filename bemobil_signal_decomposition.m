@@ -70,7 +70,7 @@ if amica
 		AMICA_n_rej = 3;
 	end
 	
-    if isfield(EEG,'datfile') && isempty(EEG.datfile)
+    if isfield(EEG,'datfile') && ~isempty(EEG.datfile)
         disp('Found datfile.');
         data = fullfile(EEG.filepath, EEG.datfile);
         
@@ -91,7 +91,7 @@ if amica
             [w, s, mods] = runamica15(data,...
                 'num_models', numb_models,...
                 'max_threads', maxx_threads,...
-                'outdir', [out_filepath '\' out_filename '_AMICA'],...
+                'outdir', fullfile(out_filepath, [out_filename '_AMICA']),...
                 'num_chans', EEG.nbchan,...
                 'writestep', 2000,...
                 'pcakeep',data_rank,...
@@ -113,7 +113,7 @@ if amica
             
             % if error, reduce threads by one
             maxx_threads = maxx_threads - 1;
-            warning(['AMICA crashed. Reducing maximum threads to ' num2str(maxx_threads)]);
+            warning(['AMICA crashed. This could be wrong input or a bug in AMICA depending on the number of threads. Reducing maximum threads to ' num2str(maxx_threads)]);
             
         end
     end
@@ -124,10 +124,11 @@ if amica
         warning(error_message.message)
         
         % potential issue with number of threads
-        warning('AMICA crashed with all possible maximum thread options. Check the warning above for what caused it to crash or try increasing the maximum usable threads of your CPU.');        
-        disp('Continuing with default EEGLAB runica() ...');
-        amica_crashed   = true; 
-        other_algorithm = 'runica';
+        error('AMICA crashed with all possible maximum thread options. Is AMICA correctly installed? Are all inputs to the function correct? If yes, please contact the BeMoBIL.');        
+        
+%         disp('Continuing with default EEGLAB runica() ...');
+%         amica_crashed   = true; 
+%         other_algorithm = 'runica';
     
     end
     

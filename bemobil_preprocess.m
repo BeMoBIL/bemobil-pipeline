@@ -74,13 +74,13 @@ if ~isempty(resample_freq)
     disp(['Resampled data to: ', num2str(resample_freq), 'Hz.']);
 end
 
-%% Clean line noise with ZapLine: de Cheveign??, A. (2020) ZapLine: a simple and effective method to remove power line
-% artifacts. Neuroimage, 1, 1???13.
+%% Clean line noise with ZapLine: de Cheveigne, A. (2020) ZapLine: a simple and effective method to remove power line
+% artifacts. Neuroimage, 1, 1-13.
 if exist('linefreqs','var') && ~isempty(linefreqs)
     
     disp('Removing frequency artifacts using ZapLine with adaptations for automatic component selection.')
     disp('---------------- PLEASE CITE ------------------')
-    disp('de Cheveign??, A. (2020) ZapLine: a simple and effective method to remove power line artifacts. Neuroimage, 1, 1???13.')
+    disp('de Cheveigne, A. (2020) ZapLine: a simple and effective method to remove power line artifacts. Neuroimage, 1, 1-13.')
     disp('---------------- PLEASE CITE ------------------')
     
     if ~exist('zapline_n_remove','var') || isempty(zapline_n_remove)
@@ -338,12 +338,10 @@ if ~isempty(channel_locations_filepath)
     disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
 else
-    eeglab_path = which('eeglab');
-    eeglab_path_base = strsplit(eeglab_path,'\eeglab.m');
     standard_channel_locations_path =...
-        [eeglab_path_base{1} '\plugins\dipfit2.3\standard_BESA\standard-10-5-cap385.elp'];
+        fullfile(fileparts(which('dipfitdefs')),'standard_BESA','standard-10-5-cap385.elp');
     
-    EEG=pop_chanedit(EEG,'lookup',standard_channel_locations_path);
+    EEG = pop_chanedit(EEG,'lookup',standard_channel_locations_path);
 end
 
 % this has to happen after loading chanlocs because chanlocs are being completely overwritten in the process
