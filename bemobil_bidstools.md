@@ -48,7 +48,7 @@ But there is notable difference between BeMoBIL and BIDS conventions in how file
 
 If you have been using the standard import in the pipeline already, your source data would look something like this :   
 
-![alt text](https://github.com/sjeung/bemobil-pipeline/tree/bemobil_bids/resources/bidstools/unises1.png "Example unisession source data")
+![alt text](./resources/bidstools/unises1.png "Example unisession source data")
 
 The components come from bemobil config fields 'filename_prefix' and 'filenames'. 
 Note that we are now assuming that there is the entry in 'filenames' is a cell that contains only one name.   
