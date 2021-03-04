@@ -38,7 +38,7 @@ It also uses the homemade quat2eul conversion function utils_quat2eul.m.
 There is no dependency on the rest of the BeMoBIL pipeline as long as the configuration is correct. 
 
 We do hope to make your life easier, not harder.  
-So if you are confused by anything, and have any suggestions regarding BeMoBIL BIDS tools pleaase don't hesitate to contact <seinjeung@gmail.com>.
+So if you are confused by anything, and have any suggestions regarding BeMoBIL BIDS tools please don't hesitate to contact <seinjeung@gmail.com>.
 
 # How to use 
 
@@ -67,13 +67,13 @@ BIDS has this field called 'task label' that will look like this in the BIDS-for
 <img src="/resources/bidstools/unises2.png" width="500">
 
 Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
-The point is that this label can differ from the 'filenames' entry, which can be confusing.  
-It is because the 'filenames' entries can be interpreted as session labels (for example, when you have one VR and one desktop session per participant, filenames can be 'VR' and 'Destkop' but the task label can be 'Navigationtask'), which is detailed later in the document. 
-This field also exists because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels.  
+The point is that this label can differ from the 'filenames' entry, and the 'filenames' entry is not even relevant here, which can be confusing.  
+It is because the 'filenames' entries can be interpreted as session labels (for example, when you have one VR and one desktop session per participant, filenames can be 'VR' and 'Destkop' but the task label can be 'Navigationtask'). This is again, detailed later in the document. 
+'bids_tasklabel' field also exists because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels.  
 For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not allow 'task-VN_E1'. 
 
 
-And then, if you later convert the unisession BIDS data to BeMoBIL compatible .seg files, it will look like this. 
+And then, if you later convert the unisession BIDS data to BeMoBIL compatible .set files, it will look like this. 
 
 
 
