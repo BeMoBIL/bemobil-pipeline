@@ -83,8 +83,8 @@ And then, if you later convert the unisession BIDS data to BeMoBIL compatible .s
 That explanation may sound vague, but you can forget about it for now.  
 To sum up, we recommend you to 
 
-> set field entries in 'filenames' and 'bids_tasklabel' to be identical in uni-session case. 
-> otherwise, use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions. 
+> set field entries in 'filenames' and 'bids_tasklabel' to be identical in uni-session case.  
+> Otherwise, use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions. 
 
 If you still have questions like "So what about broken recording sessions?" or "How are sessions and runs different and how should that be reflected in my file names?"
 Please do scroll down and check out the bit on multi-session and multi-run handing 
