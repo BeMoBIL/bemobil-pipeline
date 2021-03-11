@@ -151,7 +151,7 @@ if save_file_on_disk
     
     % save dipole fig
     print(gcf,fullfile(out_filepath,[out_filename '_brain_dipoles']),'-dpng')
-    savefig(fullfile(out_filepath,[out_filename '_brain_dipoles']))
+    savefig(fullfile(out_filepath,[out_filename '_brain_dipoles.fig']))
     close
     print(fig1,fullfile(out_filepath,[out_filename '_ICs_kept.png']),'-dpng')
     close
