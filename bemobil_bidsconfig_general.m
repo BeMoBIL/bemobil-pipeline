@@ -5,7 +5,7 @@
 cfg = [];
 
 % root directory (where you want your bids data to be saved)
-cfg.bidsroot                                = 'E:\Project_BIDS\example_dataset_MWM\rawdata_bids'; 
+cfg.bidsroot                                = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder); 
 
 % required for dataset_description.json
 cfg.dataset_description.Name                = 'Data set collected at BeMoBIL';
