@@ -10,7 +10,6 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs)
 %       bemobil_config.filename_prefix          = 'sub_';
 %       bemobil_config.raw_data_folder          = '0_raw-data\';
 %       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
-%       bemobil_config.raw_EEGLAB_data_folder   = '2_basic-EEGLAB\';
 %       bemobil_config.filenames                = {'VR' 'desktop'}; 
 %       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
 %       bemobil_config.bids_rbsessions          = [1,1; 1,1; 0,1; 0,1; 0,1]; 
@@ -50,6 +49,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs)
 %--------------------------------------------------------------------------
 if ~isfield(bemobil_config, 'bids_data_folder')
     bemobil_config.bids_data_folder = '1_BIDS-data\';
+    warning(['Config field "bids_data_folder" has not been specified- using default folder name ' bemobil_config.bids_data_folder])
 end
 
 if ~isfield(bemobil_config, 'bids_rbsessions')
@@ -61,13 +61,14 @@ else
 end
 
 if ~isfield(bemobil_config, 'bids_eegkeyword')
-    bemobil_config.bids_rbsessions      = {'BrainVision'}; 
+    bemobil_config.bids_rbsessions      = {'EEG'}; 
+    warning('Config field "bids_eegkeyword" has not been specified- using default value EEG')
 end
 
 if ~isfield(bemobil_config, 'bids_tasklabel')
     bemobil_config.bids_tasklabel       = 'defaulttask';
+    warning('Config field "bids_tasklabel" has not been specified- using default value "defaulttask"')
 end
-
 
 % start processing 
 %--------------------------------------------------------------------------
@@ -122,39 +123,16 @@ for pi = 1:numel(numericalIDs)
             bemobil_bidsconfig_participants;
             
             %--------------------------------------------------------------
-            %                Convert Motion Data to BIDS
-            %--------------------------------------------------------------
-            % import motion data
-            motionSource                = xdf2fieldtrip(cfg.dataset,'streamkeywords', motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
-            
-            % if needed, execute a custom function for any alteration
-            % to the data to address dataset specific issues
-            % (quat2eul conversion, for instance)
-            if exist('motionCustom','var')
-                motion                      = feval(motionCustom, motionSource, motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
-            else
-                motion = motionSource;
-            end
-            
-            % construct motion metadata
-            bemobil_bidsconfig_motion;
-            
-            % write motion files in bids format
-            data2bids(motioncfg, motion);
-            
-            %--------------------------------------------------------------
             %                  Convert EEG Data to BIDS
             %--------------------------------------------------------------
             % import eeg data
-            eegSource                       = xdf2fieldtrip(cfg.dataset,'streamkeywords', eegStreamName);
-            
-            % if needed, execute a custom function for any alteration
-            % to the data to address dataset specific issues
-            if exist('eegCustom','var')
-                eeg                      = feval(eegCustom, eegSource);
-            else
-                eeg = eegSource;
-            end
+            eeg                         = xdf2fieldtrip(cfg.dataset,'streamkeywords', eegStreamName);
+           
+            % resample eeg data
+            resamplecfg = [];
+            resamplecfg.resamplefs      = bemobil_config.resample_freq;
+            resamplecfg.detrend         = 'no';
+            eeg = ft_resampledata(resamplecfg, eeg);
             
             % construct eeg metadata
             bemobil_bidsconfig_eeg;
@@ -164,6 +142,36 @@ for pi = 1:numel(numericalIDs)
             
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
+            
+            %--------------------------------------------------------------
+            %                Convert Motion Data to BIDS
+            %--------------------------------------------------------------
+            % import motion data
+            motionSource                = xdf2fieldtrip(cfg.dataset,'streamkeywords', motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
+           
+            % if needed, execute a custom function for any alteration
+            % to the data to address dataset specific issues
+            % (quat2eul conversion, for instance)
+            if exist('motionCustom','var')
+                motion = feval(motionCustom, motionSource, motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
+            else
+                motion = motionSource;
+            end
+            
+            % resample motion data if the sampling rate is higher than the designated sampling rate for eeg
+            if motion.hdr.Fs > bemobil_config.resample_freq
+                resamplecfg = [];
+                resamplecfg.resamplefs      = bemobil_config.resample_freq;
+                resamplecfg.detrend         = 'no';
+                motion = ft_resampledata(resamplecfg, motion);
+            end
+            
+            % construct motion metadata
+            bemobil_bidsconfig_motion;
+            
+            % write motion files in bids format
+            data2bids(motioncfg, motion);
+            
         end
     end
 end

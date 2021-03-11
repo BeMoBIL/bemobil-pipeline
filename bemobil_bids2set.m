@@ -30,7 +30,7 @@ function bemobil_bids2set(bemobil_config)
 %--------------------------------------------------------------------------
 if ~isfield(bemobil_config, 'bids_data_folder')
     bemobil_config.bids_data_folder = '1_BIDS-data\';
-    warning(['BIDS data folder has not been specified- using default folder name ' bemobil_config.bids_data_folder])
+    warning(['Config field "bids_data_folder" has not been specified- using default folder name ' bemobil_config.bids_data_folder])
 end
 
 bidsDir         = bemobil_config.bids_data_folder;

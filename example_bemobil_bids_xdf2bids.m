@@ -8,6 +8,7 @@ bemobil_config.raw_data_folder          = 'sourcedata\';
 bemobil_config.bids_data_folder         = '1_BIDS-data\';
 bemobil_config.raw_EEGLAB_data_folder   = '2_basic-EEGLAB\';
 bemobil_config.filenames                = {'desktop' 'VR'}; 
+bemobil_config.resample_freq            = 250;     
 
 % these streams should be processed as rigid body streams containing 3 dof position and 3 dof orientation data (e.g. derivatives and filters applied)
 bemobil_config.rigidbody_streams        = {'PlayerTransform','RightFoot', 'LeftFoot', 'Torso'};

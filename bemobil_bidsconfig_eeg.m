@@ -10,7 +10,8 @@ eegcfg.elec                         = fullfile(participantDir, bemobil_config.ch
 
 % coordinate system
 eegcfg.coordsystem.EEGCoordinateSystem      = 'todo';
-eegcfg.coordsystem.EEGCoordinateUnits       = 'todo';
+eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
+
 
 % read in impedances
 %eegcfg.electrodes.impedance         = [sourceDataPath '\' subjectdata.impedance];
