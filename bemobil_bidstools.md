@@ -1,4 +1,4 @@
-# BeMoBIL BIDS tools  
+# BeMoBIL BIDS tools 1. Source data in .xdf to BIDS
 
 ## To convert .xdf to BIDS...  
 
@@ -99,7 +99,6 @@ Below is the list of fields in bemobil_config that are used by the batch of scri
        bemobil_config.filename_prefix          = 'sub_';
        bemobil_config.raw_data_folder          = '0_raw-data\';
        **bemobil_config.bids_data_folder       = '1_BIDS-data\';     
-       bemobil_config.raw_EEGLAB_data_folder   = '2_basic-EEGLAB\';
        bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; 
        bemobil_config.filenames                = {'VR' 'desktop'}; 
        bemobil_config.rigidbody_streams        = {'playerTransform','rightHand', 'leftHand', 'Torso'};
@@ -107,6 +106,7 @@ Below is the list of fields in bemobil_config that are used by the batch of scri
        **bemobil_config.eeg_streamkeyword      = {'BrainVision'};
                                                   a unique keyword used to identify the eeg stream in the .xdf file             
        **bemobil_config.bids_tasklabel         = 'VNE1';
+       bemobil_config.resample_freq            = 250; 
 
 Here the starred fields are used speficially for bids processing.
 So, you can leave them unspecified if you go the direct path from .xdf to .set and don't need to use BeMoBIL BIDS tools.
