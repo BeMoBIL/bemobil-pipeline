@@ -18,6 +18,8 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs)
 %                                                  a unique keyword used to identify the eeg stream in the .xdf file             
 %       bemobil_config.bids_tasklabel           = 'VNE1';
 %       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; 
+%       bemobil_config.resample_freq            = 250; 
+%       bemobil_config.bids_motioncustom        = 'motion_customfunctionname'
 %   
 %   numericalIDs
 %       array of participant numerical IDs in the data set
@@ -79,7 +81,6 @@ ft_defaults
 [filepath,~,~] = fileparts(which('bemobil_xdf2bids')); 
 addpath(fullfile(filepath, 'resources', 'natsortfiles'))
 
-
 % path to sourcedata
 sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder(1:end-1));
 addpath(genpath(sourceDataPath))
@@ -98,7 +99,6 @@ bemobil_bidsconfig_general;
 %--------------------------------------------------------------------------
 % loop over participants
 for pi = 1:numel(numericalIDs)
-    
     
     participantNr   = numericalIDs(pi); 
     participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
@@ -127,21 +127,49 @@ for pi = 1:numel(numericalIDs)
             %--------------------------------------------------------------
             % import eeg data
             eeg                         = xdf2fieldtrip(cfg.dataset,'streamkeywords', eegStreamName);
-           
-            % resample eeg data
-            resamplecfg = [];
-            resamplecfg.resamplefs      = bemobil_config.resample_freq;
-            resamplecfg.detrend         = 'no';
-            eeg = ft_resampledata(resamplecfg, eeg);
             
             % construct eeg metadata
             bemobil_bidsconfig_eeg;
             
             % read in the event stream (synched to the EEG stream)
-            eegcfg.event = ft_read_event(cfg.dataset);
+            events                = ft_read_event(cfg.dataset);
+            
+            if ~isempty(bemobil_config.resample_freq) % means that if left empty, no resampling happens
+                % resample eeg data
+                resamplecfg = [];
+                
+                % find the good srate to work with
+                idealresamplefreq        =  250; % bemobil_config.resample_freq;
+                
+                % this method took hint from eeglab pop_resample - it is to prevent the integer ratio used in resample function from blowing off
+                decim = 1e-12;
+                [p,q] = rat(idealresamplefreq/eeg.hdr.Fs, decim);
+                while p*q > 2^31
+                    decim = decim*10;
+                    [p,q] = rat(idealresamplefreq/eeg.hdr.Fs, decim);
+                end
+                
+                newresamplefreq             = eeg.hdr.Fs*p/q;
+                resamplecfg.detrend         = 'no';
+                resamplecfg.resamplefs      = newresamplefreq;
+                eeg_resampled               = ft_resampledata(resamplecfg, eeg);
+                
+                % remove the old header information to avoid confusion downstream
+                rmfield(eeg_resampled,'hdr')
+                
+                % find a sample that is closest to the event in the resampled data
+                for i = 1:numel(events)
+                    events(i).sample = find(eeg_resampled.time{1} > events(i).timestamp, 1, 'first'); 
+                end
+                
+                eeg = eeg_resampled; 
+                
+            end
+            
+            eegcfg.event = events; 
             
             % write eeg files in bids format
-            data2bids(eegcfg, eeg);
+            data2bids(eegcfg, eeg_resampled);
             
             %--------------------------------------------------------------
             %                Convert Motion Data to BIDS
