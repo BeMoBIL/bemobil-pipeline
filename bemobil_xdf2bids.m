@@ -169,7 +169,7 @@ for pi = 1:numel(numericalIDs)
             eegcfg.event = events; 
             
             % write eeg files in bids format
-            data2bids(eegcfg, eeg_resampled);
+            data2bids(eegcfg, eeg);
             
             %--------------------------------------------------------------
             %                Convert Motion Data to BIDS
