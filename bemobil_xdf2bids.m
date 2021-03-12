@@ -1,4 +1,4 @@
-function bemobil_xdf2bids(bemobil_config, numericalIDs)
+function bemobil_xdf2bids(bemobil_config, generalinfo, subjectData)
 
 % Examaple script for converting .xdf recordings to BIDS
 % see bemobil_bidstools.md 
@@ -19,7 +19,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs)
 %       bemobil_config.bids_tasklabel           = 'VNE1';
 %       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; 
 %       bemobil_config.resample_freq            = 250; 
-%       bemobil_config.bids_motioncustom        = 'motion_customfunctionname'
+%       bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
 %   
 %   numericalIDs
 %       array of participant numerical IDs in the data set
@@ -72,8 +72,9 @@ if ~isfield(bemobil_config, 'bids_tasklabel')
     warning('Config field "bids_tasklabel" has not been specified- using default value "defaulttask"')
 end
 
-% start processing 
-%--------------------------------------------------------------------------
+% find numerical IDs of the subjects 
+numericalIDs        = [subjectData.data{:,strcmp(subjectData.cols, 'nr')}]; 
+
 % initialize fieldtrip
 ft_defaults
 
@@ -85,16 +86,20 @@ addpath(fullfile(filepath, 'resources', 'natsortfiles'))
 sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder(1:end-1));
 addpath(genpath(sourceDataPath))
 
-% range of (effective) sampling rate of data, used for identifying streams
-% in .xdf
+% names of the steams 
 motionStreamNames                       = bemobil_config.rigidbody_streams;
 eegStreamName                           = bemobil_config.bids_eegkeyword;
 
-% funcions that resolve dataset-specific problems
-motionCustom                            = 'bemobil_bidsmotion';
 
-% load general metadata that apply to all participants
-bemobil_bidsconfig_general;
+if isempty(bemobil_config.bids_motion_customfunc)
+    % funcions that resolve dataset-specific problems
+    motionCustom            = 'bemobil_bidsmotion';
+else 
+    motionCustom            = bemobil_config.bids_motion_customfunc; 
+end
+
+% general metadata that apply to all participants
+cfg = generalinfo;
 
 %--------------------------------------------------------------------------
 % loop over participants
@@ -113,14 +118,36 @@ for pi = 1:numel(numericalIDs)
         sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.filenames{si}));
         
         % sort files by natural order 
-        sortedFileNames     = natsortfiles({sessionFiles.name}); 
+        sortedFileNames     = natsortfiles({sessionFiles.name});
         
-        % loop over files in each session. 
+        % loop over files in each session.
         % Here 'di' will index files as runs.
         for di = 1:numel(sortedFileNames)
             
             % construct file and participant- and file- specific config
-            bemobil_bidsconfig_participants;
+            % information needed to construct file paths and names
+            cfg.sub                                     = num2str(participantNr);
+            cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di});
+            cfg.ses                                     = bemobil_config.filenames{si};
+            cfg.run                                     = di;
+            
+            % remove session label in uni-session case
+            if numel(bemobil_config.filenames) == 1
+                cfg = rmfield(cfg, 'ses');
+            end
+            
+            % remove session label in uni-run case
+            if numel(sortedFileNames) == 1
+                cfg = rmfield(cfg, 'run');
+            end
+            
+            % participant information
+            allColumns      = subjectData.cols;
+            for iCol = 1:numel(allColumns)
+                if ~strcmp(allColumns{iCol},'nr')
+                    cfg.participants.(allColumns{iCol}) = subjectData.data{pi, iCol};
+                end
+            end
             
             %--------------------------------------------------------------
             %                  Convert EEG Data to BIDS
@@ -134,7 +161,8 @@ for pi = 1:numel(numericalIDs)
             % read in the event stream (synched to the EEG stream)
             events                = ft_read_event(cfg.dataset);
             
-            if ~isempty(bemobil_config.resample_freq) % means that if left empty, no resampling happens
+            if ~isempty(bemobil_config.resample_freq) % if left empty, no resampling happens
+                
                 % resample eeg data
                 resamplecfg = [];
                 
@@ -155,7 +183,7 @@ for pi = 1:numel(numericalIDs)
                 eeg_resampled               = ft_resampledata(resamplecfg, eeg);
                 
                 % remove the old header information to avoid confusion downstream
-                rmfield(eeg_resampled,'hdr')
+                eeg_resampled = rmfield(eeg_resampled,'hdr'); 
                 
                 % find a sample that is closest to the event in the resampled data
                 for i = 1:numel(events)
@@ -166,7 +194,14 @@ for pi = 1:numel(numericalIDs)
                 
             end
             
-            eegcfg.event = events; 
+            % event parser script
+            if isempty(bemobil_config.bids_parsemarkers_custom)
+                events = bemobil_bids_parsemarkers(events);
+            else
+                events = feval(bemobil_config.bids_parsemarkers_custom, events);
+            end
+            
+            eegcfg.event = events;
             
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
@@ -176,26 +211,22 @@ for pi = 1:numel(numericalIDs)
             %--------------------------------------------------------------
             % import motion data
             motionSource                = xdf2fieldtrip(cfg.dataset,'streamkeywords', motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
-           
-            % if needed, execute a custom function for any alteration
-            % to the data to address dataset specific issues
+            
+            % if needed, execute a custom function for any alteration to the data to address dataset specific issues
             % (quat2eul conversion, for instance)
-            if exist('motionCustom','var')
-                motion = feval(motionCustom, motionSource, motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
-            else
-                motion = motionSource;
-            end
+            motion = feval(motionCustom, motionSource, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), pi, si, di);
             
             % resample motion data if the sampling rate is higher than the designated sampling rate for eeg
             if motion.hdr.Fs > bemobil_config.resample_freq
-                resamplecfg = [];
-                resamplecfg.resamplefs      = bemobil_config.resample_freq;
-                resamplecfg.detrend         = 'no';
-                motion = ft_resampledata(resamplecfg, motion);
+                motion = ft_resampledata(resamplecfg, motion); % To do  : if resampling, use eeg data as query points
             end
             
             % construct motion metadata
-            bemobil_bidsconfig_motion;
+            if isempty(bemobil_config.bids_motion_customcfg)
+                bemobil_bidsconfig_motion;
+            else
+                eval(bemobil_config.bids_motion_customcfg); 
+            end
             
             % write motion files in bids format
             data2bids(motioncfg, motion);
@@ -204,5 +235,16 @@ for pi = 1:numel(numericalIDs)
     end
 end
 
+% add general json files
+%--------------------------------------------------------------------------
+ft_hastoolbox('jsonlab', 1);
+
+% participant.json 
+pJSONName       = fullfile(cfg.bidsroot, 'participant.json'); 
+pfid            = fopen(pJSONName, 'wt'); 
+pString         = savejson('', subjectData.fields, 'NaN', '"n/a"', 'ParseLogical', true);
+fwrite(pfid, pString); fclose(pfid); 
+
+% events.json 
 
 end
