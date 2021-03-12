@@ -11,16 +11,12 @@ As of now the components in BeMoBIL BIDS tool are as follows
 
 - **bemobil_xdf2bids.m**  
   this is the main function that calls other configuration scripts below  
-- **bemobil_bidsconfig_general.m**   
-  contains configurations that apply to all participants and all modalities  
-- **bemobil_bidsconfig_participant.m**  
-  contains participant or file-specific configuration   
 - **bemobil_bidsconfig_motion.m**   
   contains motion specific configuration    
 - **bemobil_bidsconfig_eeg.m**  
   contains eeg specific configuration  
 - **bemobil_bidsmotion.m**
-  deals with quat2eul conversion which is necessary for BIDS conformity
+  deafault function for processing the motion data (e.g., quat2eul conversion)
 
 
 Dependencies
@@ -68,9 +64,8 @@ BIDS has this field called 'task label' that will look like this in the BIDS-for
 
 Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
 The point is that this label can differ from the 'filenames' entry, and the 'filenames' entry is not even relevant here, which can be confusing.  
-It is because the 'filenames' entries can be interpreted as session labels (for example, when you have one VR and one desktop session per participant, filenames can be 'VR' and 'Destkop' but the task label can be 'Navigationtask'). This is again, detailed later in the document. 
-'bids_tasklabel' field also exists because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels.  
-For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not allow 'task-VN_E1'. 
+It is because the 'filenames' entries can be interpreted as session labels (for example, when you have one VR and one desktop session per participant, filenames can be 'VR' and 'Destkop' but the task label can be 'NavigationTask'). This is again, detailed later in the document. Note that, in a single session case, the label will not appear again within the pipeline. However, when you are converting the data set to BIDS in order to share it, the label is recommended to be informative enough for people who do not know the data set. For example, using string "VirtualWalkOnStraightLines" instead of "VNE1" is more desirable. 
+'bids_tasklabel' field also exists because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels. For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not allow 'task-VN_E1'. 
 
 
 And then, if you later convert the unisession BIDS data to BeMoBIL compatible .set files, it will look like this. 
@@ -103,7 +98,7 @@ Below is the list of fields in bemobil_config that are used by the batch of scri
        bemobil_config.filenames                = {'VR' 'desktop'}; 
        bemobil_config.rigidbody_streams        = {'playerTransform','rightHand', 'leftHand', 'Torso'};
        **bemobil_config.bids_rbsessions        = [1,1,1,1 ; 1,0,0,0]; 
-       **bemobil_config.eeg_streamkeyword      = {'BrainVision'};
+       **bemobil_config.eeg_streamkeyword      = {'EEG-----'};
                                                   a unique keyword used to identify the eeg stream in the .xdf file             
        **bemobil_config.bids_tasklabel         = 'VNE1';
        bemobil_config.resample_freq            = 250; 
