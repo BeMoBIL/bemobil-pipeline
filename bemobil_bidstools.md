@@ -77,8 +77,8 @@ And then, if you later convert the unisession BIDS data to BeMoBIL compatible .s
 
 To sum up, we recommend you to do the following 
 
-> single-session data set : only entries 'filenames' are important, but also try to find a sensible name for 'bids_tasklabel'  
-> multi-session data set : use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions
+> single-session data set : only the single entry in 'filenames' is important, but also try to find a sensible name for 'bids_tasklabel'  
+> multi-session data set : use multiple 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions
 
 If you still have questions like "So what about broken recording sessions?" or "How are sessions and runs different and how should that be reflected in my file names?"
 Please do scroll down and check out the bit on multi-session and multi-run handing 
