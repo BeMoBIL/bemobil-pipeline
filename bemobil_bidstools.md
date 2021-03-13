@@ -217,6 +217,60 @@ Finally, you can now call function **bemobil_xdf2bids.m** with all three of the 
 
 ## Custom functions used for .xdf to BIDS conversion 
 
+### 1. Motion configuration and conversion script 
+The two files below (one script and one function) can be replaced by custom mfiles. What they do is to figure out which streams are associated with which object and which channels are associated with which types of motion data (for instance, is that channel containing position x coordinates or y anlges in euler rotations). Motion data collected in BeMoBIL usually come in quaternions, which have to be converted to Euler angles.
+
+- **bemobil_bids_motioncfg.m**   
+  default motion specific configuration    
+  
+      % copy general fields 
+      motioncfg       = cfg; 
+
+      % data type and acquisition label
+      motioncfg.datatype                                = 'motion';
+      motioncfg.acq                                     = 'ViveTrackers';
+
+      % motion specific fields in json
+      motioncfg.motion.Manufacturer                     = 'HTC-VIVE';
+      motioncfg.motion.ManufacturersModelName           = 'VIVE Pro';
+      motioncfg.motion.RecordingType                    = 'continuous'; 
+
+      % coordinate system
+      motioncfg.coordsystem.MotionCoordinateSystem      = 'RUF';
+      motioncfg.coordsystem.MotionRotationRule          = 'left-hand'; 
+      motioncfg.coordsystem.MotionRotationOrder         = 'ZXY'; 
+
+The default configuration file above is used to specify metadata about the motion recording setup and the coordinate system that your motion data uses. If any of the information above deviates from your data set, this file has to be replaced with a custom file. This is best done by copy pasting the content of bemobil_bids_motioncfg.m, modifying the fileds, and renaming it. Then you can specify the name of the custom file in bemobil_config.bids_motioncfg. The script also takes the header information to construct channel information for motion data. The header is first read from the .xdf data and then modified by the 'bemobil_bids_motionconvert.m' below, which can also be replaced with a custom function. 
+
+- **bemobil_bids_motionconvert.m**  
+  deafault function for processing the motion data (e.g., quat2eul conversion)
+  
+      motionOut = bemobil_bids_motionconvert(motionIn, objects, pi, si, di)
+ 
+ This function takes inputs 'motionIn' (motion data directly read from the .xdf file), 'objects' (names of objects in 'bemobil_config.rigidbody_streams'), and then the three indices for participant, session, and datafile. The latter three indices are unused by default. They are there as inputs so one can take care of file-specific problems (e.g., misassigned trackers for some participants) here. The output 'motionOut' will now have correct entries in hdr.label, hdr.chantype, hdr.chanunit that will be used for constructing columns in channels.tsv.
+ 
+     
+        quaternionIndices = NaN(1,4); 
+    
+        for qi = 1:4
+            quaternionIndices(qi) = find(strcmp(labelsPre, [objects{ni} '_quat_' quaternionComponents{qi}]));        
+        end
+    
+        cartIndices = NaN(1,3); 
+    
+        for ci = 1:3
+            cartIndices(ci) = find(strcmp(labelsPre, [objects{ni} '_rigid_' cartCoordinates{ci}]));
+        end
+        
+Above is part of the default motionconvert function, demonstrating why it sometimes has to be customized. here the channels containing quaternion components are found by the labels of the channels in .xdf data. It assumes that the label has the format 'objectname_quat_x'. This may of course not be the case for all data sets which is why you might work on that part so that the right channel indices can be found. 
+    
+  
+### 2. Marker processing 
+The default function below deals with events. It does a bare minum processing on marker stream included in the .xdf file, namely replacing undefined durations with zeros and generate a generic events.json file. If you are not going to share the BIDS data, it is fine to leave it like this. But if you want to enable people to make sense out of your events and organize differen kinds of information as columns in the events.tsv file, use a custom function for parsing them as you convert data set to bids. 
+
+- **bemobil_bids_parsemarkers.m**  
+  deafault function for processing the events 
+
 ## Multi-session, multi-run cases
 
 Some caution is required when the source .xdf files are split into multiple runs.  
