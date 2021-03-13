@@ -182,11 +182,19 @@ for pi = 1:numel(numericalIDs)
                 resamplecfg.resamplefs      = newresamplefreq;
                 eeg_resampled               = ft_resampledata(resamplecfg, eeg);
                 
-                % save channel information 
-                eegcfg.EEGChannelCount      = numel(strcmp(eeg_resampled.hdr.chantype, 'EEG')); 
+                % count channel number 
+                eegcfg.EEGChannelCount          = numel(strcmp(eeg.hdr.chantype, 'EEG'));
                 
-                % remove the old header information to avoid confusion downstream
-                eeg_resampled = rmfield(eeg_resampled,'hdr'); 
+                % update hdr from the resampled data
+                eeg_resampled                   = rmfield(eeg_resampled, 'hdr');                
+                eeg_resampled.hdr.Fs            = eeg_resampled.fsample;
+                eeg_resampled.hdr.nChans        = eeg.hdr.nChans;
+                eeg_resampled.hdr.label         = eeg.hdr.label;
+                eeg_resampled.hdr.chantype      = eeg.hdr.chantype;
+                eeg_resampled.hdr.chanunit      = eeg.hdr.chanunit;      
+                eeg_resampled.hdr.nSamples      = numel(eeg_resampled.time{1});
+                eeg_resampled.hdr.nTrials       = eeg.hdr.nTrials;
+                
                 
                 % find a sample that is closest to the event in the resampled data
                 for i = 1:numel(events)
@@ -204,7 +212,7 @@ for pi = 1:numel(numericalIDs)
                 [events, eventsJSON] = feval(bemobil_config.bids_parsemarkers_custom, events);
             end
             
-            eegcfg.event = events;
+            eegcfg.events = events;
             
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
