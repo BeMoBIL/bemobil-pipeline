@@ -11,12 +11,14 @@ As of now the components in BeMoBIL BIDS tool are as follows
 
 - **bemobil_xdf2bids.m**  
   this is the main function that calls other configuration scripts below  
-- **bemobil_bidsconfig_motion.m**   
-  contains motion specific configuration    
-- **bemobil_bidsconfig_eeg.m**  
-  contains eeg specific configuration  
-- **bemobil_bidsmotion.m**
+- **bemobil_bids_motioncfg.m**   
+  default motion specific configuration    
+- **bemobil_bids_eegcfg.m**  
+  default eeg specific configuration  
+- **bemobil_bids_motionconvert.m**
   deafault function for processing the motion data (e.g., quat2eul conversion)
+- **bemobil_bids_parsemarkers.m**
+  deafault function for processing the events 
 
 
 Dependencies
@@ -86,27 +88,36 @@ If you still have questions like "So what about broken recording sessions?" or "
 Please do scroll down and check out the bit on multi-session and multi-run handing 
 
 ## A very standard usage 
+### 1. Fill out the relevant fields in bemobil_config struct
 
-You can use the example scripts by minimal changes using the input "bemobil_config" struct. 
-Below is the list of fields in bemobil_config that are used by the batch of scripts 
+Following is a detailed description of the example script 'example_bemobil_bids_xdf2bids.m' 
+The first section writes the struct "bemobil_config" with some bids-specific fields.
 
-       bemobil_config.study_folder             = 'E:\Project_BIDS\example_dataset_MWM\';
-       bemobil_config.filename_prefix          = 'sub_';
-       bemobil_config.raw_data_folder          = '0_raw-data\';
-       **bemobil_config.bids_data_folder       = '1_BIDS-data\';     
-       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; 
-       bemobil_config.filenames                = {'VR' 'desktop'}; 
-       bemobil_config.rigidbody_streams        = {'playerTransform','rightHand', 'leftHand', 'Torso'};
-       **bemobil_config.bids_rbsessions        = [1,1,1,1 ; 1,0,0,0]; 
-       **bemobil_config.eeg_streamkeyword      = {'EEG-----'};
-                                                  a unique keyword used to identify the eeg stream in the .xdf file             
-       **bemobil_config.bids_tasklabel         = 'VNE1';
-       bemobil_config.resample_freq            = 250; 
+    bemobil_config.study_folder             = 'M:\8_Conferences\MoBI Workshop\data\';
+    bemobil_config.filename_prefix          = 'vp_';
+    bemobil_config.raw_data_folder          = '0_raw-data\';
+    bemobil_config.filenames                = {'_walk'}; 
+    bemobil_config.resample_freq            = 250;
+    bemobil_config.rigidbody_streams        = {'PhaseSpace_Rigid1','PhaseSpace_Rigid2', 'PhaseSpace_Rigid3', ...
+                                            'PhaseSpace_Rigid4','PhaseSpace_Rigid5', 'PhaseSpace_Rigid6', ...
+                                            'PhaseSpace_Rigid7','PhaseSpace_Rigid8', 'PhaseSpace_Rigid9'};
+    bemobil_config.channel_locations_filename = [];                            
 
-Here the starred fields are used speficially for bids processing.
-So, you can leave them unspecified if you go the direct path from .xdf to .set and don't need to use BeMoBIL BIDS tools.
+    % bids fields 
+    bemobil_config.bids_data_folder         = '1_BIDS-data\';
+    bemobil_config.bids_rbsessions          = true(1,numel(bemobil_config.rigidbody_streams));
+    bemobil_config.bids_eegkeyword          = {'BrainVision'}; 
+    bemobil_config.bids_tasklabel           = 'walking';
+    
+    % custom function names - customization highly recommeded, especially when not using HTC-Vive
+    bemobil_config.bids_motioncfg_custom        = 'bids_motioncfg_mobiworkshop';
+    bemobil_config.bids_motionconvert_custom    = 'bids_motionconvert_mobiworkshop';
+    bemobil_config.bids_parsemarkers_custom     = 'bids_parsemarkers_mobiworkshop';
 
-Now some more detailed description of BIDS specific fields below...
+Here the last seven fields are used speficially for bids processing. So, you can leave them unspecified if you go the direct path from .xdf to .set and don't need to use BeMoBIL BIDS tools.
+
+The last three fields are needed when you want to operate on the motion or event data more closely and will be described later in section **Custom functions used for .xdf to BIDS conversion**. Custom functions are essential for motion setups other than HTC Vive and also for parsing events properly. Even when it works without custom functions, it is highly recommened that one looks are each default files (bemobil_bids_motioncfg.m, bemobil_bids_motionconvert.m, bemobil_bids_parsemarkers.m) to double check what happens. 
+Now some more detailed description of the four BIDS specific fields below...
 
 
        bemobil_config.bids_data_folder     = '1_BIDS-data\';  
@@ -123,29 +134,92 @@ default value : LOGICAL ones of size numel(filenames) X numel(rigidbody_streams)
 This indicates which streams are included in repective recording sessions. For instance, in the example above, playerTransform might only be present in session 'VR', so the first row '1,1,1,1' means all rigidbody streams are present in 'VR' session but the '1,0,0,0' in the second row means only the first type of rigidbody is in session 'desktop'.
        
       
-      bemobil_config.eeg_streamkeyword     = {'EEG'}; 
+      bemobil_config.bids_eegkeyword      = {'EEG'}; 
        
 type : Cell  
 default value : {'EEG'}  
 A cell containing the keyword to be used to identify EEG stream.
 
 
-       bemobil_config.bids_tasklabel        = 'VNE1';
+       bemobil_config.bids_tasklabel      = 'walking';
 
 type : STRING  
 default value : 'defaulttask'  
 Task label to be used in constructing bids filenames with no '_' or '-' character
   
-  
 
-Once all the config fields are filled out, you can simply call function **bemobil_xdf2bids.m** with only one additional input, namely the **numericalIDs**. 
+### 2. Specify general information about the data set
+
+The next step is to specify general metadata about the data set. Every data set in BIDS **must** include this information about the authors, institution, and the task. For details please refer to [BIDS page for modality agnostic files](https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html).
+
+    generalinfo = [];
+
+    % root directory (where you want your bids data to be saved)
+    generalinfo.bidsroot                                = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder); 
+
+    % required for dataset_description.json
+    generalinfo.dataset_description.Name                = 'Walking task in the young and old';
+    generalinfo.dataset_description.BIDSVersion         = 'unofficial extension';
+
+    % optional for dataset_description.json
+    generalinfo.dataset_description.License             = 'n/a';
+    generalinfo.dataset_description.Authors             = 'JP & KG';
+    generalinfo.dataset_description.Acknowledgements    = 'Acknowledgements here';
+    generalinfo.dataset_description.Funding             = 'n/a';
+    generalinfo.dataset_description.ReferencesAndLinks  = 'n/a';
+    generalinfo.dataset_description.DatasetDOI          = 'n/a';
+
+    % general information shared across modality specific json files 
+    generalinfo.InstitutionName                         = 'Technische Universitaet zu Berlin';
+    generalinfo.InstitutionalDepartmentName             = 'Biological Psychology and Neuroergonomics';
+    generalinfo.InstitutionAddress                      = 'Strasse des 17. Juni 135, 10623, Berlin, Germany';
+    generalinfo.TaskDescription                         = 'Participants walked repeatedly on a straight path.';
+    generalinfo.task                                    = bemobil_config.bids_tasklabel;  
 
 
-        numericalIDs             = [1,2,3,5,10]; 
-        bemobil_xdf2bids(bemobil_config, numericalIDs)
+### 3. Specify participant information  
 
-The IDs are assumed to be numerical, as it will make things easier when we convert BIDS to .set to use in the pipeline.
-But this is of course a redundant restriction if one is only interested in converting .xdf to BIDS. 
+Finally, participant information is **recommended** to be specified also following the description in [BIDS page for modality agnostic files](https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html).
+
+    % here describe the fields in the participant file
+    % for numerical values  : 
+    %       subjectData.fields.[insert your field name here].Description    = 'describe what the field contains';
+    %       subjectData.fields.[insert your field name here].Unit           = 'write the unit of the quantity';
+    % for values with discrete levels :
+    %       subjectData.fields.[insert your field name here].Description    = 'describe what the field contains';
+    %       subjectData.fields.[insert your field name here].Levels.[insert the name of the first level] = 'describe  what the level means';
+    %       subjectData.fields.[insert your field name here].Levels.[insert the name of the Nth level]   = 'describe what the level means';
+    %--------------------------------------------------------------------------
+    subjectData.fields.age.Description          = 'age of the participant'; 
+    subjectData.fields.age.Unit                 = 'years'; 
+    subjectData.fields.sex.Description          = 'sex of the participant'; 
+    subjectData.fields.sex.Levels.M             = 'male'; 
+    subjectData.fields.sex.Levels.F             = 'female'; 
+    subjectData.fields.group.Description        = 'experiment group';
+    subjectData.fields.group.Levels.young       = 'younger participants under 40';
+    subjectData.fields.group.Levels.old         = 'older participants over 65';
+    subjectData.fields.handedness.Description    = 'handedness of the participant';
+    subjectData.fields.handedness.Levels.R       = 'right-handed';
+    subjectData.fields.handedness.Levels.L       = 'left-handed';
+
+This part above is going to be used in writing a Json file for participant data. The role of the Json file is to describe the names and values of the variables that are considered to be "participant information". For generic fields such as age and sex, this kind of description may appear redundant, but the importance becomes obvious when we consider fields that are specific to the experiment, such as "group". Once you have identified and described all variables to be saved as participant information, you can start filling out the table below. 
+
+    % names of the columns - 'nr' column is just the numerical IDs of subjects
+    %                         do not change the name of this column 
+    subjectData.cols = {'nr',   'age',  'sex',  'group',    'handedness'};
+    subjectData.data = {64,     71,     'F',    'old',      'R' ; ...
+                       66,     67,     'M',    'old',      'R' ; ...
+                       76,     34,     'M',    'young',    'R' ; ...
+                       78,     33,     'M',    'young',    'R' };
+
+Note that the first column of this table is reserved for numerical IDs of the participants. It is then followed by the names of variables you have described in **subjecData.fields**. 
+
+Finally, you can now call function **bemobil_xdf2bids.m** with all three of the structs above as inputs. 
+
+        bemobil_xdf2bids(bemobil_config, generalinfo, subjectData)
+
+
+## Custom functions used for .xdf to BIDS conversion 
 
 ## Multi-session, multi-run cases
 
