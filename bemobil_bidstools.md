@@ -15,9 +15,9 @@ As of now the components in BeMoBIL BIDS tool are as follows
   default motion specific configuration    
 - **bemobil_bids_eegcfg.m**  
   default eeg specific configuration  
-- **bemobil_bids_motionconvert.m**
+- **bemobil_bids_motionconvert.m**  
   deafault function for processing the motion data (e.g., quat2eul conversion)
-- **bemobil_bids_parsemarkers.m**
+- **bemobil_bids_parsemarkers.m**  
   deafault function for processing the events 
 
 
@@ -64,10 +64,8 @@ BIDS has this field called 'task label' that will look like this in the BIDS-for
 
 <img src="/resources/bidstools/unises2.png" width="500">
 
-Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'.  
-The point is that this label can differ from the 'filenames' entry, and the 'filenames' entry is not even relevant here, which can be confusing.  
-It is because the 'filenames' entries can be interpreted as session labels (for example, when you have one VR and one desktop session per participant, filenames can be 'VR' and 'Destkop' but the task label can be 'NavigationTask'). This is again, detailed later in the document. Note that, in a single session case, the label will not appear again within the pipeline. However, when you are converting the data set to BIDS in order to share it, the label is recommended to be informative enough for people who do not know the data set. For example, using string "VirtualWalkOnStraightLines" instead of "VNE1" is more desirable. 
-'bids_tasklabel' field also exists because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels. For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not allow 'task-VN_E1'. 
+Now the name is taken from the BIDS-specific config field called 'bids_tasklabel'. This label can differ from the 'filenames' entry, and the 'filenames' entry is not even visible at this step, which can be confusing.  
+Entries in field 'filenames' can be interpreted both as a tasklabel in a unisession case and session labels in a multisession case (for example, when there is one VR and one desktop session per participant, filenames are equivalent to session labels 'VR' and 'Destkop' but the task label is 'NavigationTask'. On the other hand, in a unisession case with only one 'filenames' element, this will be used like a task label). This is again, detailed later in the document. Note that, in a single session case, the value of 'bids_tasklabel' will not appear again within the pipeline. However, when you are converting the data set to BIDS in order to share it, we recommend you make it informative enough for people who do not know the data set. For example, using string "VirtualWalkOnStraightLines" instead of "VNE1" is more desirable. 'bids_tasklabel' field exists also because, unlike the pipeline, BIDS does not allow usage of certain characters in tasklabels. For instance, 'VN_E1' is OK to use in the BeMoBIL pipeline but BIDS does not allow 'task-VN_E1'. 
 
 
 And then, if you later convert the unisession BIDS data to BeMoBIL compatible .set files, it will look like this. 
@@ -77,12 +75,10 @@ And then, if you later convert the unisession BIDS data to BeMoBIL compatible .s
 <img src="/resources/bidstools/unises3.png" width="350">
 
 
-
-That explanation may sound vague, but you can forget about it for now.  
 To sum up, we recommend you to 
 
-> set field entries in 'filenames' and 'bids_tasklabel' to be identical in uni-session case.  
-> Otherwise, use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions. 
+> single-session data set : only entries 'filenames' are important, but also try to find a sensible name for 'bids_tasklabel'
+> multi-session data set : use 'filenames' to indicate keywords that represent each session and 'bids_tasklabel' as the name of the task common to all sessions
 
 If you still have questions like "So what about broken recording sessions?" or "How are sessions and runs different and how should that be reflected in my file names?"
 Please do scroll down and check out the bit on multi-session and multi-run handing 
