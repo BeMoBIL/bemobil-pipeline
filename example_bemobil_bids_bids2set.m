@@ -1,4 +1,4 @@
-% example script for BeMoBIL BIDS tools set2bids
+% example script for BeMoBIL BIDS tools bids2set
 
 % configuration 
 bemobil_config.study_folder             = 'E:\Project_BIDS\example_dataset_MWM\';
