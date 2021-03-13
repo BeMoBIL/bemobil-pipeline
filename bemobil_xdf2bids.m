@@ -91,11 +91,11 @@ motionStreamNames                       = bemobil_config.rigidbody_streams;
 eegStreamName                           = bemobil_config.bids_eegkeyword;
 
 
-if isempty(bemobil_config.bids_motion_customfunc)
+if isempty(bemobil_config.bids_motionconvert_custom)
     % funcions that resolve dataset-specific problems
-    motionCustom            = 'bemobil_bidsmotion';
+    motionCustom            = 'bemobil_bids_motionconvert';
 else 
-    motionCustom            = bemobil_config.bids_motion_customfunc; 
+    motionCustom            = bemobil_config.bids_motionconvert_custom; 
 end
 
 % general metadata that apply to all participants
@@ -156,7 +156,7 @@ for pi = 1:numel(numericalIDs)
             eeg                         = xdf2fieldtrip(cfg.dataset,'streamkeywords', eegStreamName);
             
             % construct eeg metadata
-            bemobil_bidsconfig_eeg;
+            bemobil_bids_eegcfg;
             
             % read in the event stream (synched to the EEG stream)
             events                = ft_read_event(cfg.dataset);
@@ -181,6 +181,9 @@ for pi = 1:numel(numericalIDs)
                 resamplecfg.detrend         = 'no';
                 resamplecfg.resamplefs      = newresamplefreq;
                 eeg_resampled               = ft_resampledata(resamplecfg, eeg);
+                
+                % save channel information 
+                eegcfg.EEGChannelCount      = numel(strcmp(eeg_resampled.hdr.chantype, 'EEG')); 
                 
                 % remove the old header information to avoid confusion downstream
                 eeg_resampled = rmfield(eeg_resampled,'hdr'); 
@@ -222,10 +225,10 @@ for pi = 1:numel(numericalIDs)
             end
             
             % construct motion metadata
-            if isempty(bemobil_config.bids_motion_customcfg)
-                bemobil_bidsconfig_motion;
+            if isempty(bemobil_config.bids_motioncfg_custom)
+                bemobil_bids_motioncfg;
             else
-                eval(bemobil_config.bids_motion_customcfg); 
+                eval(bemobil_config.bids_motioncfg_custom); 
             end
             
             % write motion files in bids format
@@ -240,11 +243,15 @@ end
 ft_hastoolbox('jsonlab', 1);
 
 % participant.json 
-pJSONName       = fullfile(cfg.bidsroot, 'participant.json'); 
+pJSONName       = fullfile(cfg.bidsroot, 'participants.json'); 
 pfid            = fopen(pJSONName, 'wt'); 
 pString         = savejson('', subjectData.fields, 'NaN', '"n/a"', 'ParseLogical', true);
 fwrite(pfid, pString); fclose(pfid); 
 
 % events.json 
+eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']); 
+efid            = fopen(eJSONName, 'wt'); 
+eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
+fwrite(efid, eString); fclose(efid); 
 
 end
