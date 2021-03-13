@@ -199,9 +199,9 @@ for pi = 1:numel(numericalIDs)
             
             % event parser script
             if isempty(bemobil_config.bids_parsemarkers_custom)
-                events = bemobil_bids_parsemarkers(events);
+                [events, eventsJSON] = bemobil_bids_parsemarkers(events);
             else
-                events = feval(bemobil_config.bids_parsemarkers_custom, events);
+                [events, eventsJSON] = feval(bemobil_config.bids_parsemarkers_custom, events);
             end
             
             eegcfg.event = events;
