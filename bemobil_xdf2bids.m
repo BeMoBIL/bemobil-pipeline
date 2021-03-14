@@ -1,4 +1,4 @@
-function bemobil_xdf2bids(bemobil_config, generalinfo, subjectData)
+function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 
 % Examaple script for converting .xdf recordings to BIDS
 % see bemobil_bidstools.md 
@@ -24,6 +24,9 @@ function bemobil_xdf2bids(bemobil_config, generalinfo, subjectData)
 %   numericalIDs
 %       array of participant numerical IDs in the data set
 %  
+%--------------------------------------------------------------------------
+% Optional Inputs : 
+%
 %   Note on multi-session and multi-run data sets :  
 %
 %           Entries in bemobil_config.filenames will search through the 
@@ -47,12 +50,13 @@ function bemobil_xdf2bids(bemobil_config, generalinfo, subjectData)
 % Author : Sein Jeung (seinjeung@gmail.com)
 %--------------------------------------------------------------------------
 
+
 % input check and default value assignment 
 %--------------------------------------------------------------------------
-if ~isfield(bemobil_config, 'bids_data_folder')
-    bemobil_config.bids_data_folder = '1_BIDS-data\';
-    warning(['Config field "bids_data_folder" has not been specified- using default folder name ' bemobil_config.bids_data_folder])
-end
+
+bemobil_config = checkfield(bemobil_config, 'bids_data_folder', '1_BIDS-data\', '1_BIDS-data\'); 
+bemobil_config = checkfield(bemobil_config, 'rigidbody_names', bemobil_config.rigidbody_streams, 'values from field "rigidbody_streams"'); 
+bemobil_config = checkfield(bemobil_config, 'rigidbody_anat', 'Undefined', 'Undefined'); 
 
 if ~isfield(bemobil_config, 'bids_rbsessions')
     bemobil_config.bids_rbsessions    = true(numel(bemobil_config.filenames),numel(bemobil_config.rigidbody_streams)); 
@@ -62,19 +66,80 @@ else
     end
 end
 
-if ~isfield(bemobil_config, 'bids_eegkeyword')
-    bemobil_config.bids_rbsessions      = {'EEG'}; 
-    warning('Config field "bids_eegkeyword" has not been specified- using default value EEG')
+bemobil_config = checkfield(bemobil_config, 'bids_eegkeyword','EEG', 'EEG'); 
+bemobil_config = checkfield(bemobil_config, 'bids_tasklabel', 'defaulttask', 'defaulttask'); 
+
+if isfield(bemobil_config, 'bids_motion_positionunits')
+    if iscell(bemobil_config.bids_motion_positionunits)
+        if numel(bemobil_config.bids_motion_positionunits) ~= numel(bemobil_config.filenames)
+            if numel(bemobil_config.bids_motion_positionunits) == 1
+                bemobil_config.bids_motion_positionunits = repmat(bemobil_config.bids_motion_postionunits, 1, numel(bemobil_config.filenames)); 
+                warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_positionunits must have either one entry or the number of entries (in cell array) have to match number of entries in field filenames')
+            end
+        end
+    else
+        bemobil_config.bids_motion_positionunits = {bemobil_config.bids_motion_positionunits}; 
+    end
+else
+    bemobil_config.bids_motion_positionunits       = repmat({'meters'},1,numel(bemobil_config.filenames));
+    warning('Config field bids_motion_positionunits unspecified - assuming meters')
 end
 
-if ~isfield(bemobil_config, 'bids_tasklabel')
-    bemobil_config.bids_tasklabel       = 'defaulttask';
-    warning('Config field "bids_tasklabel" has not been specified- using default value "defaulttask"')
+if isfield(bemobil_config, 'bids_motion_orientationunits')
+    if iscell(bemobil_config.bids_motion_orientationunits)
+        if numel(bemobil_config.bids_motion_orientationunits) ~= numel(bemobil_config.filenames)
+            if numel(bemobil_config.bids_motion_orientationunits) == 1
+                bemobil_config.bids_motion_positionunits = repmat(bemobil_config.bids_motion_postionunits, 1, numel(bemobil_config.filenames)); 
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_orientationunits must have either one entry or the number of entries (in cell array) have to match number of entries in field filenames')
+            end
+        end
+    else
+        bemobil_config.bids_motion_orientationunits = {bemobil_config.bids_motion_orientationunits}; 
+    end
+else
+    bemobil_config.bids_motion_orientationunits       = repmat({'radians'},1,numel(bemobil_config.filenames));
+    warning('Config field bids_motion_oreintationunits unspecified - assuming radians')
 end
 
-% find numerical IDs of the subjects 
-numericalIDs        = [subjectData.data{:,strcmp(subjectData.cols, 'nr')}]; 
+%--------------------------------------------------------------------------
+% find optional input arguments 
+for iVI = 1:2:numel(varargin)
+    if strcmp(varargin{iVI}, 'generalmetadata')
+        generalInfo         = varargin{iVI+1}; 
+    elseif strcmp(varargin{iVI}, 'participantmetadata')
+        subjectInfo         = varargin{iVI+1}; 
+    elseif strcmp(varargin{iVI}, 'motionmetadata')
+        motionInfo          = varargin{iVI+1}; 
+    else
+        warning('One of the optional inputs are not valid : please see help bemobil_xdf2bids')
+    end
+end
 
+% check if numerical IDs match subjectData, if this was specified
+if exist('subjectInfo','var')
+    
+    % first sort numerical IDs and rows in subjectdata struct in ascending order
+    numericalIDs            = sort(numericalIDs);
+    nrColInd                = find(strcmp(subjectInfo.cols, 'nr'));
+    subjectInfo.data        = sortrows(subjectInfo.data, nrColInd);
+    IDsInSData              = [subjectInfo.data{:,nrColInd}];
+    
+    if ~isequal(numericalIDs,IDsInSData)
+        
+        % throw warning if the two ID arrays do not match and take the latter
+        warning('Input numericalIDs and entries for column nr in participant metadata do not match - using the latter')
+        numericalIDs = IDsInSData;
+        
+    end
+else 
+    warning('Optional input participantmetadata was not entered - participant.tsv will be omitted (NOT recommended for data sharing)')
+end
+
+%-------------------------------------------------------------------------
 % initialize fieldtrip
 ft_defaults
 
@@ -88,7 +153,7 @@ addpath(genpath(sourceDataPath))
 
 % names of the steams 
 motionStreamNames                       = bemobil_config.rigidbody_streams;
-eegStreamName                           = bemobil_config.bids_eegkeyword;
+eegStreamName                           = {bemobil_config.bids_eegkeyword};
 
 
 if isempty(bemobil_config.bids_motionconvert_custom)
@@ -99,7 +164,37 @@ else
 end
 
 % general metadata that apply to all participants
-cfg = generalinfo;
+if ~exist('generalInfo', 'var')
+    
+    warning('Optional input generalmetadata was not entered - using default general metadata (NOT recommended for data sharing)')
+    
+    generalInfo = [];
+    
+    % root directory (where you want your bids data to be saved)
+    generalInfo.bidsroot                                = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder);
+    
+    % required for dataset_description.json
+    generalInfo.dataset_description.Name                = 'Default task';
+    generalInfo.dataset_description.BIDSVersion         = 'unofficial extension';
+    
+    % optional for dataset_description.json
+    generalInfo.dataset_description.License             = 'n/a';
+    generalInfo.dataset_description.Authors             = 'n/a';
+    generalInfo.dataset_description.Acknowledgements    = 'n/a';
+    generalInfo.dataset_description.Funding             = 'n/a';
+    generalInfo.dataset_description.ReferencesAndLinks  = 'n/a';
+    generalInfo.dataset_description.DatasetDOI          = 'n/a';
+    
+    % general information shared across modality specific json files
+    generalInfo.InstitutionName                         = 'Technische Universitaet zu Berlin';
+    generalInfo.InstitutionalDepartmentName             = 'Biological Psychology and Neuroergonomics';
+    generalInfo.InstitutionAddress                      = 'Strasse des 17. Juni 135, 10623, Berlin, Germany';
+    generalInfo.TaskDescription                         = 'Default task generated by bemobil bidstools- no metadata present';
+    generalInfo.task                                    = bemobil_config.bids_tasklabel;
+
+end
+
+cfg = generalInfo;
 
 %--------------------------------------------------------------------------
 % loop over participants
@@ -142,10 +237,12 @@ for pi = 1:numel(numericalIDs)
             end
             
             % participant information
-            allColumns      = subjectData.cols;
-            for iCol = 1:numel(allColumns)
-                if ~strcmp(allColumns{iCol},'nr')
-                    cfg.participants.(allColumns{iCol}) = subjectData.data{pi, iCol};
+            if exist('subjectData', 'var')
+                allColumns      = subjectInfo.cols;
+                for iCol = 1:numel(allColumns)
+                    if ~strcmp(allColumns{iCol},'nr')
+                        cfg.participants.(allColumns{iCol}) = subjectInfo.data{pi, iCol};
+                    end
                 end
             end
             
@@ -229,16 +326,14 @@ for pi = 1:numel(numericalIDs)
             
             % resample motion data if the sampling rate is higher than the designated sampling rate for eeg
             if motion.hdr.Fs > bemobil_config.resample_freq
-                motion = ft_resampledata(resamplecfg, motion); % To do  : if resampling, use eeg data as query points
+                resamplecfg = []; 
+                resamplecfg.time = eeg.time;  
+                motion = ft_resampledata(resamplecfg, motion);
             end
             
             % construct motion metadata
-            if isempty(bemobil_config.bids_motioncfg_custom)
-                bemobil_bids_motioncfg;
-            else
-                eval(bemobil_config.bids_motioncfg_custom); 
-            end
-            
+            bemobil_bids_motioncfg;
+
             % write motion files in bids format
             data2bids(motioncfg, motion);
             
@@ -250,16 +345,30 @@ end
 %--------------------------------------------------------------------------
 ft_hastoolbox('jsonlab', 1);
 
-% participant.json 
-pJSONName       = fullfile(cfg.bidsroot, 'participants.json'); 
-pfid            = fopen(pJSONName, 'wt'); 
-pString         = savejson('', subjectData.fields, 'NaN', '"n/a"', 'ParseLogical', true);
-fwrite(pfid, pString); fclose(pfid); 
+if exist('subjectInfo', 'var')
+    % participant.json
+    pJSONName       = fullfile(cfg.bidsroot, 'participants.json');
+    pfid            = fopen(pJSONName, 'wt');
+    pString         = savejson('', subjectInfo.fields, 'NaN', '"n/a"', 'ParseLogical', true);
+    fwrite(pfid, pString); fclose(pfid);
+    
+    % events.json
+    eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
+    efid            = fopen(eJSONName, 'wt');
+    eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
+    fwrite(efid, eString); fclose(efid);
+end
 
-% events.json 
-eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']); 
-efid            = fopen(eJSONName, 'wt'); 
-eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
-fwrite(efid, eString); fclose(efid); 
+end
+
+
+function [newconfig] =  checkfield(oldconfig, fieldName, defaultValue, defaultValueText)
+
+newconfig   = oldconfig; 
+
+if ~isfield(oldconfig, fieldName)
+    newconfig.(fieldName) = defaultValue; 
+    warning(['Config field ' fieldName ' not specified- using default value: ' defaultValueText])
+end
 
 end
