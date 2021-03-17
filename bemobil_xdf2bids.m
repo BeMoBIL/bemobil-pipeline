@@ -237,7 +237,7 @@ for pi = 1:numel(numericalIDs)
             end
             
             % participant information
-            if exist('subjectData', 'var')
+            if exist('subjectInfo', 'var')
                 allColumns      = subjectInfo.cols;
                 for iCol = 1:numel(allColumns)
                     if ~strcmp(allColumns{iCol},'nr')
@@ -324,13 +324,30 @@ for pi = 1:numel(numericalIDs)
             % (quat2eul conversion, for instance)
             motion = feval(motionCustom, motionSource, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), pi, si, di);
             
-            % resample motion data if the sampling rate is higher than the designated sampling rate for eeg
+            % overwrite some fields in header with more precise information
+            motion.hdr.nSamples         = size(motion.trial{1},2); 
+            motion.hdr.FirstTimeStamp   = motion.time{1}(1);
+            lastTimeStamp               = motion.time{1}(end);
+            motion.hdr.Fs               = motion.hdr.nSamples/(lastTimeStamp - motion.hdr.FirstTimeStamp); 
+            motion.hdr.TimeStampPerSample  = (lastTimeStamp - motion.hdr.FirstTimeStamp)/motion.hdr.nSamples; 
+            
+            % resample motion data to deal with potentially irregular sampling rate 
+            eegStartTime    = eeg.time{1}(1);
+            eegEndTime      = eeg.time{1}(end);
+            resamplecfg     = [];
+            
             if motion.hdr.Fs > bemobil_config.resample_freq
-                resamplecfg = []; 
-                resamplecfg.time = eeg.time;  
-                motion = ft_resampledata(resamplecfg, motion);
+                % downsample as well if motion data has higher sampling rate than eeg data after downsampling
+                motionSRate     = eeg.fsample; 
+                disp(['Motion data has higher srate than bemobil_config.resample_freg ' num2str(bemobil_config.resample_freq) 'Hz- downsampling motion data as well']) 
+            else
+                % resample to the regular time points
+                motionSRate     = motion.hdr.Fs;
             end
             
+            resamplecfg.time  = {eegStartTime:1/motionSRate:eegEndTime};
+            motion            = ft_resampledata(resamplecfg, motion);
+       
             % construct motion metadata
             bemobil_bids_motioncfg;
 
@@ -351,13 +368,13 @@ if exist('subjectInfo', 'var')
     pfid            = fopen(pJSONName, 'wt');
     pString         = savejson('', subjectInfo.fields, 'NaN', '"n/a"', 'ParseLogical', true);
     fwrite(pfid, pString); fclose(pfid);
-    
-    % events.json
-    eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
-    efid            = fopen(eJSONName, 'wt');
-    eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
-    fwrite(efid, eString); fclose(efid);
 end
+
+% events.json
+eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
+efid            = fopen(eJSONName, 'wt');
+eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
+fwrite(efid, eString); fclose(efid);
 
 end
 
