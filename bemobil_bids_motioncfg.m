@@ -34,10 +34,10 @@ motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
 %--------------------------------------------------------------------------
 % rename and fill out motion-specific fields to be used in channels_tsv
 motioncfg.channels.name         = cell(motion.hdr.nChans,1); 
-motioncfg.channels.object       = cell(motion.hdr.nChans,1); 
+motioncfg.channels.tracked_point       = cell(motion.hdr.nChans,1); 
 motioncfg.channels.component    = cell(motion.hdr.nChans,1); 
-motioncfg.channels.object_anat  = cell(motion.hdr.nChans,1); 
-motioncfg.channels.tsvfile      = cell(motion.hdr.nChans,1); 
+motioncfg.channels.placement  = cell(motion.hdr.nChans,1); 
+motioncfg.channels.datafile      = cell(motion.hdr.nChans,1); 
 
 for ci  = 1:motion.hdr.nChans
     
@@ -56,17 +56,17 @@ for ci  = 1:motion.hdr.nChans
     
     % assign object names and anatomical positions
     for iRB = 1:numel(bemobil_config.rigidbody_streams)
-        if strcmpi(splitlabel{1}, bemobil_config.rigidbody_streams{iRB})
-            motioncfg.channels.object{ci}       = bemobil_config.rigidbody_names{iRB};
-            if iscell(bemobil_config.ridigbody_anat)
-                motioncfg.channels.object_anat{ci}  = bemobil_config.rigidbody_anat{iRB};
+        if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
+            motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
+            if iscell(bemobil_config.rigidbody_anat)
+                motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
             else
-                motioncfg.channels.object_anat{ci} =  bemobil_config.rigidbody_anat;
+                motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
             end
         end
     end
     
     motioncfg.channels.component{ci}    = splitlabel{end};                  % REQUIRED. Component of the representational system that the channel contains.   
-    motioncfg.channels.tsvfile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];                     
+    motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];                     
     
 end
