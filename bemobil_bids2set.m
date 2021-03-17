@@ -33,18 +33,15 @@ if ~isfield(bemobil_config, 'bids_data_folder')
     warning(['Config field "bids_data_folder" has not been specified- using default folder name ' bemobil_config.bids_data_folder])
 end
 
-bidsDir         = bemobil_config.bids_data_folder;
+bidsDir         = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder);
 
 % all runs and sessions are merged by default - can be optional e.g., bemobil_config.bids_mergeruns = 1; bemobil_config.bids_mergeses  = 1;
 targetDir       = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder);                    % construct using existing config fields
 
 % Import data set saved in BIDS, using the standard eeglab plugin (only EEG)
 %--------------------------------------------------------------------------
-try
-    pop_importbids(bidsDir, 'outputdir', targetDir);
-catch
-    warning('Pop_importbids not working')
-end
+pop_importbids(bidsDir, 'outputdir', targetDir);
+
 
 % Restructure and rename the output of the import function
 %--------------------------------------------------------------------------
@@ -57,6 +54,10 @@ dirFlagArray    = [subDirList.isdir];
 nameArray       = {subDirList.name};
 nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
 subDirList      = subDirList(dirFlagArray & nameFlagArray);
+
+% ToDO : add .json in event.json filename and then remove it - this is to
+% let it pass through the bids import function 
+% Also, study creation does not work with the eeglab version we are using      
 
 % iterate over all subjects
 for iSub = 1:numel(subDirList)
@@ -114,15 +115,23 @@ for iSub = 1:numel(subDirList)
                 disp(['Unknown modality' bidsModality ' saved as ' bidsModality '.set'])
         end
         
-        bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr) '_' strjoin(bidsNameSplit(2:end-1),'_') '_' bemobilModality extension];
+      
         if isMultiSession
             for iSes = 1:numel(sesDirList)
                 sesDir      = sesDirList(iSes);
                 eegDir      = [targetDir, subjectDir, sesDir];
+                
                 % move files and then remove the empty eeg folder
                 newDir     = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]); 
                 if ~isdir(newDir)
                     mkdir(newDir)
+                end
+                
+                % identify the session using session keyword
+                for iFN     = 1:numel(bemobil_config.filenames)
+                    if contains(bidsName, bemobil_config.filenames{iFN})
+                        bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr), '_' bemobil_config.filenames{iFN} '_' bemobilModality extension];
+                    end
                 end
                 movefile(fullfile(eegDir, bidsName), fullfile(newDir, bemobilName));
                 if numel(dir(eegDir)) == 2
@@ -138,6 +147,8 @@ for iSub = 1:numel(subDirList)
             if ~isfolder(newDir)
                 mkdir(newDir)
             end
+            % construct the name with filename in the middle 
+            bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr), '_' bemobil_config.filenames{1} '_' bemobilModality extension];
             movefile( fullfile(eegDir, bidsName), fullfile(newDir, bemobilName));
             if numel(dir(eegDir)) == 2
                 rmdir(eegDir)
