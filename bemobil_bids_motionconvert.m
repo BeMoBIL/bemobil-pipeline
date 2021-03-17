@@ -19,7 +19,7 @@ oi                      = 0;
 for ni = 1:numel(objects)
     
     % check first if the object exists at all and if not, skip
-    if isempty(find(contains(labelsPre, [objects{ni} '_quat_']),1))
+    if isempty(find(contains(labelsPre, objects{ni}),1))
         continue; 
     else 
         oi = oi + 1; 
@@ -28,13 +28,13 @@ for ni = 1:numel(objects)
     quaternionIndices = NaN(1,4); 
     
     for qi = 1:4
-        quaternionIndices(qi) = find(strcmp(labelsPre, [objects{ni} '_quat_' quaternionComponents{qi}]));        
+        quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_quat_' quaternionComponents{qi}]));        
     end
     
     cartIndices = NaN(1,3); 
     
     for ci = 1:3
-        cartIndices(ci) = find(strcmp(labelsPre, [objects{ni} '_rigid_' cartCoordinates{ci}]));
+        cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_rigid_' cartCoordinates{ci}]));
     end
     
     % convert from quaternions to euler angles
