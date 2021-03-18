@@ -3,7 +3,6 @@ function bemobil_bids2set(bemobil_config)
 % "bids-matlab-tools" and reorganizes the output to be compatible with 
 % BeMoBIL pipeline. For now only EEG data are read and restructured
 % To be added :
-%           reading in Motion data or data of other modalities
 %           support separate output files for multi-run and multi-session
 %
 % Usage
@@ -40,7 +39,7 @@ targetDir       = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLA
 
 % Import data set saved in BIDS, using the standard eeglab plugin (only EEG)
 %--------------------------------------------------------------------------
-pop_importbids(bidsDir, 'outputdir', targetDir);
+pop_importbids(bidsDir,'datatypes',{'motion'},'outputdir', targetDir);
 
 
 % Restructure and rename the output of the import function
@@ -78,48 +77,57 @@ for iSub = 1:numel(subDirList)
         nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
         sesDirList      = sesDirList(dirFlagArray & nameFlagArray);
         
-        eegFiles        = [];
+        allFiles        = [];
         for iSes = 1:numel(sesDirList)
-            sesDir      = sesDirList(iSes);
-            sesFiles    = dir([targetDir subjectDir sesDir '\eeg']);
-            eegFiles    = [eegFiles sesFiles];
+            sesDir          = sesDirList(iSes);
+            sesEEGDir       = fullfile(targetDir, subjectDir, sesDir, 'eeg'); 
+            sesBEHDir       = fullfile(targetDir, subjectDir, sesDir, 'beh'); 
+            sesFilesEEG     = dir(sesEEGDir);
+            sesFilesBEH     = dir(sesBEHDir);
+            allFiles        = [allFiles sesFilesEEG sesFilesBEH];
         end
         
     else
         
         % for unisession, simply find all files in EEG folder
-        eegDir          = [targetDir subjectDir '\eeg']; 
-        eegFiles        = dir(eegDir);
+        eegDir          = fullfile(targetDir, subjectDir, 'eeg'); 
+        behDir          = fullfile(targetDir, subjectDir, 'beh'); 
+        allFiles        = [dir(eegDir) dir(behDir)] ;
         
     end
     
     % select only .set and .fdt files
-    eegFiles = eegFiles(contains({eegFiles(:).name},'.set')| contains({eegFiles(:).name},'.fdt')) ;
+    allFiles = allFiles(contains({allFiles(:).name},'.set')| contains({allFiles(:).name},'.fdt')) ;
     
-    for iFile = 1:numel(eegFiles)
+    for iFile = 1:numel(allFiles)
         
         % rename files to bemobil convention (only eeg files for now)
-        bidsName        = eegFiles(iFile).name;                             % 'sub-003_task-VirtualNavigation_eeg.set';
+        bidsName        = allFiles(iFile).name;                             % 'sub-003_task-VirtualNavigation_eeg.set';
         bidsNameSplit   = regexp(bidsName, '_', 'split');
         subjectNr       = str2double(bidsNameSplit{1}(5:end));
         bidsModality    = bidsNameSplit{end}(1:end-4);                        % this string includes modality and extension
         extension       = bidsNameSplit{end}(end-3:end);
         
+        if find(strncmp(bidsNameSplit, 'ses',3))
+            isMultiSession      = 1; 
+            sessionName         = bidsNameSplit{strncmp(bidsNameSplit, 'ses',3)}(5:end);
+        end
+        
         switch bidsModality
             case 'eeg'
                 bemobilModality = upper(bidsModality);                      % use string 'EEG' for eeg data
+                bidsFolderName  = 'eeg'; 
             case 'motion'
-                disp('Found motion data in .set format - not implemented yet')
+                bemobilModality = 'MOCAP';
+                bidsFolderName = 'beh'; 
             otherwise
                 bemobilModality = bidsModality;
                 disp(['Unknown modality' bidsModality ' saved as ' bidsModality '.set'])
         end
         
-      
         if isMultiSession
-            for iSes = 1:numel(sesDirList)
-                sesDir      = sesDirList(iSes);
-                eegDir      = [targetDir, subjectDir, sesDir];
+                
+                dataDir         = fullfile(targetDir, subjectDir, ['ses-' sessionName] , bidsFolderName);
                 
                 % move files and then remove the empty eeg folder
                 newDir     = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]); 
@@ -127,21 +135,21 @@ for iSub = 1:numel(subDirList)
                     mkdir(newDir)
                 end
                 
-                % identify the session using session keyword
-                for iFN     = 1:numel(bemobil_config.filenames)
-                    if contains(bidsName, bemobil_config.filenames{iFN})
-                        bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr), '_' bemobil_config.filenames{iFN} '_' bemobilModality extension];
-                    end
+                bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr), '_' sessionName '_' bemobilModality extension];
+    
+                % move the file
+                movefile(fullfile(dataDir, bidsName), fullfile(newDir, bemobilName));
+                if numel(dir(dataDir)) == 2
+                    rmdir(dataDir)
                 end
-                movefile(fullfile(eegDir, bidsName), fullfile(newDir, bemobilName));
-                if numel(dir(eegDir)) == 2
-                    rmdir(eegDir)
-                end
-            end
+             
+            sesDir =  fullfile(targetDir, subjectDir, ['ses-' sessionName]);
             if numel(dir(sesDir)) == 2
                 rmdir(sesDir)
             end
         else
+            dataDir         = fullfile(targetDir, subjectDir, bidsFolderName);
+                
             % move files and then remove the empty eeg folder
             newDir     = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]);
             if ~isfolder(newDir)
@@ -149,9 +157,9 @@ for iSub = 1:numel(subDirList)
             end
             % construct the name with filename in the middle 
             bemobilName     = [bemobil_config.filename_prefix num2str(subjectNr), '_' bemobil_config.filenames{1} '_' bemobilModality extension];
-            movefile( fullfile(eegDir, bidsName), fullfile(newDir, bemobilName));
-            if numel(dir(eegDir)) == 2
-                rmdir(eegDir)
+            movefile( fullfile(dataDir, bidsName), fullfile(newDir, bemobilName));
+            if numel(dir(dataDir)) == 2
+                rmdir(dataDir)
             end
         end
     end
@@ -161,5 +169,17 @@ for iSub = 1:numel(subDirList)
         rmdir([targetDir, subjectDir])
     end
 end
+
+% now synchronize and merge the streams 
+%--------------------------------------------------------------------------
+% synchronization has to be done using BIDS srate information 
+
+% find the sampling rate of the eeg files
+
+% find the sampling rate of the matching motion files
+
+% upsample motion data if necesary
+
+% merge files and delete the unnecessary pieces of files  
 
 end
