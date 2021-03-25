@@ -48,6 +48,11 @@ if ~isfield(bemobil_config, 'merge_all_sessions')
     warning('Config field "merge_all_sessions" has not been specified- using default value "true"')
 end
 
+if ~isfield(bemobil_config, 'resample_freq')
+    bemobil_config.resample_freq = 250;
+    warning('Config field "resample_freq" has not been specified- using default value 250')
+end
+
 % write down the names of other data types then eeg (use BIDS suffix)
 otherDataTypes  = bemobil_config.other_data_types; 
 
