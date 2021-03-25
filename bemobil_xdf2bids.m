@@ -221,7 +221,7 @@ for pi = 1:numel(numericalIDs)
             
             % construct file and participant- and file- specific config
             % information needed to construct file paths and names
-            cfg.sub                                     = num2str(participantNr);
+            cfg.sub                                     = num2str(participantNr,'%03.f');
             cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di});
             cfg.ses                                     = bemobil_config.filenames{si};
             cfg.run                                     = di;
