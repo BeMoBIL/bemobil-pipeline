@@ -33,11 +33,11 @@ motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
 
 %--------------------------------------------------------------------------
 % rename and fill out motion-specific fields to be used in channels_tsv
-motioncfg.channels.name         = cell(motion.hdr.nChans,1); 
-motioncfg.channels.tracked_point       = cell(motion.hdr.nChans,1); 
-motioncfg.channels.component    = cell(motion.hdr.nChans,1); 
-motioncfg.channels.placement  = cell(motion.hdr.nChans,1); 
-motioncfg.channels.datafile      = cell(motion.hdr.nChans,1); 
+motioncfg.channels.name                 = cell(motion.hdr.nChans,1); 
+motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1); 
+motioncfg.channels.component            = cell(motion.hdr.nChans,1); 
+motioncfg.channels.placement            = cell(motion.hdr.nChans,1); 
+motioncfg.channels.datafile             = cell(motion.hdr.nChans,1); 
 
 for ci  = 1:motion.hdr.nChans
     

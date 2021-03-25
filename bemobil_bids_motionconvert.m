@@ -51,15 +51,14 @@ for ni = 1:numel(objects)
         motion.label{6*(oi-1) + ei}                 = [objects{ni} '_eul_' eulerComponents{ei}];
         motion.hdr.label{6*(oi-1) + ei}             = [objects{ni} '_eul_' eulerComponents{ei}];
         motion.hdr.chantype{6*(oi-1) + ei}          = 'orientation';
-        % to do : convert the orientation data to radian 
-        motion.hdr.chanunit{6*(oi-1) + ei}         = 'radian';
+        motion.hdr.chanunit{6*(oi-1) + ei}          = 'rad';
     end
     
     for ci = 1:3
         motion.label{6*(oi-1) + 3 + ci}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
         motion.hdr.label{6*(oi-1) + 3 + ci}             = [objects{ni} '_cart_' cartCoordinates{ci}];
         motion.hdr.chantype{6*(oi-1) + 3 + ci}          = 'position';
-        motion.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'meters';
+        motion.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'm';
     end
     
 end
