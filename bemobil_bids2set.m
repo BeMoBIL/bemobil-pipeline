@@ -80,10 +80,7 @@ dirFlagArray    = [subDirList.isdir];
 nameArray       = {subDirList.name};
 nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
 subDirList      = subDirList(dirFlagArray & nameFlagArray);
-
-% ToDO : add .json in event.json filename and then remove it - this is to
-% let it pass through the bids import function 
-% Also, study creation does not work with the eeglab version we are using      
+  
 
 % iterate over all subjects
 for iSub = 1:numel(subDirList)
@@ -307,14 +304,18 @@ for iSub = 1:numel(subDirList)
         DATA.event = EEG.event;
        
         % checkset 
-        DATA = eeg_checkset(DATA); 
+        DATA = eeg_checkset(DATA);
         
-        % save merged EEG file for the session
-        DATA = pop_saveset(DATA, 'filename',[DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
-        disp(['Saved session file ' DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)])
+        DATASessionFileNameOld  = DATASessionFileName; 
+        nameSplit               = regexp(DATASessionFileName,'_', 'split'); % remove _rec entity
+        DATASessionFileName     = [char(join(nameSplit(1:end-1),'_')), '.set'];
+        
+        % save merged data file for the session
+        DATA = pop_saveset(DATA, 'filename',DATASessionFileName,'filepath',fullfile(targetDir, subDirList(iSub).name));
+        disp(['Saved session file ' DATASessionFileName])
         
         % remove the old .set file 
-        delete(fullfile(targetDir, subDirList(iSub).name, DATASessionFileName))
+        delete(fullfile(targetDir, subDirList(iSub).name, DATASessionFileNameOld))
     end
     
     if mergeAllSessions
