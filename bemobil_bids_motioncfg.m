@@ -21,12 +21,14 @@ if ~exist('motionInfo', 'var')
 
 end
 
-
 % data type and acquisition label
 motioncfg.acq                                     = motionInfo.acq;
 
 % motion specific fields in json
 motioncfg.motion                                  = motionInfo.motion;
+
+% start time 
+motioncfg.motion.StartTime                        = motionStartTime - eegStartTime; 
 
 % coordinate system
 motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;

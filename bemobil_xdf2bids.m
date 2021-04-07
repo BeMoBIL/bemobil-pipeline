@@ -17,8 +17,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.bids_eegkeyword          = {'BrainVision'};
 %                                                  a unique keyword used to identify the eeg stream in the .xdf file             
 %       bemobil_config.bids_tasklabel           = 'VNE1';
-%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; 
-%       bemobil_config.resample_freq            = 250; 
+%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc';
 %       bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
 %   
 %   numericalIDs
@@ -83,7 +82,7 @@ if isfield(bemobil_config, 'bids_motion_positionunits')
         bemobil_config.bids_motion_positionunits = {bemobil_config.bids_motion_positionunits}; 
     end
 else
-    bemobil_config.bids_motion_positionunits       = repmat({'meters'},1,numel(bemobil_config.filenames));
+    bemobil_config.bids_motion_positionunits       = repmat({'m'},1,numel(bemobil_config.filenames));
     warning('Config field bids_motion_positionunits unspecified - assuming meters')
 end
 
@@ -91,7 +90,7 @@ if isfield(bemobil_config, 'bids_motion_orientationunits')
     if iscell(bemobil_config.bids_motion_orientationunits)
         if numel(bemobil_config.bids_motion_orientationunits) ~= numel(bemobil_config.filenames)
             if numel(bemobil_config.bids_motion_orientationunits) == 1
-                bemobil_config.bids_motion_positionunits = repmat(bemobil_config.bids_motion_postionunits, 1, numel(bemobil_config.filenames)); 
+                bemobil_config.bids_motion_orientationunits = repmat(bemobil_config.bids_motion_orientationunits, 1, numel(bemobil_config.filenames)); 
                 warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
             else
                 error('Config field bids_motion_orientationunits must have either one entry or the number of entries (in cell array) have to match number of entries in field filenames')
@@ -101,7 +100,7 @@ if isfield(bemobil_config, 'bids_motion_orientationunits')
         bemobil_config.bids_motion_orientationunits = {bemobil_config.bids_motion_orientationunits}; 
     end
 else
-    bemobil_config.bids_motion_orientationunits       = repmat({'radians'},1,numel(bemobil_config.filenames));
+    bemobil_config.bids_motion_orientationunits       = repmat({'rad'},1,numel(bemobil_config.filenames));
     warning('Config field bids_motion_oreintationunits unspecified - assuming radians')
 end
 
@@ -146,6 +145,10 @@ ft_defaults
 % add natsortfiles to path
 [filepath,~,~] = fileparts(which('bemobil_xdf2bids')); 
 addpath(fullfile(filepath, 'resources', 'natsortfiles'))
+
+% add load_xdf
+[filepath,~,~] = fileparts(which('ft_defaults')); 
+addpath(fullfile(filepath, 'external', 'xdf'))
 
 % path to sourcedata
 sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder(1:end-1));
@@ -200,7 +203,7 @@ cfg = generalInfo;
 % loop over participants
 for pi = 1:numel(numericalIDs)
     
-    participantNr   = numericalIDs(pi); 
+    participantNr   = numericalIDs(pi);
     participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
     
     % find all .xdf files for the given session in the participant directory
@@ -212,7 +215,7 @@ for pi = 1:numel(numericalIDs)
         
         sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.filenames{si}));
         
-        % sort files by natural order 
+        % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
         
         % loop over files in each session.
@@ -246,61 +249,56 @@ for pi = 1:numel(numericalIDs)
                 end
             end
             
+            % load and assign streams (parts taken from xdf2fieldtrip)
+            %--------------------------------------------------------------
+            streams                  = load_xdf(cfg.dataset);
+            
+            % initialize an array of booleans indicating whether the streams are continuous
+            iscontinuous = false(size(streams));
+            
+            % figure out which streams contain continuous/regular and discrete/irregular data
+            for i=1:numel(streams)
+                
+                names{i}           = streams{i}.info.name;
+                
+                % if the nominal srate is non-zero, the stream is considered continuous
+                if ~strcmpi(streams{i}.info.nominal_srate, '0')
+                    
+                    iscontinuous(i) =  true;
+                    num_samples  = numel(streams{i}.time_stamps);
+                    t_begin      = streams{i}.time_stamps(1);
+                    t_end        = streams{i}.time_stamps(end);
+                    duration     = t_end - t_begin;
+                    
+                    if ~isfield(streams{i}.info, 'effective_srate')
+                        % in case effective srate field is missing, add one
+                        streams{i}.info.effective_srate = (num_samples - 1) / duration;
+                    elseif isempty(streams{i}.info.effective_srate)
+                        % in case effective srate field value is missing, add one
+                        streams{i}.info.effective_srate = (num_samples - 1) / duration;
+                    end
+                    
+                end
+                
+            end
+            
+            xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
+            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rbsessions(si,:))) & iscontinuous);
+      
             %--------------------------------------------------------------
             %                  Convert EEG Data to BIDS
             %--------------------------------------------------------------
-            % import eeg data
-            eeg                         = xdf2fieldtrip(cfg.dataset,'streamkeywords', eegStreamName);
+            % construct fieldtrip data
+            eeg        = stream2ft(xdfeeg{1}); 
+    
+            % save eeg start time
+            eegStartTime                = eeg.time{1}(1); 
             
             % construct eeg metadata
             bemobil_bids_eegcfg;
             
             % read in the event stream (synched to the EEG stream)
             events                = ft_read_event(cfg.dataset);
-            
-            if ~isempty(bemobil_config.resample_freq) % if left empty, no resampling happens
-                
-                % resample eeg data
-                resamplecfg = [];
-                
-                % find the good srate to work with
-                idealresamplefreq        =  250; % bemobil_config.resample_freq;
-                
-                % this method took hint from eeglab pop_resample - it is to prevent the integer ratio used in resample function from blowing off
-                decim = 1e-12;
-                [p,q] = rat(idealresamplefreq/eeg.hdr.Fs, decim);
-                while p*q > 2^31
-                    decim = decim*10;
-                    [p,q] = rat(idealresamplefreq/eeg.hdr.Fs, decim);
-                end
-                
-                newresamplefreq             = eeg.hdr.Fs*p/q;
-                resamplecfg.detrend         = 'no';
-                resamplecfg.resamplefs      = newresamplefreq;
-                eeg_resampled               = ft_resampledata(resamplecfg, eeg);
-                
-                % count channel number 
-                eegcfg.EEGChannelCount          = numel(strcmp(eeg.hdr.chantype, 'EEG'));
-                
-                % update hdr from the resampled data
-                eeg_resampled                   = rmfield(eeg_resampled, 'hdr');                
-                eeg_resampled.hdr.Fs            = eeg_resampled.fsample;
-                eeg_resampled.hdr.nChans        = eeg.hdr.nChans;
-                eeg_resampled.hdr.label         = eeg.hdr.label;
-                eeg_resampled.hdr.chantype      = eeg.hdr.chantype;
-                eeg_resampled.hdr.chanunit      = eeg.hdr.chanunit;      
-                eeg_resampled.hdr.nSamples      = numel(eeg_resampled.time{1});
-                eeg_resampled.hdr.nTrials       = eeg.hdr.nTrials;
-                
-                
-                % find a sample that is closest to the event in the resampled data
-                for i = 1:numel(events)
-                    events(i).sample = find(eeg_resampled.time{1} > events(i).timestamp, 1, 'first'); 
-                end
-                
-                eeg = eeg_resampled; 
-                
-            end
             
             % event parser script
             if isempty(bemobil_config.bids_parsemarkers_custom)
@@ -311,43 +309,30 @@ for pi = 1:numel(numericalIDs)
             
             eegcfg.events = events;
             
+            if isfield(bemobil_config, 'channel_locations_filename')      
+                eegcfg.elec = fullfile(participantDir, [bemobil_config.filename_prefix, num2str(participantNr) '_' bemobil_config.channel_locations_filename]); 
+            end
+            
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
             
             %--------------------------------------------------------------
             %                Convert Motion Data to BIDS
             %--------------------------------------------------------------
-            % import motion data
-            motionSource                = xdf2fieldtrip(cfg.dataset,'streamkeywords', motionStreamNames(bemobil_config.bids_rbsessions(si,:)));
+            motionsrates = []; 
             
-            % if needed, execute a custom function for any alteration to the data to address dataset specific issues
-            % (quat2eul conversion, for instance)
-            motion = feval(motionCustom, motionSource, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), pi, si, di);
-            
-            % overwrite some fields in header with more precise information
-            motion.hdr.nSamples         = size(motion.trial{1},2); 
-            motion.hdr.FirstTimeStamp   = motion.time{1}(1);
-            lastTimeStamp               = motion.time{1}(end);
-            motion.hdr.Fs               = motion.hdr.nSamples/(lastTimeStamp - motion.hdr.FirstTimeStamp); 
-            motion.hdr.TimeStampPerSample  = (lastTimeStamp - motion.hdr.FirstTimeStamp)/motion.hdr.nSamples; 
-            
-            % resample motion data to deal with potentially irregular sampling rate 
-            eegStartTime    = eeg.time{1}(1);
-            eegEndTime      = eeg.time{1}(end);
-            resamplecfg     = [];
-            
-            if motion.hdr.Fs > bemobil_config.resample_freq
-                % downsample as well if motion data has higher sampling rate than eeg data after downsampling
-                motionSRate     = eeg.fsample; 
-                disp(['Motion data has higher srate than bemobil_config.resample_freg ' num2str(bemobil_config.resample_freq) 'Hz- downsampling motion data as well']) 
-            else
-                % resample to the regular time points
-                motionSRate     = motion.hdr.Fs;
+            % construct fieldtrip data
+            for iM = 1:numel(xdfmotion)
+                ftmotion{iM} = stream2ft(xdfmotion{iM}); 
             end
             
-            resamplecfg.time  = {eegStartTime:1/motionSRate:eegEndTime};
-            motion            = ft_resampledata(resamplecfg, motion);
-       
+             % if needed, execute a custom function for any alteration to the data to address dataset specific issues
+            % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
+            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), pi, si, di);
+                     
+            % save motion start time
+            motionStartTime              = motion.time{1}(1);
+            
             % construct motion metadata
             bemobil_bids_motioncfg;
 
@@ -379,6 +364,7 @@ fwrite(efid, eString); fclose(efid);
 end
 
 
+%--------------------------------------------------------------------------
 function [newconfig] =  checkfield(oldconfig, fieldName, defaultValue, defaultValueText)
 
 newconfig   = oldconfig; 
@@ -387,5 +373,54 @@ if ~isfield(oldconfig, fieldName)
     newconfig.(fieldName) = defaultValue; 
     warning(['Config field ' fieldName ' not specified- using default value: ' defaultValueText])
 end
+
+end
+
+%--------------------------------------------------------------------------
+function [ftdata] = stream2ft(xdfstream)
+
+% construct header
+hdr.Fs                  = xdfstream.info.effective_srate;
+hdr.nSamplesPre         = 0;
+hdr.nSamples            = length(xdfstream.time_stamps);
+hdr.nTrials             = 1;
+hdr.FirstTimeStamp      = xdfstream.time_stamps(1);
+hdr.TimeStampPerSample  = (xdfstream.time_stamps(end)-xdfstream.time_stamps(1)) / (length(xdfstream.time_stamps) - 1);
+
+if isfield(xdfstream.info.desc, 'channels')
+    hdr.nChans    = numel(xdfstream.info.desc.channels.channel);
+else
+    hdr.nChans    = str2double(xdfstream.info.channel_count);
+end
+
+hdr.label       = cell(hdr.nChans, 1);
+hdr.chantype    = cell(hdr.nChans, 1);
+hdr.chanunit    = cell(hdr.nChans, 1);
+
+prefix = xdfstream.info.name;
+for j=1:hdr.nChans
+    if isfield(xdfstream.info.desc, 'channels')
+        hdr.label{j} = [prefix '_' xdfstream.info.desc.channels.channel{j}.label];
+        hdr.chantype{j} = xdfstream.info.desc.channels.channel{j}.type;
+        try
+            hdr.chanunit{j} = xdfstream.info.desc.channels.channel{j}.unit;
+        catch
+            disp([hdr.label{j} ' missing unit'])
+        end
+    else
+        % the stream does not contain continuously sampled data
+        hdr.label{j} = num2str(j);
+        hdr.chantype{j} = 'unknown';
+        hdr.chanunit{j} = 'unknown';
+    end
+end
+
+% keep the original header details
+hdr.orig = xdfstream.info;
+
+ftdata.trial    = {xdfstream.time_series};
+ftdata.time     = {xdfstream.time_stamps};
+ftdata.hdr = hdr;
+ftdata.label = hdr.label;
 
 end
