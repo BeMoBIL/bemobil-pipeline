@@ -132,7 +132,7 @@ EEG_clean = pop_subcomp( EEG, ICs_throw);
 set(fig1,'color','w','position',get(0,'screensize'))
 
 % plot dipoles
-pop_dipplot( EEG_clean, ICs_keep,...
+pop_dipplot( EEG_clean, 1:size(EEG_clean.icaweights,1),...
     'mri',fullfile(fileparts(which('dipfitdefs')), 'standard_BEM','standard_mri.mat'),'normlen','on');
 view(30,30)
 
