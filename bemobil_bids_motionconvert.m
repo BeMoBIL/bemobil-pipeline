@@ -10,6 +10,10 @@ eulerComponents         = {'x','y','z'};
 % yourcartesian coordinates 
 cartCoordinates         = {'x','y','z'};
 
+% missing value (how tracking loss is represented in the stream)
+missingval = 0; 
+
+
 % iterate over different objects 
 %--------------------------------------------------------------------------
 motionStreamAll    = cell(numel(motionIn), 1);
@@ -56,6 +60,13 @@ for iM = 1:numel(motionIn)
         orientationInEuler         = orientationInEuler';
         position                   = dataPre(cartIndices,:);
         
+        % find and fill missing values 
+        occindices                  = find(position(1,:) == missingval); 
+        position(:,occindices)      = nan; 
+        orientationInEuler(:,occindices) = nan; 
+        position            = fillmissing(position', 'pchip')'; 
+        orientationInEuler  = fillmissing(orientationInEuler', 'nearest')'; 
+        
         % unwrap euler angles 
         orientationInEuler         = unwrap(orientationInEuler, [], 2); 
         
@@ -83,8 +94,9 @@ for iM = 1:numel(motionIn)
     if oi > 0 
         motionStream.trial{1}     = dataPost;
         motionStream.hdr.nChans   = numel(motionStream.hdr.chantype);
-        motionStreamAll{iM}         = motionStream;
+        motionStreamAll{iM}       = motionStream;
     end
+    
     
 end
 
@@ -97,7 +109,6 @@ for iM = 1:numel(motionStreamAll)
 end
 
 [~,maxind] = max(motionsrates);
-
 
 % copy the header from the stream with max srate
 keephdr             = motionStreamAll{maxind}.hdr;
