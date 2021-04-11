@@ -16,11 +16,13 @@ function EEG_mocap_out = bemobil_mocap_timeDerivative(EEG_mocap_in)
 
 % checking for Quaternionvalues
 
+disp('Computing time derivatives...');
+
 for channel = 1:EEG_mocap_in.nbchan
     
-    % checking for already present eulers
+    % checking for already present euls
     if any(~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'quat')))
-        error('Dataset contains quaternion data. Please transfor to euler before deriving')
+        error('Dataset contains quaternion data. Please transfor to eul before deriving')
     end
 end
 
@@ -33,7 +35,7 @@ for channel=1:size(tmpData,1)
     tmpData(channel,1:end-1) = diff(tmpData(channel,:),1)/dt;
     tmpData(channel,end) = tmpData(channel,end-1);
     
-    % check if channel is Euler angles and if so,
+    % check if channel is eul angles and if so,
     % correct for turns over pi or -pi respectively
     if contains(lower(EEG_mocap_in.chanlocs(channel).labels),'eul')
         

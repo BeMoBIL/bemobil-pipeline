@@ -1,4 +1,4 @@
-function [y,yy,nremove,scores]=nt_zapline_bemobil(x,fline,nremove,p,plotflag)
+function [y,yy,nremove,scores]=nt_zapline_plus(x,fline,nremove,p,plotflag)
 %[y,yy]=nt_zapline(x,fline,nremove,p,plotflag) - remove power line artifact
 %
 %  y: denoised data
@@ -17,6 +17,8 @@ function [y,yy,nremove,scores]=nt_zapline_bemobil(x,fline,nremove,p,plotflag)
 %    p.fig2: figure to use for results [default: 101]
 %    p.adaptiveNremove: use adaptive detection method of artifact scores for
 %		removal instead of predefined nremove
+%    p.initialSigma: initial sigma for automatic iterative outlier detection [default: 3]
+%    p.sigmaIncrease: increase of sigma threshold per outlier detection iteration [default: 0.1]
 %  plotflag: plot
 %
 %Examples:
@@ -29,6 +31,7 @@ function [y,yy,nremove,scores]=nt_zapline_bemobil(x,fline,nremove,p,plotflag)
 %  [y,yy]=nt_zapline(x,60/1000)
 %    return cleaned data in y, noise in yy, don't plot
 %
+% Original Author: Alain de Cheveigne, taken from http://audition.ens.fr/adc/NoiseTools/
 % Marius Klug: Added support for adaptive detection of nremove using outlier detection (2020)
 
 % NoiseTools
@@ -43,6 +46,8 @@ if ~isfield(p,'niterations'); p.niterations=1; end
 if ~isfield(p,'fig1'); p.fig1=100; end
 if ~isfield(p, 'fig2'); p.fig2=101; end
 if ~isfield(p, 'adaptiveNremove'); p.adaptiveNremove=1; end
+if ~isfield(p, 'initialSigma'); p.initialSigma=3; end
+if ~isfield(p, 'sigmaIncrease'); p.sigmaIncrease=0.1; end
 if nargin<5||isempty(plotflag); plotflag=0; end
 
 if isempty(x); error('!'); end
@@ -52,7 +57,7 @@ if size(x,1)<p.nfft; warning(['reducing nfft to ',num2str(size(x,1))]); p.nfft=s
 
 if ~nargout || plotflag
     % print result and display spectra
-    [y,yy,nremove,scores]=nt_zapline_bemobil(x,fline,nremove,p); %%% MK added outputs
+    [y,yy,nremove,scores]=nt_zapline_plus(x,fline,nremove,p); %%% MK added outputs
     disp('proportion of non-DC power removed:');
     disp(nt_wpwr(x-y)/nt_wpwr(nt_demean(x)));
     
@@ -118,25 +123,33 @@ if p.adaptiveNremove == 1
 % 	significant for noisier datasets which menas that clean datasets get more components removed which defeats the
 % 	purpose
     
-    [adaptiveNremove, ~] = bemobil_iterative_threshold_detection(scores);
+    [adaptiveNremove, ~] = iterative_outlier_removal(scores,p.initialSigma,p.sigmaIncrease);
+    fprintf('Adaptive score outlier detection found %d components to remove. This does not reduce the data rank!\n',adaptiveNremove);
     
-	
-    if adaptiveNremove >= nremove
-        fprintf('Adaptive score outlier detection found %d components, predefined nremove is %d. Removing %d components. This does not reduce the data rank!\n',adaptiveNremove,nremove,adaptiveNremove);
-        nremove = adaptiveNremove;
+    if adaptiveNremove<nremove
+        fprintf('Specified nremove is larger than adaptive nremove, using specified nremove (%d)! Set it to 0 to prevent this.\n',nremove);
     else
-        fprintf('Adaptive score outlier detection found %d components, which is LESS than predefined nremove (%d). Using predefined removal to remove %d components. This does not reduce the data rank!\n',adaptiveNremove,nremove,nremove);
+        nremove = adaptiveNremove;
     end
-    
+        
 end
+
+
+if nremove>0
+    
+    xxxx=nt_mmat(xxxx,todss(:,1:nremove)); % line-dominated components
+    xxx=nt_tsr(x-xx,xxxx); % project them out
+    clear xxxx
+
+    % reconstruct clean signal
+    y=xx+xxx; clear xx xxx
+
+else
+    y = x;
+end
+
 %% MK end
 
-xxxx=nt_mmat(xxxx,todss(:,1:nremove)); % line-dominated components
-xxx=nt_tsr(x-xx,xxxx); % project them out
-clear xxxx
-
-% reconstruct clean signal
-y=xx+xxx; clear xx xxx
 yy=x-y;
 
 % test code
@@ -148,6 +161,6 @@ if 0
     artifact=max(artifact,0).^3; % introduce harmonics
     artifact=3*nt_demean(artifact*randn(1,nchans));
     disp(nt_wpwr(artifact)/nt_wpwr(signal+artifact));
-    nt_zapline_bemobil(signal+artifact,50/sr);
+    nt_zapline_plus(signal+artifact,50/sr);
 end
 
