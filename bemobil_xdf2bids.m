@@ -113,6 +113,8 @@ for iVI = 1:2:numel(varargin)
         subjectInfo         = varargin{iVI+1}; 
     elseif strcmp(varargin{iVI}, 'motionmetadata')
         motionInfo          = varargin{iVI+1}; 
+    elseif strcmp(varargin{iVI}, 'eegmetadata')
+        eegInfo          = varargin{iVI+1}; 
     else
         warning('One of the optional inputs are not valid : please see help bemobil_xdf2bids')
     end
@@ -294,8 +296,43 @@ for pi = 1:numel(numericalIDs)
             % save eeg start time
             eegStartTime                = eeg.time{1}(1); 
             
-            % construct eeg metadata
-            bemobil_bids_eegcfg;
+            % eeg metadata construction 
+            %--------------------------------------------------------------
+            eegcfg                              = cfg;
+            eegcfg.datatype                     = 'eeg';
+            eegcfg.method                       = 'convert';
+            
+            % full path to eloc file
+            eegcfg.elec                         = fullfile(participantDir, bemobil_config.channel_locations_filename);
+            
+            if ~isempty(bemobil_config.channel_locations_filename)
+                eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
+                eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
+            end
+            
+            % try to extract information from config struct if specified
+            if isfield(bemobil_config, 'ref_channel')
+                eegcfg.eeg.EEGReference                 = bemobil_config.ref_channel;
+            end
+            
+            if isfield(bemobil_config, 'linefreqs')
+                if numel(bemobil_config.linefreqs) == 1
+                    eegcfg.eeg.PowerLineFrequency           = bemobil_config.linefreqs;
+                elseif numel(bemobil_config.linefreqs) > 1
+                    eegcfg.eeg.PowerLineFrequency           = bemobil_config.linefreqs(1);
+                    warning('Only the first value specified in bemobil_config.linefreqs entered in eeg.json')
+                end
+            end
+            
+            % overwrite some fields if specified
+            if exist(eegInfo,'var')
+                if isfield(eegInfo, 'eeg')
+                    eegcfg.eeg          = eegInfo.eeg;
+                end
+                if isfield(eegInfo, 'coordsystem')
+                    eegcfg.coordsystem  = eegInfo.coordsystem;
+                end
+            end
             
             % read in the event stream (synched to the EEG stream)
             events                = ft_read_event(cfg.dataset);
@@ -334,8 +371,80 @@ for pi = 1:numel(numericalIDs)
             motionStartTime              = motion.time{1}(1);
             
             % construct motion metadata
-            bemobil_bids_motioncfg;
-
+            % copy general fields
+            motioncfg       = cfg;
+            motioncfg.datatype                                = 'motion';
+            
+            %--------------------------------------------------------------
+            if ~exist('motionInfo', 'var')
+                
+                % data type and acquisition label
+                motionInfo.acq                                     = 'Motion';
+                
+                % motion specific fields in json
+                motionInfo.motion.Manufacturer                     = 'Undefined';
+                motionInfo.motion.ManufacturersModelName           = 'Undefined';
+                motionInfo.motion.RecordingType                    = 'continuous';
+                
+                % coordinate system
+                motionInfo.coordsystem.MotionCoordinateSystem      = 'Undefined';
+                motionInfo.coordsystem.MotionRotationRule          = 'Undefined';
+                motionInfo.coordsystem.MotionRotationOrder         = 'Undefined';
+                
+            end
+            
+            % data type and acquisition label
+            motioncfg.acq                                     = motionInfo.acq;
+            
+            % motion specific fields in json
+            motioncfg.motion                                  = motionInfo.motion;
+            
+            % start time
+            motioncfg.motion.StartTime                        = motionStartTime - eegStartTime;
+            
+            % coordinate system
+            motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
+            
+            %--------------------------------------------------------------
+            % rename and fill out motion-specific fields to be used in channels_tsv
+            motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
+            motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1);
+            motioncfg.channels.component            = cell(motion.hdr.nChans,1);
+            motioncfg.channels.placement            = cell(motion.hdr.nChans,1);
+            motioncfg.channels.datafile             = cell(motion.hdr.nChans,1);
+            
+            for ci  = 1:motion.hdr.nChans
+                
+                if  contains(motion.hdr.chantype{ci},'position')
+                    motion.hdr.chantype{ci} = 'POS';
+                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_positionunits{si};
+                end
+                
+                if  contains(motion.hdr.chantype{ci},'orientation')
+                    motion.hdr.chantype{ci} = 'ORNT';
+                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientationunits{si};
+                end
+                
+                splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
+                motioncfg.channels.name{ci}         = motion.hdr.label{ci};
+                
+                % assign object names and anatomical positions
+                for iRB = 1:numel(bemobil_config.rigidbody_streams)
+                    if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
+                        motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
+                        if iscell(bemobil_config.rigidbody_anat)
+                            motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
+                        else
+                            motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
+                        end
+                    end
+                end
+                
+                motioncfg.channels.component{ci}    = splitlabel{end};                  % REQUIRED. Component of the representational system that the channel contains.
+                motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
+                
+            end
+            
             % write motion files in bids format
             data2bids(motioncfg, motion);
             
