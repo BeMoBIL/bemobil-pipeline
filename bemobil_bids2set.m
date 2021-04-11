@@ -243,10 +243,30 @@ for iSub = 1:numel(subDirList)
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.filenames{iSes}] )
         end
         
-        % resample EEG only when the original sampling rate deviates much
-        % from the new
-        if abs(bemobil_config.resample_freq - EEG.srate) > 0.01 % this value is not enough
-            EEG = pop_resample(EEG, bemobil_config.resample_freq);
+        % resample EEG
+        %------------------------------------------------------------------
+        if isempty(bemobil_config.resample_freq)
+            newSRate        = round(EEG.srate);    
+            warning(['No resample frequency specified - data is still resampled to the nearest integer ' num2str(newSRate) 'Hz'])
+        else
+            newSRate        = bemobil_config.resample_freq;
+        end
+        
+        % Note that in fieldtrip time is in seconds
+        newTimes                = (EEG.times(1):1000/newSRate:EEG.times(end))/1000;
+        resamplecfg.time        = {newTimes};
+        resamplecfg.detrend     = 'no';
+        resamplecfg.extrapval   = nan;
+        EEG.group = 1; EEG.condition = 1;
+        ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
+        resampledData           = ft_resampledata(resamplecfg, ftData);
+        EEG.data                = resampledData.trial{1};
+        EEG.srate               = newSRate;
+        EEG.times               = newTimes*1000; % convert back to miliseconds
+        EEG.pnts                = size(EEG.data,2);
+        EEG.urevent             = EEG.event;
+        for iE = 1:numel(EEG.event)
+            EEG.event(iE).latency        = find(EEG.times > EEG.urevent(iE).latency,1,'first');
         end
         
         EEG.setname = EEG.filename(1:end-8); 
@@ -294,36 +314,80 @@ for iSub = 1:numel(subDirList)
                 warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.filenames{iSes}] )
             end 
         end
-        
+       
         % resample DATA
-        if abs(bemobil_config.resample_freq - DATA.srate) > 0.01
-            DATA    = pop_resample(DATA, bemobil_config.resample_freq);
+        %------------------------------------------------------------------
+        if isempty(bemobil_config.resample_freq)
+            newSRate        = EEG.srate;
+            warning(['No resample frequency specified -' bemobilModality 'data is still resampled to match EEG srate, ' num2str(newSRate) 'Hz'])
+        else
+            newSRate        = bemobil_config.resample_freq;
         end
+        
+        % unwrap any kind of angular data before resampling 
+        angleind = []; 
+        for Ci = 1:numel(DATA.chanlocs)
+            if  contains(DATA.chanlocs(Ci).units, 'rad') 
+                angleind =  [angleind Ci]; 
+            end
+        end
+        
+        % unwrap any kind of angular data before resampling 
+        DATA.data(angleind,:)   = unwrap(DATA.data(angleind,:));
+        
+        % resample to EEG times 
+        newTimes                = (EEG.times(1):1000/newSRate:EEG.times(end))/1000;
+        resamplecfg.time        = {newTimes};
+        resamplecfg.detrend     = 'no';
+        resamplecfg.extrapval   = nan; 
+        DATA.group = 1; DATA.condition = 1;
+        ftData                  = eeglab2fieldtrip(DATA, 'raw', 'none' ); % here offset information is lost (onset corrected to zero): start time to be accounted for 
+        ftData.time{1}          = ftData.time{1} + DATA.etc.starttime; % offset has to be added here 
+        resampledData           = ft_resampledata(resamplecfg, ftData); % the resamplecfg used for EEG
+        
+        % assign the data back to the .set file 
+        DATA.data                = resampledData.trial{1};
+        
+        % wrap back angular data to [pi, -pi]
+        DATA.data(angleind,:)    = wrapToPi(DATA.data(angleind,:));
+        DATA.srate               = newSRate;
+        DATA.times               = resampledData.time{1}*1000;
+        DATA.pnts                = size(DATA.data,2);
         
         % copy events from EEG
         DATA.event = EEG.event;
-       
+        
         % checkset 
         DATA = eeg_checkset(DATA);
         
-        DATASessionFileNameOld  = DATASessionFileName; 
-        nameSplit               = regexp(DATASessionFileName,'_', 'split'); % remove _rec entity
-        DATASessionFileName     = [char(join(nameSplit(1:end-1),'_')), '.set'];
-        
         % save merged data file for the session
-        DATA = pop_saveset(DATA, 'filename',DATASessionFileName,'filepath',fullfile(targetDir, subDirList(iSub).name));
-        disp(['Saved session file ' DATASessionFileName])
+        DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
+        disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
         
-        % remove the old .set file 
-        delete(fullfile(targetDir, subDirList(iSub).name, DATASessionFileNameOld))
+    end
+    
+    % remove unnecessary files prior to merging
+    subjectFiles = dir(fullfile(targetDir, subDirList(iSub).name));
+    toDelete = {subjectFiles(contains({subjectFiles.name}, '_old.fdt') | contains({subjectFiles.name}, '_old.set')).name};
+    for iD = 1:numel(toDelete)
+        delete(fullfile(targetDir, subDirList(iSub).name, toDelete{iD}));
     end
     
     if mergeAllSessions
         
-        % merge all EEG data over sessions 
-        
-        % merge all other data over sessions
-    end 
+%         % merge all EEG data over sessions 
+%         for iFile = 1:numel(EEGFiles)
+%             pop_mergeset
+%         end
+%         
+%         % merge all other data over sessions
+%         for iType = 1:numel(dataTypes)
+%             for iFile = 1:numel(DataFiles)
+%                 pop_mergeset
+%             end
+%         end
+      
+    end
     
 end
 
