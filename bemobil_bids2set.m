@@ -1,4 +1,4 @@
-function bemobil_bids2set(bemobil_config)
+function bemobil_bids2set(bemobil_config, numericalIDs)
 % This function reads in BIDS datasets using the eeglab plugin 
 % "bids-matlab-tools" and reorganizes the output to be compatible with 
 % BeMoBIL pipeline. For now only EEG data are read and restructured
@@ -33,6 +33,12 @@ function bemobil_bids2set(bemobil_config)
 
 % input check and default value assignment 
 %--------------------------------------------------------------------------
+
+% add natsortfiles to path
+[filepath,~,~] = fileparts(which('bemobil_bids2set')); 
+addpath(fullfile(filepath, 'resources', 'natsortfiles'))
+
+
 if ~isfield(bemobil_config, 'bids_data_folder')
     bemobil_config.bids_data_folder = '1_BIDS-data\';
     warning(['Config field "bids_data_folder" has not been specified- using default folder name ' bemobil_config.bids_data_folder])
@@ -66,9 +72,17 @@ bidsDir         = fullfile(bemobil_config.study_folder, bemobil_config.bids_data
 targetDir       = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder);                    % construct using existing config fields
 tempDir         = fullfile(targetDir, 'temp_bids'); 
 
+% check if final session file names are there - if so, skip
+% subjectNr = str2double(subDirList(iSub).name(numel(bemobil_config.filename_prefix) + 1:end));
+% sessionNameEEG = [bemobil_config.filename_prefix, num2str(subjectNr), '_', bemobil_config.filenames{iSes} '_EEG.set'];
+% 
+% if isfile(fullfile(targetDir, subDirList(iSub).name, sessionNameEEG))
+%     disp(['File ' sessionNameEEG ' already found - skipping import for this participant'])
+% end
+
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
-pop_importbids(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir);
+pop_importbids(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs);
 
 % Restructure and rename the output of the import function
 %--------------------------------------------------------------------------
@@ -80,13 +94,11 @@ dirFlagArray    = [subDirList.isdir];
 nameArray       = {subDirList.name};
 nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
 subDirList      = subDirList(dirFlagArray & nameFlagArray);
-  
 
 % iterate over all subjects
 for iSub = 1:numel(subDirList)
     
     subjectDir      = subDirList(iSub).name;
-    
     sesDirList      = dir([tempDir subjectDir]);
     
     % check if data set contains multiple sessions
@@ -129,12 +141,11 @@ for iSub = 1:numel(subDirList)
         bidsName        = allFiles(iFile).name;                             % 'sub-003_task-VirtualNavigation_eeg.set';
         bidsNameSplit   = regexp(bidsName, '_', 'split');
         subjectNr       = str2double(bidsNameSplit{1}(5:end));
-        bidsModality    = bidsNameSplit{end}(1:end-4);                        % this string includes modality and extension
+        bidsModality    = bidsNameSplit{end}(1:end-4);                      % this string includes modality and extension
         extension       = bidsNameSplit{end}(end-3:end);
-        
-        if find(strncmp(bidsNameSplit, 'ses',3))
+        if find(strncmp(bidsNameSplit,'ses',3))
             isMultiSession      = 1; 
-            sessionName         = bidsNameSplit{strncmp(bidsNameSplit, 'ses',3)}(5:end);
+            sessionName         = bidsNameSplit{strncmp(bidsNameSplit,'ses',3)}(5:end);
         end
         
         if find(strncmp(bidsNameSplit, 'run',3))
@@ -173,9 +184,9 @@ for iSub = 1:numel(subDirList)
                     bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, extension];
                 end
                 
-                % move the file
-                movefile(fullfile(dataDir, bidsName), fullfile(newDir, bemobilName));
-     
+                data    = pop_loadset('filepath', dataDir, 'filename', bidsName);
+                pop_saveset(data, 'filepath', newDir, 'filename', bemobilName);
+                
         else
             dataDir         = fullfile(tempDir, subjectDir, bidsFolderName);
                 
@@ -209,9 +220,22 @@ rmdir(tempDir, 's')
 subDirList      = dir(targetDir); 
 nameArray       = {subDirList.name};
 nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
+nameArray       = nameArray(nameFlagArray); 
 subDirList      = subDirList(nameFlagArray);
 
-% first merge all the files if needed
+% select participant data to process
+subFlagArray    = true(size(nameArray)); 
+if ~isempty(numericalIDs)
+    for iN = 1:numel(nameArray)
+        subjectNr = str2double(nameArray{iN}(numel(bemobil_config.filename_prefix) + 1:end));
+        if ~ismember(subjectNr,numericalIDs)
+            subFlagArray(iN) = false; 
+        end
+    end
+    subDirList = subDirList(subFlagArray); 
+end
+
+% merge all the run files if needed
 for iSub = 1:numel(subDirList)
     
     % list all files in the subject folder
@@ -219,22 +243,32 @@ for iSub = 1:numel(subDirList)
     
     % iterate over sessions
     for iSes = 1:numel(bemobil_config.filenames)
+        
+        % check if final session file names are there - if so, skip
+        subjectNr = str2double(subDirList(iSub).name(numel(bemobil_config.filename_prefix) + 1:end));
+        sessionNameEEG = [bemobil_config.filename_prefix, num2str(subjectNr), '_', bemobil_config.filenames{iSes} '_EEG.set'];
        
+        if isfile(fullfile(targetDir, subDirList(iSub).name, sessionNameEEG))
+            disp(['File ' sessionNameEEG ' already found - skipping import for this session'])
+            continue; 
+        end
+        
         % find all EEG data
-        eegFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.filenames{iSes} '_EEG']) & contains({subjectFiles.name}, '.set')).name};
-        eegFiles = sort(eegFiles); % not using natsortorder here - potentially problematic for more than 10 runs? (implausible)  
+        eegFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.filenames{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
+        eegFiles = natsortfiles(eegFiles); % not using natsortorder here - potentially problematic for more than 10 runs? (implausible)  
         
         if numel(eegFiles) > 1
             % if there are multiple runs, merge them all
             EEGMerged = pop_loadset(fullfile(targetDir, subDirList(iSub).name, eegFiles{1}));
             for iFile = 2:numel(eegFiles)
+                disp('merging files')
                 [EEG2]      = pop_loadset(fullfile(targetDir, subDirList(iSub).name, eegFiles{iFile}));
                 EEGMerged   = pop_mergeset(EEGMerged, EEG2);
             end
             EEG                 = EEGMerged;
             EEGFileNameWithRun  = eegFiles{iFile}; 
             nameSplit           = regexp(EEGFileNameWithRun,'_', 'split'); % remove _rec entity
-            nameJoined          = join(nameSplit(1:end-1),'_');
+            nameJoined          = join(nameSplit(1:end-2),'_');
             EEGSessionFileName  = [nameJoined{1} '.set'];
         elseif numel(eegFiles) == 1
             EEG                 = pop_loadset(fullfile(targetDir, subDirList(iSub).name, eegFiles{1}));
@@ -278,9 +312,6 @@ for iSub = 1:numel(subDirList)
         EEG = pop_saveset(EEG, 'filename',[EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
         disp(['Saved session file ' EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)])
         
-        % remove the old EEG gile 
-        delete(fullfile(targetDir, subDirList(iSub).name, EEGSessionFileName))
-        
         % now iterate over other data types
         for iType = 1:numel(otherDataTypes)
             
@@ -293,7 +324,7 @@ for iSub = 1:numel(subDirList)
             end
             
             % find all data of the type
-            dataFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.filenames{iSes} '_' bemobilModality]) & contains({subjectFiles.name}, '.set')).name};
+            dataFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.filenames{iSes} '_' bemobilModality]) & contains({subjectFiles.name}, '_old.set')).name};
             
             if numel(dataFiles) > 1
                 % if there are multiple runs, merge them all 
@@ -302,11 +333,11 @@ for iSub = 1:numel(subDirList)
                     DATA2           = pop_loadset(fullfile(targetDir, subDirList(iSub).name, dataFiles{iFile}));
                     DATAMerged      = pop_mergeset(DATAMerged, DATA2);
                 end
-                DATA             = DATAMerged;
-                DATAFileNameWithRun  = dataFiles{iFile};
-                nameSplit           = regexp(DATAFileNameWithRun,'_', 'split'); % remove _rec entity
-                nameJoined          = join(nameSplit(1:end-1),'_');
-                DATASessionFileName  = [nameJoined{1} '.set'];
+                DATA                    = DATAMerged;
+                DATAFileNameWithRun     = dataFiles{iFile};
+                nameSplit               = regexp(DATAFileNameWithRun,'_', 'split'); % remove _run entity
+                nameJoined              = join(nameSplit(1:end-2),'_');
+                DATASessionFileName      = [nameJoined{1} '.set'];
             elseif numel(dataFiles) == 1
                 DATA             = pop_loadset(fullfile(targetDir, subDirList(iSub).name, dataFiles{1}));
                 DATASessionFileName  = dataFiles{1};
