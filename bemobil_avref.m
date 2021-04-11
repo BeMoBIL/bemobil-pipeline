@@ -56,5 +56,9 @@ end
 
 
 EEG.etc.bemobil_reref = EEG_channels;
-EEG.etc.bemobil_reref_exclude = EEG.chanlocs(exclude_channels).labels;
+
+if ~isempty(exclude_channels)
+    EEG.etc.bemobil_reref_exclude = EEG.chanlocs(exclude_channels).labels;
+end
+
 disp('Rereferencing done.');

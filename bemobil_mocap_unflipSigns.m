@@ -2,7 +2,7 @@ function EEG_mocap_out = bemobil_mocap_unflipSigns(EEG_mocap_in)
 % Heuristic for unflipping the sign of quaternion values to anable filtering. Quaternions can represent the
 % same value two ways, whereas only the sign changes. Sometimes the representation flips in the time series.
 % If this gets filtered, it creates an artifact, so this is why we want to unflip it first. It won't make a
-% difference later when transforming the values to Euler angles.
+% difference later when transforming the values to eul angles.
 % The principle idea is to check if the difference between consecutive values becomes smaller if we flip them.
 %
 % Input arguments:
@@ -17,9 +17,9 @@ function EEG_mocap_out = bemobil_mocap_unflipSigns(EEG_mocap_in)
 
 for channel = 1:EEG_mocap_in.nbchan
     
-    % checking for already present eulers
+    % checking for already present euls
     if any(~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'eul')))
-        error('You can only unflip Quaternions, this dataset contains Euler angles, try it with the original data set.')
+        error('You can only unflip Quaternions, this dataset contains eul angles, try it with the original data set.')
     end
     
 end
