@@ -96,19 +96,19 @@ if ~exist('EEG_single_subject_final','var')
         %% AMICA
         % running signal decomposition with automatic rejection is recommended
         
-%         turns out the data rank reduction due to bridges does not really solve the issue of a high D value when
-%         computing AMICA, and since PCA before ICA was shown the be problematic, I removed it again: Artoni, F.,
-%         Delorme, A., & Makeig, S. (2018) Applying dimension reduction to EEG data by Principal Component Analysis
-%         reduces the quality of its subsequent Independent Component decomposition. Neuroimage, 175, 176–187.
-
-%         data_rank = EEG_filtered_for_AMICA.etc.rank;
-%         [rank_reduction_of_bridges,EEG_filtered_for_AMICA] = bemobil_find_gel_bridges(EEG_filtered_for_AMICA,0.98);
-%         data_rank = data_rank - rank_reduction_of_bridges;
+        %         turns out the data rank reduction due to bridges does not really solve the issue of a high D value when
+        %         computing AMICA, and since PCA before ICA was shown the be problematic, I removed it again: Artoni, F.,
+        %         Delorme, A., & Makeig, S. (2018) Applying dimension reduction to EEG data by Principal Component Analysis
+        %         reduces the quality of its subsequent Independent Component decomposition. Neuroimage, 175, 176–187.
+        
+        %         data_rank = EEG_filtered_for_AMICA.etc.rank;
+        %         [rank_reduction_of_bridges,EEG_filtered_for_AMICA] = bemobil_find_gel_bridges(EEG_filtered_for_AMICA,0.98);
+        %         data_rank = data_rank - rank_reduction_of_bridges;
         
         [ALLEEG, EEG_AMICA_cleaned, CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG_filtered_for_AMICA, ...
             CURRENTSET, true, bemobil_config.num_models, bemobil_config.max_threads, EEG_filtered_for_AMICA.etc.rank, [], ...
             [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.amica_filename_output], output_filepath,...
-            bemobil_config.AMICA_autoreject, bemobil_config.AMICA_n_rej);
+            bemobil_config.AMICA_autoreject, bemobil_config.AMICA_n_rej, bemobil_config.AMICA_reject_sigma_threshold);
         
         % add information about AMICA autorejected time points
         
@@ -192,6 +192,11 @@ if ~exist('EEG_single_subject_final','var')
     % save RAM
     clear EEG_AMICA_cleaned
     
+    % plot all AMICA results
+    pop_topoplot(EEG, 0, [1:size(EEG.icaweights,1)] ,EEG.filename,[] ,0,'electrodes','off'); allICfighandle = gcf;
+    print(allICfighandle,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_all_ICs.png']),'-dpng')
+    close
+    
     %% Copy the spatial filter data into the raw full data set for further single subject processing
     
     output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.single_subject_analysis_folder,...
@@ -205,16 +210,124 @@ if ~exist('EEG_single_subject_final','var')
     % save RAM
     clear EEG_interp_avRef EEG_AMICA_final
     %% clean with IClabel
-	
+    
     disp('Cleaning data with ICLabel')
-	
-	% clean now, save files and figs
-	[ALLEEG, EEG_single_subject_final, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG_single_subject_copied ,...
+    
+    % clean now, save files and figs
+    [ALLEEG, EEG_single_subject_final, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG_single_subject_copied ,...
         ALLEEG, CURRENTSET, bemobil_config.iclabel_classifier,...
         bemobil_config.iclabel_classes, bemobil_config.iclabel_threshold,...
-		[ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
-
+        [ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
+    
     disp('...done.')
+    
+    %% plot interpolated filtered, for analytics
+    
+    disp('Filtering data only for plotting!')
+    EEG = pop_eegfiltnew(EEG_single_subject_final, 'locutoff',0.5);
+    
+    %%
+    
+    plotfigure = figure('color','w');
+    set(plotfigure, 'Position', get(0,'screensize'))
+    ax1 = subplot(231);
+    ax2 = subplot(232);
+    ax3 = subplot(233);
+    ax4 = subplot(234);
+    ax5 = subplot(235);
+    ax6 = subplot(236);
+    
+    
+    starttime = EEG.times(end)/7*1;
+    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
+        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    axeshandle = gca;
+    fighandle = gcf;
+    axcp = copyobj(axeshandle, plotfigure);
+    set(axcp,'Position',get(ax1,'position'));
+    axcp.XTickLabel = [0:10]+round(starttime/1000);
+    axcp.YTick=[];
+    axcp.Title.String = ['Cleaned channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
+    axcp.XLabel.String = 'seconds';
+    delete(ax1);
+    close(fighandle)
+    
+    starttime = EEG.times(end)/7*2;
+    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
+        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    axeshandle = gca;
+    fighandle = gcf;
+    axcp = copyobj(axeshandle, plotfigure);
+    set(axcp,'Position',get(ax2,'position'));
+    axcp.XTickLabel = [0:10]+round(starttime/1000);
+    axcp.YTick=[];
+    axcp.Title.String = ['Cleaned channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
+    axcp.XLabel.String = 'seconds';
+    delete(ax2);
+    close(fighandle)
+    
+    starttime = EEG.times(end)/7*3;
+    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
+        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    axeshandle = gca;
+    fighandle = gcf;
+    axcp = copyobj(axeshandle, plotfigure);
+    set(axcp,'Position',get(ax3,'position'));
+    axcp.XTickLabel = [0:10]+round(starttime/1000);
+    axcp.YTick=[];
+    axcp.Title.String = ['Cleaned channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
+    axcp.XLabel.String = 'seconds';
+    delete(ax3);
+    close(fighandle)
+    
+    starttime = EEG.times(end)/7*4;
+    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
+        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    axeshandle = gca;
+    fighandle = gcf;
+    axcp = copyobj(axeshandle, plotfigure);
+    set(axcp,'Position',get(ax4,'position'));
+    axcp.XTickLabel = [0:10]+round(starttime/1000);
+    axcp.YTick=[];
+    axcp.Title.String = ['Cleaned channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
+    axcp.XLabel.String = 'seconds';
+    delete(ax4);
+    close(fighandle)
+    
+    starttime = EEG.times(end)/7*5;
+    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
+        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    axeshandle = gca;
+    fighandle = gcf;
+    axcp = copyobj(axeshandle, plotfigure);
+    set(axcp,'Position',get(ax5,'position'));
+    axcp.XTickLabel = [0:10]+round(starttime/1000);
+    axcp.YTick=[];
+    axcp.Title.String = ['Cleaned channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
+    axcp.XLabel.String = 'seconds';
+    delete(ax5);
+    close(fighandle)
+    
+    starttime = EEG.times(end)/7*6;
+    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
+        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    axeshandle = gca;
+    fighandle = gcf;
+    axcp = copyobj(axeshandle, plotfigure);
+    set(axcp,'Position',get(ax6,'position'));
+    axcp.XTickLabel = [0:10]+round(starttime/1000);
+    axcp.YTick=[];
+    axcp.Title.String = ['Cleaned channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
+    axcp.XLabel.String = 'seconds';
+    delete(ax6);
+    close(fighandle)
+    
+    %%
+    
+    savefig(plotfigure,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_cleaned.fig']))
+    print(plotfigure,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_cleaned.png']),'-dpng')
+    close
+    
 end
 
 disp('Entire AMICA processing done!');

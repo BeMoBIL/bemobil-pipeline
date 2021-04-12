@@ -10,26 +10,27 @@
 %   >>  [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath)
 %
 % Inputs:
-%   ALLEEG                  - complete EEGLAB data set structure
-%   EEG                     - current EEGLAB EEG structure
-%   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
-%   amica                   - Boolean value (1/0) to use amica or not
-%   numb_models             - number of models to learn, default is 1
-%   maxx_threads            - maximum of CPU threads to be used for AMICA
-%   data_rank               - rank of the data matrix (= number of channels minus number of interpolated
+%   ALLEEG                          - complete EEGLAB data set structure
+%   EEG                             - current EEGLAB EEG structure
+%   CURRENTSET                      - index of current EEGLAB EEG structure within ALLEEG
+%   amica                           - Boolean value (1/0) to use amica or not
+%   numb_models                     - number of models to learn, default is 1
+%   maxx_threads                    - maximum of CPU threads to be used for AMICA
+%   data_rank                       - rank of the data matrix (= number of channels minus number of interpolated
 %       channels minus 1, if average referenced)
-%   other_algorithm         - currently (20.6.2017) not yet implemented, hopefully SSD and JD will
+%   other_algorithm                 - currently (20.6.2017) not yet implemented, hopefully SSD and JD will
 %       be added here some day
-%   out_filename            - output filename (OPTIONAL ARGUMENT)
-%   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
+%   out_filename                    - output filename (OPTIONAL ARGUMENT)
+%   out_filepath                    - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
 %       if both a name and a path are provided)
-%   AMICA_autoreject        - flag for doing rejection of time points, def=0
-%   AMICA_n_rej             - for rejection, number of rejections to perform, def=3
+%   AMICA_autoreject                - flag for doing rejection of time points, def=1
+%   AMICA_n_rej                     - for rejection, number of rejections to perform, def=5
+%   AMICA_reject_sigma_threshold    - for rejection, sigma threshold of log likelyhood of samples to reject, def=3
 %
 % Outputs:
-%   ALLEEG                  - complete EEGLAB data set structure
-%   EEG                     - current EEGLAB EEG structure
-%   Currentset              - index of current EEGLAB EEG structure within ALLEEG
+%   ALLEEG                          - complete EEGLAB data set structure
+%   EEG                             - current EEGLAB EEG structure
+%   Currentset                      - index of current EEGLAB EEG structure within ALLEEG
 %
 %   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
@@ -39,7 +40,7 @@
 % Authors: Lukas Gehrke, Marius Klug, 2017
 
 function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
-	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject, AMICA_n_rej)
+	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject, AMICA_n_rej, AMICA_reject_sigma_threshold)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var') && ...
@@ -63,12 +64,16 @@ amica_crashed = false;
 if amica
 	
 	if ~exist('AMICA_autoreject', 'var')
-		AMICA_autoreject = 0;
+		AMICA_autoreject = 1;
 	end
 	
-	if ~exist('AMICA_n_rej', 'var')
-		AMICA_n_rej = 3;
-	end
+    if ~exist('AMICA_n_rej', 'var')
+		AMICA_n_rej = 5;
+    end
+    
+    if ~exist('AMICA_n_rej', 'var')
+		AMICA_reject_sigma_threshold = 3;
+    end
 	
     if isfield(EEG,'datfile') && ~isempty(EEG.datfile)
         disp('Found datfile.');
@@ -97,6 +102,7 @@ if amica
                 'pcakeep',data_rank,...
 				'do_reject',AMICA_autoreject,...
 				'numrej',AMICA_n_rej,...
+                'rejsig',AMICA_reject_sigma_threshold,...
                 'write_nd',1,...
                 'do_history',0,...
                 'histstep',2,...

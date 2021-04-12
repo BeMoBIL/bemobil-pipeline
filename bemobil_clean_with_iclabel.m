@@ -150,12 +150,12 @@ EEG = eeg_checkset( EEG );
 if save_file_on_disk
     
     % save dipole fig
-    print(gcf,fullfile(out_filepath,[out_filename '_brain_dipoles.png']),'-dpng')
-    savefig(fullfile(out_filepath,[out_filename '_brain_dipoles.fig']))
+    print(gcf,fullfile(out_filepath,[erase(out_filename,'.set') '_brain_dipoles.png']),'-dpng')
+    savefig(fullfile(out_filepath,[erase(out_filename,'.set') '_brain_dipoles.fig']))
 
     close
-    print(fig1,fullfile(out_filepath,[out_filename '_ICs_kept.png']),'-dpng')
+    print(fig1,fullfile(out_filepath,[erase(out_filename,'.set') '_ICs_kept.png']),'-dpng')
     close
-    EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', out_filepath);
+    EEG = pop_saveset( EEG, 'filename',erase(out_filename,'.set'),'filepath', out_filepath);
     disp('...done');
 end
