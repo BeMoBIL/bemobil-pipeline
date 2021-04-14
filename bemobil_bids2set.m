@@ -82,7 +82,7 @@ tempDir         = fullfile(targetDir, 'temp_bids');
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
-pop_importbids(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs);
+pop_importbids_mobi(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs);
 
 % Restructure and rename the output of the import function
 %--------------------------------------------------------------------------
