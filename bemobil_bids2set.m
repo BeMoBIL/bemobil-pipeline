@@ -99,7 +99,7 @@ subDirList      = subDirList(dirFlagArray & nameFlagArray);
 for iSub = 1:numel(subDirList)
     
     subjectDir      = subDirList(iSub).name;
-    sesDirList      = dir([tempDir subjectDir]);
+    sesDirList      = dir(fullfile(tempDir, subjectDir));
     
     % check if data set contains multiple sessions
     isMultiSession = any(contains({sesDirList(:).name},'ses-'));
@@ -116,10 +116,10 @@ for iSub = 1:numel(subDirList)
         allFiles        = [];
         for iSes = 1:numel(sesDirList)
             sesDir          = sesDirList(iSes);
-            sesEEGDir       = fullfile(tempDir, subjectDir, sesDir, 'eeg'); 
-            sesBEHDir       = fullfile(tempDir, subjectDir, sesDir, 'beh'); 
-            sesFilesEEG     = dir(sesEEGDir);
-            sesFilesBEH     = dir(sesBEHDir);
+            sesEEGDir       = fullfile(tempDir, subjectDir, sesDir.name, 'eeg'); 
+            sesBEHDir       = fullfile(tempDir, subjectDir, sesDir.name, 'beh'); 
+            sesFilesEEG     = dir(sesEEGDir)';
+            sesFilesBEH     = dir(sesBEHDir)';
             allFiles        = [allFiles sesFilesEEG sesFilesBEH];
         end
         
@@ -143,6 +143,7 @@ for iSub = 1:numel(subDirList)
         subjectNr       = str2double(bidsNameSplit{1}(5:end));
         bidsModality    = bidsNameSplit{end}(1:end-4);                      % this string includes modality and extension
         extension       = bidsNameSplit{end}(end-3:end);
+        
         if find(strncmp(bidsNameSplit,'ses',3))
             isMultiSession      = 1; 
             sessionName         = bidsNameSplit{strncmp(bidsNameSplit,'ses',3)}(5:end);
@@ -168,30 +169,32 @@ for iSub = 1:numel(subDirList)
         end
         
         if isMultiSession
-                
-                dataDir         = fullfile(tempDir, subjectDir, ['ses-' sessionName] , bidsFolderName);
-                
-                % move files and then remove the empty eeg folder
-                newDir          = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]); 
-                
-                if ~isdir(newDir)
-                    mkdir(newDir)
-                end
-                
-                if isMultiRun
-                    bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_rec', runIndex, extension];
-                else
-                    bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, extension];
-                end
-                
-                data    = pop_loadset('filepath', dataDir, 'filename', bidsName);
-                pop_saveset(data, 'filepath', newDir, 'filename', bemobilName);
-                
-        else
-            dataDir         = fullfile(tempDir, subjectDir, bidsFolderName);
-                
+            
+            dataDir         = fullfile(tempDir, subjectDir, ['ses-' sessionName] , bidsFolderName);
+            
             % move files and then remove the empty eeg folder
             newDir          = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]);
+            
+            if ~isdir(newDir)
+                mkdir(newDir)
+            end
+            
+            if isMultiRun
+                bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_rec', runIndex, '_old', extension];
+            else
+                bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_old', extension];
+            end
+            
+            data    = pop_loadset('filepath', dataDir, 'filename', bidsName);
+            pop_saveset(data, 'filepath', newDir, 'filename', bemobilName);
+            
+        else
+            
+            dataDir         = fullfile(tempDir, subjectDir, bidsFolderName);
+            
+            % move files and then remove the empty eeg folder
+            newDir          = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]);
+            
             if ~isfolder(newDir)
                 mkdir(newDir)
             end
@@ -259,10 +262,10 @@ for iSub = 1:numel(subDirList)
         
         if numel(eegFiles) > 1
             % if there are multiple runs, merge them all
-            EEGMerged = pop_loadset(fullfile(targetDir, subDirList(iSub).name, eegFiles{1}));
+            EEGMerged = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
             for iFile = 2:numel(eegFiles)
                 disp('merging files')
-                [EEG2]      = pop_loadset(fullfile(targetDir, subDirList(iSub).name, eegFiles{iFile}));
+                [EEG2]      = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name),'filename' ,eegFiles{iFile});
                 EEGMerged   = pop_mergeset(EEGMerged, EEG2);
             end
             EEG                 = EEGMerged;
@@ -271,7 +274,7 @@ for iSub = 1:numel(subDirList)
             nameJoined          = join(nameSplit(1:end-2),'_');
             EEGSessionFileName  = [nameJoined{1} '.set'];
         elseif numel(eegFiles) == 1
-            EEG                 = pop_loadset(fullfile(targetDir, subDirList(iSub).name, eegFiles{1}));
+            EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
             EEGSessionFileName  = eegFiles{1};
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.filenames{iSes}] )
@@ -328,9 +331,9 @@ for iSub = 1:numel(subDirList)
             
             if numel(dataFiles) > 1
                 % if there are multiple runs, merge them all 
-                DATAMerged =  pop_loadset(fullfile(targetDir, subDirList(iSub).name, dataFiles{1}));
+                DATAMerged =  pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{1});
                 for iFile = 2:numel(dataFiles)
-                    DATA2           = pop_loadset(fullfile(targetDir, subDirList(iSub).name, dataFiles{iFile}));
+                    DATA2           = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename' ,dataFiles{iFile});
                     DATAMerged      = pop_mergeset(DATAMerged, DATA2);
                 end
                 DATA                    = DATAMerged;
@@ -339,7 +342,7 @@ for iSub = 1:numel(subDirList)
                 nameJoined              = join(nameSplit(1:end-2),'_');
                 DATASessionFileName      = [nameJoined{1} '.set'];
             elseif numel(dataFiles) == 1
-                DATA             = pop_loadset(fullfile(targetDir, subDirList(iSub).name, dataFiles{1}));
+                DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
                 DATASessionFileName  = dataFiles{1};
             else
                 warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.filenames{iSes}] )
