@@ -280,13 +280,33 @@ for pi = 1:numel(numericalIDs)
                         streams{i}.info.effective_srate = (num_samples - 1) / duration;
                     end
                     
+                else 
+                    try
+                        num_samples  = numel(streams{i}.time_stamps);
+                        t_begin      = streams{i}.time_stamps(1);
+                        t_end        = streams{i}.time_stamps(end);
+                        duration     = t_end - t_begin;
+                        
+                        if (num_samples - 1) / duration >= 20
+                            iscontinuous(i) =  true;
+                            if ~isfield(streams{i}.info, 'effective_srate')
+                                % in case effective srate field is missing, add one
+                                streams{i}.info.effective_srate = (num_samples - 1) / duration;
+                            elseif isempty(streams{i}.info.effective_srate)
+                                % in case effective srate field value is missing, add one
+                                streams{i}.info.effective_srate = (num_samples - 1) / duration;
+                            end
+                        end
+                    catch
+                    end
                 end
                 
             end
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
             xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rbsessions(si,:))) & iscontinuous);
-      
+            xdfmarkers  = streams(~iscontinuous); 
+            
             %--------------------------------------------------------------
             %                  Convert EEG Data to BIDS
             %--------------------------------------------------------------
@@ -325,7 +345,7 @@ for pi = 1:numel(numericalIDs)
             end
             
             % overwrite some fields if specified
-            if exist(eegInfo,'var')
+            if exist('eegInfo','var')
                 if isfield(eegInfo, 'eeg')
                     eegcfg.eeg          = eegInfo.eeg;
                 end
@@ -335,7 +355,8 @@ for pi = 1:numel(numericalIDs)
             end
             
             % read in the event stream (synched to the EEG stream)
-            events                = ft_read_event(cfg.dataset);
+            %events                = ft_read_event(cfg.dataset);
+            events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps); 
             
             % event parser script
             if isempty(bemobil_config.bids_parsemarkers_custom)
@@ -531,5 +552,32 @@ ftdata.trial    = {xdfstream.time_series};
 ftdata.time     = {xdfstream.time_stamps};
 ftdata.hdr = hdr;
 ftdata.label = hdr.label;
+
+end
+
+function outEvents = stream2events(inStreams, dataTimes)
+
+outEvents = []; 
+
+for Si = 1:numel(inStreams)
+    if iscell(inStreams{Si}.time_series)
+        eventsInStream              = cell2struct(inStreams{Si}.time_series, 'value')';
+        [eventsInStream.type]       = deal(inStreams{Si}.info.type);
+        times                       = num2cell(inStreams{Si}.time_stamps);
+        [eventsInStream.timestamp]  = times{:};
+        samples                     = num2cell(cellfun(@(x) find(dataTimes >= x, 1,'first'), times));
+        [eventsInStream.sample]     = samples{:};
+        [eventsInStream.offset]     = deal([]);
+        [eventsInStream.duration]   = deal([]);
+        outEvents = [outEvents eventsInStream];
+    end
+end
+
+% sort events by sample
+[~,I] = sort([outEvents.timestamp]); 
+outEvents   = outEvents(I); 
+
+% re-order fields to match ft events output 
+outEvents   = orderfields(outEvents, [2,1,3,4,5,6]);  
 
 end
