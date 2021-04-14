@@ -127,26 +127,7 @@ if ~exist('EEG_single_subject_final','var')
             'filepath', output_filepath);
         disp('...done');
         
-        
-        % plot autorejection
-        data2plot = EEG_AMICA_cleaned.data(1:round(EEG_AMICA_cleaned.nbchan/10):EEG_AMICA_cleaned.nbchan,:)';
-        figure;
-        set(gcf,'color','w','Position', get(0,'screensize'));
-        plot(data2plot,'g');
-        data2plot(~EEG_AMICA_cleaned.etc.bad_samples,:) = NaN;
-        hold on
-        plot(data2plot,'r');
-        xlim([-10000 EEG_AMICA_cleaned.pnts+10000])
-        ylim([-1000 1000])
-        title(['AMICA autorejection, removed ' num2str(round(EEG_AMICA_cleaned.etc.bad_samples_percent,2)) '% of the samples'])
-        xlabel('Samples')
-        ylabel('\muV')
-        clear data2plot
-        % save figure to disk
-        savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject.fig']))
-        print(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject.png']),'-dpng')
-        close
-        
+        bemobil_plot_amica_autoreject(EEG_AMICA_cleaned, output_filepath, [bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject'])
         
         % save RAM
         clear EEG_filtered_for_AMICA
@@ -226,107 +207,8 @@ if ~exist('EEG_single_subject_final','var')
     disp('Filtering data only for plotting!')
     EEG = pop_eegfiltnew(EEG_single_subject_final, 'locutoff',0.5);
     
-    %%
-    
-    plotfigure = figure('color','w');
-    set(plotfigure, 'Position', get(0,'screensize'))
-    ax1 = subplot(231);
-    ax2 = subplot(232);
-    ax3 = subplot(233);
-    ax4 = subplot(234);
-    ax5 = subplot(235);
-    ax6 = subplot(236);
-    
-    
-    starttime = EEG.times(end)/7*1;
-    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
-        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
-    axeshandle = gca;
-    fighandle = gcf;
-    axcp = copyobj(axeshandle, plotfigure);
-    set(axcp,'Position',get(ax1,'position'));
-    axcp.XTickLabel = [0:10]+round(starttime/1000);
-    axcp.YTick=[];
-    axcp.Title.String = ['Cleaned channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
-    axcp.XLabel.String = 'seconds';
-    delete(ax1);
-    close(fighandle)
-    
-    starttime = EEG.times(end)/7*2;
-    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
-        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
-    axeshandle = gca;
-    fighandle = gcf;
-    axcp = copyobj(axeshandle, plotfigure);
-    set(axcp,'Position',get(ax2,'position'));
-    axcp.XTickLabel = [0:10]+round(starttime/1000);
-    axcp.YTick=[];
-    axcp.Title.String = ['Cleaned channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
-    axcp.XLabel.String = 'seconds';
-    delete(ax2);
-    close(fighandle)
-    
-    starttime = EEG.times(end)/7*3;
-    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
-        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
-    axeshandle = gca;
-    fighandle = gcf;
-    axcp = copyobj(axeshandle, plotfigure);
-    set(axcp,'Position',get(ax3,'position'));
-    axcp.XTickLabel = [0:10]+round(starttime/1000);
-    axcp.YTick=[];
-    axcp.Title.String = ['Cleaned channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
-    axcp.XLabel.String = 'seconds';
-    delete(ax3);
-    close(fighandle)
-    
-    starttime = EEG.times(end)/7*4;
-    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
-        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
-    axeshandle = gca;
-    fighandle = gcf;
-    axcp = copyobj(axeshandle, plotfigure);
-    set(axcp,'Position',get(ax4,'position'));
-    axcp.XTickLabel = [0:10]+round(starttime/1000);
-    axcp.YTick=[];
-    axcp.Title.String = ['Cleaned channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
-    axcp.XLabel.String = 'seconds';
-    delete(ax4);
-    close(fighandle)
-    
-    starttime = EEG.times(end)/7*5;
-    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
-        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
-    axeshandle = gca;
-    fighandle = gcf;
-    axcp = copyobj(axeshandle, plotfigure);
-    set(axcp,'Position',get(ax5,'position'));
-    axcp.XTickLabel = [0:10]+round(starttime/1000);
-    axcp.YTick=[];
-    axcp.Title.String = ['Cleaned channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
-    axcp.XLabel.String = 'seconds';
-    delete(ax5);
-    close(fighandle)
-    
-    starttime = EEG.times(end)/7*6;
-    vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
-        round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
-    axeshandle = gca;
-    fighandle = gcf;
-    axcp = copyobj(axeshandle, plotfigure);
-    set(axcp,'Position',get(ax6,'position'));
-    axcp.XTickLabel = [0:10]+round(starttime/1000);
-    axcp.YTick=[];
-    axcp.Title.String = ['Cleaned channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
-    axcp.XLabel.String = 'seconds';
-    delete(ax6);
-    close(fighandle)
-    
-    %%
-    
-    savefig(plotfigure,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_cleaned.fig']))
-    print(plotfigure,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_cleaned.png']),'-dpng')
-    close
+    bemobil_plot_data_chunks(EEG, output_filepath, [bemobil_config.filename_prefix num2str(subject) '_cleaned'])
+
     
 end
 
