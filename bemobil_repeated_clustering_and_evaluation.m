@@ -97,7 +97,7 @@ end
 
 %% cluster (takes time...)
 
-filename_clustering_solutions_with_path = [filepath_clustering_solutions '\' filename_clustering_solutions];
+filename_clustering_solutions_with_path = fullfile(filepath_clustering_solutions, filename_clustering_solutions);
 
 if do_clustering
     
@@ -114,7 +114,7 @@ end
 
 %% create multivariate data of clusters using ROI (takes a little time)
 
-filename_multivariate_data_with_path = [filepath_clustering_solutions '\' filename_multivariate_data];
+filename_multivariate_data_with_path = fullfile(filepath_clustering_solutions, filename_multivariate_data);
 
 if do_multivariate_data
     
@@ -136,7 +136,7 @@ end
 
 ranked_solutions = bemobil_clustering_rank_solutions(cluster_multivariate_data,quality_measure_weights);
 
-filepath_to_evaluations = [filepath_clustering_solutions '\evaluations\weights_' num2str(quality_measure_weights) '\'];
+filepath_to_evaluations = fullfile(filepath_clustering_solutions, 'evaluations' , ['weights_' num2str(quality_measure_weights)]);
 mkdir(filepath_to_evaluations)
 
 for rank = [5 4 3 2 1]
@@ -156,7 +156,7 @@ for rank = [5 4 3 2 1]
     %     dipplot_fig = figure;
     std_dipplot(STUDY,ALLEEG,'clusters',STUDY.bemobil.clustering.cluster_ROI_index,'figure','off');
     
-    savefig(topoplot_and_dipplot_fig, [filepath_to_evaluations 'rank-' num2str(rank) '_ROI_plot'])
+    savefig(topoplot_and_dipplot_fig, fullfile(filepath_to_evaluations, ['rank-' num2str(rank) '_ROI_plot']));
 end
 
 % find dipole locations, centroids, and residual variances of clusters
