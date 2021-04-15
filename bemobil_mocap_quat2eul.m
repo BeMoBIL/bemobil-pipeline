@@ -1,16 +1,16 @@
-function EEG_mocap_out = bemobil_mocap_quat2eul(EEG_mocap_in)
-% Transforms Quaternion angle values (4 dimensions) into eul angles (3 dimensions) to make them human-interpretable.
-% Quat values will be taken out, and eul angles will be assigned as new channels
+% Transforms rigid body dataset unit quaternion angle values (4 dimensions) into eul angles (3 dimensions) to make them
+% human-interpretable. Quat values will be taken out, and eul angles will be assigned as new channels.
 %
-% Input arguments:
+% Input:
 %       EEG dataset containing mocap channels with quaternion data (must have exactly 4 channels with labels
 %       containing "quat_x/y/z/w")
 %
-% Output argument:
+% Output:
 %       EEG dataset containing mocap channels with eul data (will have no quaternion channels but instead
 %       eul angle channels with the replaced names of "eul_x/y/z")
-%
-% Usage:
+
+
+function EEG_mocap_out = bemobil_mocap_quat2eul(EEG_mocap_in)
 
 
 for channel = 1:EEG_mocap_in.nbchan
@@ -60,7 +60,6 @@ y = data(:,quaternionY);
 z = data(:,quaternionZ);
 w = data(:,quaternionW);
 
-
 % check if values are [-1 1] - could have been messed up by
 % interpolating or filtering, would be undefined then.
 w(w>=1) = 0.99999;
@@ -75,15 +74,6 @@ z(z<=-1) = -0.99999;
 % transform to ZYX sequence eul angles
 disp('Transforming Quaternions to eul angles using a Body-ZYX sequence!')
 euls = util_quat2eul([w x y z]');
-
-% selfmade formula
-%             eulX = atan2(2.*(w.*x + y.*z),1 - 2.*(x.^2 + y.^2));     % wikipedia roll (rotation about x)
-%             eulY = asin(2.*(w.*y - z.*x));                             % wikipedia pitch (rotation about y)
-%             eulZ = atan2(2.*(w.*z + x.*y),1-2.*(y.^2+z.^2));          % wikipedia yaw (rotation about z)
-%
-% euls(1,:) = eulX;
-% euls(2,:) = eulY;
-% euls(3,:) = eulZ;
 
 % convert from radian to degree
 euls = euls'*180/pi;

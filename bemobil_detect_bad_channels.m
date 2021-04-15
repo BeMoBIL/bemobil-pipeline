@@ -1,11 +1,33 @@
+% bemobil_detect_bad_channels - Detects bad channels using the "clean_artifacts" function of the EEGLAB "clean_rawdata"
+% plugin. Computes average reference before detecting bad channels and uses an 0.5Hz highpass filter cutoff (inside
+% clan_artifacts). Plots segments of the data to check the detection.
+%
+% Usage:
+%   >>  [chans_to_interp, plothandle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET, chancorr_crit, chan_max_broken_time)
+% 
+% Inputs:
+%   EEG                     - current EEGLAB EEG structure
+%   ALLEEG                  - complete EEGLAB data set structure
+%   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
+%   chancorr_crit           - Correlation threshold. If a channel is correlated at less than this value
+%                               to its robust estimate (based on other channels), it is considered abnormal in
+%                               the given time window. OPTIONAL, default = 0.8.
+%   chan_max_broken_time    - Maximum time (either in seconds or as fraction of the recording) during which a 
+%                               retained channel may be broken. Reasonable range: 0.1 (very aggressive) to 0.6
+%                               (very lax). OPTIONAL, default = 0.5.
+%
+% Outputs:
+%   chans_to_interp         - vector with channel indices to remove
+%   plothandle              - handle to the plot of the data segments to check cleaning
+%
+%   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
+%
+% See also:
+%   EEGLAB, bemobil_avref, clean_artifacts
+%
+% Authors: Lukas Gehrke, 2017, Marius Klug, 2021
+
 function [chans_to_interp, plothandle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET, chancorr_crit, chan_max_broken_time)
-% TODO write help 
-%   CorrelationThreshold : Correlation threshold. If a channel is correlated at less than this value
-%                          to its robust estimate (based on other channels), it is considered abnormal in
-%                          the given time window. Default: 0.85.
-%   MaxBrokenTime : Maximum time (either in seconds or as fraction of the recording) during which a 
-%                   retained channel may be broken. Reasonable range: 0.1 (very aggressive) to 0.6
-%                   (very lax). The default is 0.4.
 
 if ~exist('chancorr_crit','var') || isempty(chancorr_crit)
 	chancorr_crit = 0.8;
@@ -15,6 +37,7 @@ if ~exist('chan_max_broken_time','var') || isempty(chan_max_broken_time)
 end
 
 if ~strcmp(EEG.ref,'average')
+    disp('Re-referencing ONLY for bad channel detection now.')
     % compute average reference before finding bad channels 
     [ALLEEG, EEG, CURRENTSET] = bemobil_avref( EEG , ALLEEG, CURRENTSET);
 end

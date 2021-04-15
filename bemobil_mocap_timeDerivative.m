@@ -1,18 +1,14 @@
-function EEG_mocap_out = bemobil_mocap_timeDerivative(EEG_mocap_in)
-% Computes the time derivatives of motion capture data. It smooths
-% the signals after each order of derivation to minimize cumulative
-% precision errors. As smoother it uses a Hamming windowed zero-phase FIR lowpass filter.
-% Each new derivative is stored in a new object.
+% Computes the time derivatives of motion capture data. It smooths the signals after each order of derivation to
+% minimize cumulative precision errors. As smoother it uses a Hamming windowed zero-phase FIR lowpass filter. Each new
+% derivative is stored in a new object.
 %
-% Input arguments:
-%       order:     maximum order of derivation, default: 3 (1 = velocity,
-%                  2 = acceleration, 3 = jerk)
-%       cutOff:    lowpass filter cutoff, default: 18 Hz.
+% Input:
+%       EEG dataset containing mocap channels with Euler angles data in radians (6 channels)
 %
-% Output argument:
-%       cobj:      handle to the object containing the latest order of
-%                  derivation
+% Output:
+%       EEG dataset containing mocap channels and their first and second derivatives (18 channels altogether)
 
+function EEG_mocap_out = bemobil_mocap_timeDerivative(EEG_mocap_in)
 
 % checking for Quaternionvalues
 
@@ -37,15 +33,17 @@ for channel=1:size(tmpData,1)
     
     % check if channel is eul angles and if so,
     % correct for turns over pi or -pi respectively
-    if contains(lower(EEG_mocap_in.chanlocs(channel).labels),'eul')
+    if contains(lower(EEG_mocap_in.chanlocs(channel).labels),'eul') && ~contains(lower(EEG_mocap_in.chanlocs(channel).labels),'_derivative')
         
         dataChannel = tmpData(channel,:);
         
-        % if there is a jump of almost 360 degrees between the frames it is assumed to be actually a smooth transition
-        % and thus 360 degrees are subtracted. this means turning rates of more than half a circle per frame are not
-        % possible
-        dataChannel(dataChannel > 180/dt) = dataChannel(dataChannel > 180/dt) - 2*180/dt;
-        dataChannel(dataChannel < -180/dt) = dataChannel(dataChannel < -180/dt) + 2*180/dt;
+        assert(max(abs(dataChannel))<2*pi/dt,'Data must be in radian!')
+        
+        % if there is a jump of more than 180 degrees (pi) between the frames it is assumed to be a turn in the other
+        % direction and thus 360 degrees are subtracted. this means turning rates of more than half a circle per frame
+        % are not possible.
+        dataChannel(dataChannel > pi/dt) = dataChannel(dataChannel > pi/dt) - 2*pi/dt;
+        dataChannel(dataChannel < -pi/dt) = dataChannel(dataChannel < -pi/dt) + 2*pi/dt;
         
         tmpData(channel,:) = dataChannel;
         

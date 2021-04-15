@@ -1,8 +1,8 @@
-% bemobil_process_all_AMICA - wrapper function that incorporates all necessary processing steps from the basic EEG
-% struct (e.g. all blocks merged together, nothing else done before) up to the finished dataset which has channels
-% interpolated and all AMICA information copied. The AMICA is computed on a dataset that made use of automatic channel
-% and time domain cleaning. Additionally, information of dipole fitting and automatic IC classification with ICLabel is
-% present. A processing config struct is necessary. For an example please see the EEG_processing_example script!
+% bemobil_process_all_AMICA - wrapper function that incorporates all necessary processing steps from the preprocessed
+% EEG struct (line noise removed, bad channels interpolated, average referenced) to AMICA computation, dipole fitting,
+% and artifact IC cleaning. AMICA autorejection is supported and recommended, all information including the rejected
+% time points is stored in the final EEG set. A processing config struct is necessary. For an example please see the
+% EEG_processing_example script! Plots several analytics figures that are stored alongside their respective datasets.
 %
 % The intermediate files are stored on the disk.
 %
@@ -28,7 +28,7 @@
 % See also:
 %   EEGLAB
 %
-% Authors: Marius Klug, 2019
+% Authors: Marius Klug, 2021
 
 function [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute)
 
@@ -58,8 +58,10 @@ if ~force_recompute
             bemobil_config.copy_weights_interpolate_avRef_filename], 'filepath', output_filepath);
         [ALLEEG, EEG_single_subject_final, CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'study',0);
         
-        warning('Old single subject file with interpolated channels, avref, and AMICA data already existed, using that file!')
+        warning('Old single subject file with interpolated channels, avref, and AMICA data already existed, skipping this processing!')
         
+    catch
+        disp('...failed. Computing now.')
     end
 end
 
@@ -78,6 +80,8 @@ if ~exist('EEG_single_subject_final','var')
             
             warning('Old AMICA file already existed, using that file!')
             
+        catch
+            disp('...failed. Computing now.')
         end
     end
     
@@ -110,24 +114,6 @@ if ~exist('EEG_single_subject_final','var')
             [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.amica_filename_output], output_filepath,...
             bemobil_config.AMICA_autoreject, bemobil_config.AMICA_n_rej, bemobil_config.AMICA_reject_sigma_threshold);
         
-        % add information about AMICA autorejected time points
-        
-        sample_mask = EEG_AMICA_cleaned.etc.spatial_filter.AMICAmods.Lt == 0;
-        EEG_AMICA_cleaned.etc.bad_samples = sample_mask;
-        EEG_AMICA_cleaned.etc.bad_samples_percent = sum(EEG_AMICA_cleaned.etc.bad_samples) / length(EEG_AMICA_cleaned.etc.bad_samples) * 100;
-        
-        % find latency of regions
-        remove_data_intervals = reshape(find(diff([false sample_mask false])),2,[])';
-        remove_data_intervals(:,2) = remove_data_intervals(:,2)-1;
-        EEG_AMICA_cleaned.etc.remove_data_intervals = remove_data_intervals;
-        
-        % save again
-        EEG_AMICA_cleaned = pop_saveset( EEG_AMICA_cleaned,...
-            'filename',[bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.amica_filename_output],...
-            'filepath', output_filepath);
-        disp('...done');
-        
-        
         % plot autorejection
         data2plot = EEG_AMICA_cleaned.data(1:round(EEG_AMICA_cleaned.nbchan/10):EEG_AMICA_cleaned.nbchan,:)';
         figure;
@@ -147,7 +133,12 @@ if ~exist('EEG_single_subject_final','var')
         print(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject.png']),'-dpng')
         close
         
-        
+        % plot all ICs
+        pop_topoplot(EEG_AMICA_cleaned, 0, [1:size(EEG_AMICA_cleaned.icaweights,1)],EEG_AMICA_cleaned.filename,[],0,'electrodes','off');
+        allICfighandle = gcf;
+        print(allICfighandle,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_all_ICs.png']),'-dpng')
+        close
+    
         % save RAM
         clear EEG_filtered_for_AMICA
         
@@ -171,6 +162,8 @@ if ~exist('EEG_single_subject_final','var')
             
             warning('Old cleaned AMICA file already existed, using that file!')
             
+        catch
+            disp('...failed. Computing now.')
         end
     end
     
@@ -178,7 +171,7 @@ if ~exist('EEG_single_subject_final','var')
         
         % compute iclabel scores
         disp('ICLabel component classification...');
-        EEG_AMICA_cleaned = iclabel(EEG_AMICA_cleaned,'lite');
+        EEG_AMICA_cleaned = iclabel(EEG_AMICA_cleaned,bemobil_config.iclabel_classifier);
         
         % do the warp and dipfit
         disp('Dipole fitting...');
@@ -191,11 +184,6 @@ if ~exist('EEG_single_subject_final','var')
     
     % save RAM
     clear EEG_AMICA_cleaned
-    
-    % plot all AMICA results
-    pop_topoplot(EEG, 0, [1:size(EEG.icaweights,1)] ,EEG.filename,[] ,0,'electrodes','off'); allICfighandle = gcf;
-    print(allICfighandle,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_all_ICs.png']),'-dpng')
-    close
     
     %% Copy the spatial filter data into the raw full data set for further single subject processing
     
@@ -322,7 +310,7 @@ if ~exist('EEG_single_subject_final','var')
     delete(ax6);
     close(fighandle)
     
-    %%
+    %% save plot
     
     savefig(plotfigure,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_cleaned.fig']))
     print(plotfigure,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_cleaned.png']),'-dpng')

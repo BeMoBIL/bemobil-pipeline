@@ -1,5 +1,5 @@
-% bemobil_clean_with_iclabel() - Cleans data with the help of the ICLabel classifications. Plots kept and thrown ICs
-% according to their respective summed score (or 1 - said score).
+% bemobil_clean_with_iclabel() - Cleans data with the help of the ICLabel classifications. Plots ICs that are kept
+% scaled to their respective summed score.
 % The classes are: {'Brain'  'Muscle'  'Eye'  'Heart'  'Line Noise'  'Channel Noise'  'Other'}
 %
 % Usage:
@@ -26,6 +26,8 @@
 %
 % See also:
 %   EEGLAB, pop_iclabel, bemobil_plot_patterns
+% 
+% Author: Marius Klug, 2021
 
 function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classifier_version,...
     classes_to_keep, threshold_to_keep, out_filename, out_filepath)

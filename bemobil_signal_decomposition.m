@@ -1,14 +1,14 @@
-% bemobil_signal_decomposition() - Computes a spatial filter for the EEG data set, which decomposes
-% the data into components (e.g. statistically independent components using AMICA - by default).
-% AMICA sometimes crashes bevore the first iteration with some combinations of data set length and
-% number of threads. Therefore, if this happens and the according error message of WINDOWS is
-% closed, AMICA is automatically restarted with one thread less. In case the number of threads are
-% reduced to 0, the standard EEGLAB runica() is started.
+% bemobil_signal_decomposition() - Computes a spatial filter for the EEG data set, which decomposes the data into
+% components (e.g. statistically independent components using AMICA - by default). AMICA sometimes crashes before the
+% first iteration with some combinations of data set length and number of threads. Therefore, if this happens AMICA is
+% automatically restarted with one thread less. Allows automatic rejection of samples in AMICA, which effectively
+% replaces time-domain artifact cleaning.
 %
 % Usage:
-%   >>  [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, amica, numb_models, maxx_threads, data_rank, other_algorithm)
-%   >>  [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET, amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath)
-%
+%   >>  [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
+%           amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject,...
+%           AMICA_n_rej, AMICA_reject_sigma_threshold)
+
 % Inputs:
 %   ALLEEG                          - complete EEGLAB data set structure
 %   EEG                             - current EEGLAB EEG structure
@@ -20,12 +20,12 @@
 %       channels minus 1, if average referenced)
 %   other_algorithm                 - currently (20.6.2017) not yet implemented, hopefully SSD and JD will
 %       be added here some day
-%   out_filename                    - output filename (OPTIONAL ARGUMENT)
-%   out_filepath                    - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
+%   out_filename                    - output filename (OPTIONAL)
+%   out_filepath                    - output filepath (OPTIONAL - File will only be saved on disk
 %       if both a name and a path are provided)
-%   AMICA_autoreject                - flag for doing rejection of time points, def=1
-%   AMICA_n_rej                     - for rejection, number of rejections to perform, def=5
-%   AMICA_reject_sigma_threshold    - for rejection, sigma threshold of log likelyhood of samples to reject, def=3
+%   AMICA_autoreject                - flag for doing rejection of time points, def=1 (OPTIONAL)
+%   AMICA_n_rej                     - for rejection, number of rejections to perform, def=5 (OPTIONAL)
+%   AMICA_reject_sigma_threshold    - for rejection, sigma threshold of log likelyhood of samples to reject, def=3 (OPTIONAL)
 %
 % Outputs:
 %   ALLEEG                          - complete EEGLAB data set structure
@@ -37,10 +37,11 @@
 % See also:
 %    EEGLAB, runamica15
 %
-% Authors: Lukas Gehrke, Marius Klug, 2017
+% Authors: Lukas Gehrke, Marius Klug, 2021
 
 function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
-	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject, AMICA_n_rej, AMICA_reject_sigma_threshold)
+	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject,...
+    AMICA_n_rej, AMICA_reject_sigma_threshold)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var') && ...
@@ -111,6 +112,16 @@ if amica
             disp('AMICA successfull, storing weights and sphere.');
             EEG.etc.spatial_filter.algorithm = 'AMICA';
             EEG.etc.spatial_filter.AMICAmods = mods;
+            
+            % add information about AMICA autorejected time points
+            sample_mask = EEG.etc.spatial_filter.AMICAmods.Lt == 0;
+            EEG.etc.bad_samples = sample_mask;
+            EEG.etc.bad_samples_percent = sum(EEG.etc.bad_samples) / length(EEG.etc.bad_samples) * 100;
+
+            % find latency of regions
+            remove_data_intervals = reshape(find(diff([false sample_mask false])),2,[])';
+            remove_data_intervals(:,2) = remove_data_intervals(:,2)-1;
+            EEG.etc.remove_data_intervals = remove_data_intervals;
             
             % if successful, get out of the loop
             break 

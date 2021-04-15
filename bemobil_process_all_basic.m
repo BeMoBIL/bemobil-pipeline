@@ -1,11 +1,38 @@
-function [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_basic(subject, bemobil_config, ALLEEG, EEG_merged, CURRENTSET, force_recompute)
+% bemobil_process_all_basic - wrapper function that incorporates all necessary processing steps from the basic EEG
+% struct (e.g. all blocks merged together, nothing else done before except resampling) up to the preprocessed dataset
+% which has line noise removed, channels interpolated, average reference, and relevant information stored in the EEG
+% struct. Also plots several analytics plots along the way which are stored on disk alongside their respective files.
+%
+% Usage:
+%   >>  [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_basic(subject, bemobil_config, ALLEEG, EEG_merged,...
+%     CURRENTSET, force_recompute)
+% 
+% Inputs:
+%   subject                   - subject number of the current subject (necessary for filepaths and storage)
+%   bemobil_config            - configuration struct with all necessary information. See EEG_processing_example file
+%                                that comes with this function!
+%   ALLEEG                    - complete EEGLAB data set structure
+%   EEG_to_process            - EEGLAB EEG structure that should be processed. Best to have all blocks merged into one
+%                                file.
+%   CURRENTSET                - index of current EEGLAB EEG structure within ALLEEG
+%   force_recompute           - OPTIONAL force recomputation even if processed file is already present, default = 0
+%
+% Outputs:
+%   ALLEEG                    - complete EEGLAB data set structure
+%   EEG_interp_avRef          - processed EEGLAB EEG structure
+%   Currentset                - index of current EEGLAB EEG structure within ALLEEG
+%
+%   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
+%
+% See also:
+%   EEGLAB, bemobil_preprocess, bemobil_detect_bad_channels, bemobil_interp_avref
+%
+% Authors: Marius Klug, 2021
 
-if ~exist('force_recompute','var') || isempty(force_recompute)
-    force_recompute = 0;
-end
+function [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_basic(subject, bemobil_config, ALLEEG, EEG_to_process,...
+    CURRENTSET, force_recompute)
 
-
-disp(['Subject #' num2str(subject)]);
+%% basic setup
 
 % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
 % larger than 2gb)
@@ -15,6 +42,12 @@ try
 catch
     warning('Could NOT edit EEGLAB memory options!!');
 end
+
+if ~exist('force_recompute','var') || isempty(force_recompute)
+    force_recompute = 0;
+end
+
+disp(['Subject #' num2str(subject)]);
 
 
 filepath = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder, [bemobil_config.filename_prefix num2str(subject)]);
@@ -31,12 +64,11 @@ if ~force_recompute
         
         return
     catch
-        disp('...failed.')
+        disp('...failed. Computing now.')
     end
 end
 
-
-% preprocess
+%% preprocess
 if ~force_recompute
     try
         
@@ -48,7 +80,7 @@ if ~force_recompute
         % save RAM
         clear EEG_merged
     catch
-        disp('...failed.')
+        disp('...failed. Computing now.')
     end
 end
 
@@ -63,7 +95,7 @@ if ~exist('EEG_preprocessed','var')
     end
     
     % preprocessing: enter chanlocs, remove unused channels, declare EOG, resample
-    [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_preprocess(ALLEEG, EEG_merged, CURRENTSET, channel_locations_filepath,...
+    [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_preprocess(ALLEEG, EEG_to_process, CURRENTSET, channel_locations_filepath,...
         bemobil_config.channels_to_remove, bemobil_config.eog_channels, bemobil_config.resample_freq,...
         [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.preprocessed_filename], filepath,...
         bemobil_config.rename_channels, bemobil_config.ref_channel, bemobil_config.zaplineConfig);
@@ -71,22 +103,18 @@ if ~exist('EEG_preprocessed','var')
     disp('Preprocessing done!')
     
     % save RAM
-    clear EEG_merged
+    clear EEG_to_process
 end
-
-%% bad channel removal with clean_artifacts
-
-EEG = EEG_preprocessed;
 
 %% detect bad channels
 
-[chans_to_interp, plothandle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET, bemobil_config.chancorr_crit,...
+[chans_to_interp, plothandle] = bemobil_detect_bad_channels(EEG_preprocessed, ALLEEG, CURRENTSET, bemobil_config.chancorr_crit,...
     bemobil_config.chan_max_broken_time);
 
 %% save fig of bad channels
 
-savefig(plothandle,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_bad_channels.fig']))
-print(plothandle,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_bad_channels.png']),'-dpng')
+savefig(plothandle,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_bad_channels.fig']))
+print(plothandle,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_bad_channels.png']),'-dpng')
 close
 
 %% do the actual interpolation and average referencing (reference is not considering EOGs)
@@ -110,7 +138,6 @@ ax3 = subplot(233);
 ax4 = subplot(234);
 ax5 = subplot(235);
 ax6 = subplot(236);
-
 
 starttime = EEG.times(end)/7*1;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
@@ -197,10 +224,10 @@ delete(ax6);
 close(fighandle)
 
 
-%%
+%% save plot
 
-savefig(plotfigure,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.fig']))
-print(plotfigure,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_preprocessed_interpolated_channels.png']),'-dpng')
+savefig(plotfigure,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_interpolated_channels.fig']))
+print(plotfigure,fullfile(filepath,[bemobil_config.filename_prefix num2str(subject) '_interpolated_channels.png']),'-dpng')
 close
 
 disp('All basic EEG processing done.')
