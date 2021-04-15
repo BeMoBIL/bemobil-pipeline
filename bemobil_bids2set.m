@@ -49,21 +49,19 @@ if ~isfield(bemobil_config, 'other_data_types')
     warning(['Config field "other_data_types" has not been specified- using default value ' bemobil_config.other_data_types{1}])
 end
 
-if ~isfield(bemobil_config, 'merge_all_sessions')
-    bemobil_config.merge_all_sessions = true;
-    warning('Config field "merge_all_sessions" has not been specified- using default value "true"')
-end
-
 if ~isfield(bemobil_config, 'resample_freq')
     bemobil_config.resample_freq = 250;
     warning('Config field "resample_freq" has not been specified- using default value 250')
 end
 
+if ~isfield(bemobil_config, 'merged_filename')
+    bemobil_config.merged_filename = 'merged.set';
+    warning('Config field "merged_filename" has not been specified- using default value merged.set')
+end
+
+
 % write down the names of other data types then eeg (use BIDS suffix)
 otherDataTypes  = bemobil_config.other_data_types; 
-
-% should all sessions be merged? 
-mergeAllSessions = bemobil_config.merge_all_sessions; 
 
 % construct the bids data directory 
 bidsDir         = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder);
@@ -72,13 +70,23 @@ bidsDir         = fullfile(bemobil_config.study_folder, bemobil_config.bids_data
 targetDir       = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder);                    % construct using existing config fields
 tempDir         = fullfile(targetDir, 'temp_bids'); 
 
+if isdir(tempDir)
+    warning('Previous import seems to have been interrupted - removing temp_bids folder')
+    rmdir(tempDir, 's')
+end
+
+skipFlag = false(size(numericalIDs)); 
+
 % check if final session file names are there - if so, skip
-% subjectNr = str2double(subDirList(iSub).name(numel(bemobil_config.filename_prefix) + 1:end));
-% sessionNameEEG = [bemobil_config.filename_prefix, num2str(subjectNr), '_', bemobil_config.filenames{iSes} '_EEG.set'];
-% 
-% if isfile(fullfile(targetDir, subDirList(iSub).name, sessionNameEEG))
-%     disp(['File ' sessionNameEEG ' already found - skipping import for this participant'])
-% end
+for IDi = 1:numel(numericalIDs)
+    [sesfilePath, sesfileName] = sessionfilename(targetDir, 'EEG', bemobil_config, 1, numericalIDs(IDi)); 
+    if isfile(fullfile(sesfilePath, sesfileName))
+        disp(['File ' sesfileName ' already found - skipping import for this participant'])
+        skipFlag(IDi) = true;
+    end 
+end
+
+numericalIDs = numericalIDs(skipFlag); 
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
@@ -243,12 +251,12 @@ for iSub = 1:numel(subDirList)
     
     % list all files in the subject folder
     subjectFiles = dir(fullfile(targetDir, subDirList(iSub).name));
+    subjectNr = str2double(subDirList(iSub).name(numel(bemobil_config.filename_prefix) + 1:end));
     
     % iterate over sessions
     for iSes = 1:numel(bemobil_config.filenames)
         
         % check if final session file names are there - if so, skip
-        subjectNr = str2double(subDirList(iSub).name(numel(bemobil_config.filename_prefix) + 1:end));
         sessionNameEEG = [bemobil_config.filename_prefix, num2str(subjectNr), '_', bemobil_config.filenames{iSes} '_EEG.set'];
        
         if isfile(fullfile(targetDir, subDirList(iSub).name, sessionNameEEG))
@@ -309,7 +317,7 @@ for iSub = 1:numel(subDirList)
         EEG.setname = EEG.filename(1:end-8); 
         
         % checkset 
-        EEG = eeg_checkset(EEG); 
+        EEG = eeg_checkset(EEG, 'makeur'); 
         
         % save merged EEG file for the session
         EEG = pop_saveset(EEG, 'filename',[EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
@@ -392,7 +400,7 @@ for iSub = 1:numel(subDirList)
         DATA.event = EEG.event;
         
         % checkset 
-        DATA = eeg_checkset(DATA);
+        DATA = eeg_checkset(DATA, 'makeur');
         
         % save merged data file for the session
         DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
@@ -403,27 +411,35 @@ for iSub = 1:numel(subDirList)
     % remove unnecessary files prior to merging
     subjectFiles = dir(fullfile(targetDir, subDirList(iSub).name));
     toDelete = {subjectFiles(contains({subjectFiles.name}, '_old.fdt') | contains({subjectFiles.name}, '_old.set')).name};
+    
     for iD = 1:numel(toDelete)
         delete(fullfile(targetDir, subDirList(iSub).name, toDelete{iD}));
     end
     
-    if mergeAllSessions
-        
-%         % merge all EEG data over sessions 
-%         for iFile = 1:numel(EEGFiles)
-%             pop_mergeset
-%         end
-%         
-%         % merge all other data over sessions
-%         for iType = 1:numel(dataTypes)
-%             for iFile = 1:numel(DataFiles)
-%                 pop_mergeset
-%             end
-%         end
-      
+    % merge EEG sessions 
+    %----------------------------------------------------------------------
+    ALLEEG = []; CURRENTSET = [];
+    for Si = 1:numel(bemobil_config.filenames)
+        [outPath, outName] = sessionfilename(targetDir,'EEG', bemobil_config, Si, subjectNr);
+        EEG         = pop_loadset('filepath',outPath,'filename',outName);
+        [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+    end
+    
+    if numel(ALLEEG) > 1
+        [~, EEG_merged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.merged_filename], fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
+    else
+        EEG_merged = EEG;
+        pop_saveset(EEG_merged, 'filename', [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.merged_filename], 'filepath', fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
     end
     
 end
 
+end
+
+
+function [outPath, outName] = sessionfilename(targetDir, modality, bemobil_config, sesnr, subnr)
+
+outName     = [bemobil_config.filename_prefix, num2str(subnr), '_', bemobil_config.filenames{sesnr} '_' modality '.set'];
+outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)]); 
 
 end
