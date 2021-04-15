@@ -300,6 +300,7 @@ for pi = 1:numel(numericalIDs)
                     catch
                     end
                 end
+                
             end
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
@@ -376,8 +377,9 @@ for pi = 1:numel(numericalIDs)
             %--------------------------------------------------------------
             %                Convert Motion Data to BIDS
             %--------------------------------------------------------------
-            motionsrates    = []; 
-            ftmotion        = {}; 
+            motionsrates = []; 
+            ftmotion = {};
+            
             % construct fieldtrip data
             for iM = 1:numel(xdfmotion)
                 ftmotion{iM} = stream2ft(xdfmotion{iM}); 
