@@ -581,13 +581,13 @@ for iSubject = 2:size(bids.participants,1)
                     case 'motion'
                         % JSON information file
                         infoFileMotion  = searchparent(subjectFolder{iFold}, '*_motion.json');
-                        infoData        = loadfile(infoFileMotion.name, infoFileMotion);
+                        infoData        = loadfile(infoFileMotion(iFile).name, infoFileMotion);
                         bids.otherdata  = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], infoData);
                         
                         % channel file (potentially shared with EEG)
                         importChan          = true;
                         channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
-                        channelData     = loadfile(channelFileMotion.name, channelFileMotion); % this might have to change along with motion BEP
+                        channelData     = loadfile(channelFileMotion(iFile).name, channelFileMotion); % this might have to change along with motion BEP
                        
                         % coordinate system file (potentially shared with EEG)
                         importCoord 	= true; 
