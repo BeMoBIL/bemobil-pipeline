@@ -55,7 +55,7 @@ if ~isfield(bemobil_config, 'resample_freq')
 end
 
 if ~isfield(bemobil_config, 'merged_filename')
-    bemobil_config.merged_filename = 'merged.set';
+    bemobil_config.merged_filename = 'merged_EEG.set';
     warning('Config field "merged_filename" has not been specified- using default value merged.set')
 end
 
@@ -115,7 +115,6 @@ for iSub = 1:numel(subDirList)
     if isMultiSession
         
         % if multisession, iterate over sessions and concatenate files in EEG folder
-        
         dirFlagArray    = [sesDirList.isdir];
         nameArray       = {sesDirList.name};
         nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
@@ -255,15 +254,7 @@ for iSub = 1:numel(subDirList)
     
     % iterate over sessions
     for iSes = 1:numel(bemobil_config.filenames)
-        
-        % check if final session file names are there - if so, skip
-        sessionNameEEG = [bemobil_config.filename_prefix, num2str(subjectNr), '_', bemobil_config.filenames{iSes} '_EEG.set'];
-       
-        if isfile(fullfile(targetDir, subDirList(iSub).name, sessionNameEEG))
-            disp(['File ' sessionNameEEG ' already found - skipping import for this session'])
-            continue; 
-        end
-        
+         
         % find all EEG data
         eegFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.filenames{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
         eegFiles = natsortfiles(eegFiles); % not using natsortorder here - potentially problematic for more than 10 runs? (implausible)  
@@ -416,20 +407,16 @@ for iSub = 1:numel(subDirList)
         delete(fullfile(targetDir, subDirList(iSub).name, toDelete{iD}));
     end
     
-    % merge EEG sessions 
+    % merge EEG sessions
     %----------------------------------------------------------------------
-    ALLEEG = []; CURRENTSET = [];
-    for Si = 1:numel(bemobil_config.filenames)
-        [outPath, outName] = sessionfilename(targetDir,'EEG', bemobil_config, Si, subjectNr);
-        EEG         = pop_loadset('filepath',outPath,'filename',outName);
-        [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
-    end
-    
-    if numel(ALLEEG) > 1
+    if numel(bemobil_config.filenames) > 1
+        ALLEEG = []; CURRENTSET = [];
+        for Si = 1:numel(bemobil_config.filenames)
+            [outPath, outName] = sessionfilename(targetDir,'EEG', bemobil_config, Si, subjectNr);
+            EEG         = pop_loadset('filepath',outPath,'filename',outName);
+            [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+        end
         [~, EEG_merged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.merged_filename], fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
-    else
-        EEG_merged = EEG;
-        pop_saveset(EEG_merged, 'filename', [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.merged_filename], 'filepath', fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
     end
     
 end
