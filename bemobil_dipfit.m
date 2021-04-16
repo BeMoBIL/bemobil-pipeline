@@ -1,9 +1,9 @@
 % bemobil_dipfit() - Prepares data for dipole fitting and runs the dipole fitting procedure
 %
 % Usage:
-%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold, remove_outside_head, fit_bilateral_dipoles)
-%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold, remove_outside_head, fit_bilateral_dipoles, out_filename, out_filepath)
-%
+%   >> [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold,...
+%     remove_outside_head, number_of_dipoles, out_filename, out_filepath)
+
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
 %   EEG                     - current EEGLAB EEG structure
@@ -27,8 +27,11 @@
 %
 % See also:
 %   EEGLAB, coregister, pop_dipfit_settings, pop_multifit
+% 
+% Author: Marius Klug, 2021
 
-function [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold, remove_outside_head, number_of_dipoles, out_filename, out_filepath)
+function [ALLEEG, EEG, CURRENTSET] = bemobil_dipfit( EEG , ALLEEG, CURRENTSET, warping_channel_names, RV_threshold,...
+    remove_outside_head, number_of_dipoles, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var'));

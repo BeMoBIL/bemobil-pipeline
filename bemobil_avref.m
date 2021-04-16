@@ -1,3 +1,32 @@
+% bemobil_avref() - Computes the average reference. If EOG channels are declared in channel types, these are excluded.
+% If reference channel exists and is declared in EEG.chanlocs(1).ref regular average reference is computed. If no
+% reference channel is declared, the full rank average reference is used (see fullrankaveref by Makoto Miakoshi (2017)).
+% In both cases the data rank is the number of original channels, so no subtraction of 1 rank for AMICA is necessary!
+%
+% Usage:
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_avref( EEG , ALLEEG, CURRENTSET)
+%   >>  [ALLEEG, EEG, CURRENTSET] = bemobil_avref( EEG , ALLEEG, CURRENTSET, out_filename, out_filepath)
+%
+% Inputs:
+%   ALLEEG                  - complete EEGLAB data set structure
+%   EEG                     - current EEGLAB EEG structure
+%   CURRENTSET              - index of current EEGLAB EEG structure within ALLEEG
+%   out_filename            - output filename (OPTIONAL ARGUMENT)
+%   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
+%       if both a name and a path are provided)
+%
+% Outputs:
+%   ALLEEG                  - complete EEGLAB data set structure
+%   EEG                     - current EEGLAB EEG structure
+%   Currentset              - index of current EEGLAB EEG structure within ALLEEG
+%
+%   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
+%
+% See also: 
+%   EEGLAB, bemobil_interp, bemobil_avref, pop_interp, pop_reref
+% 
+% Author: Marius Klug, 2021
+
 function [ALLEEG, EEG, CURRENTSET] = bemobil_avref( EEG , ALLEEG, CURRENTSET, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided
@@ -14,26 +43,16 @@ end
 
 %% Compute average reference for all EEG channels
 
-disp('Computing average reference for bad channel detection...')
-% Compute average reference for all EEG channels
+disp('Computing average reference excluding EOG.')
+disp('This does NOT reduce the data rank because either full rank average reference is used or the original reference channel was fed back to the data!')
 
-EEG_channels_bool = strcmp({EEG.chanlocs.type},'EEG');
-REF_channels_bool = strcmp({EEG.chanlocs.type},'REF');
+exclude_channels = find(strcmp({EEG.chanlocs.type},'EOG'));
 EEG_channels = 1:EEG.nbchan;
-exclude_channels = EEG_channels(~(EEG_channels_bool | REF_channels_bool));
-EEG_channels = EEG_channels(EEG_channels_bool | REF_channels_bool);
-
-
-if ~any(EEG_channels_bool)
-    
-    EEG_channels = [];
-    
-end
-
+EEG_channels(exclude_channels) = [];
 
 if isempty(EEG.chanlocs(1).ref)
     % no ref was declared during preprocessing, use full rank averef (without needing dependency) Apply average
-    % reference after adding initial reference, see fullrankaveref by Makoto Miakoshi (2017) This adds an empty new
+    % reference after adding initial reference, see fullrankaveref by Makoto Miakoshi (2017). This adds an empty new
     % channel, rereferences, then removes the excess channel again, so the rank is still intact. The reference channel,
     % however, is gone and can't be used for analyses, so in case Cz was used as reference during recording, it is
     % inaccessible.
@@ -54,11 +73,12 @@ else
     EEG = pop_reref( EEG,[],'keepref','on','exclude',exclude_channels);
 end
 
-
 EEG.etc.bemobil_reref = EEG_channels;
 
 if ~isempty(exclude_channels)
     EEG.etc.bemobil_reref_exclude = EEG.chanlocs(exclude_channels).labels;
+else
+    EEG.etc.bemobil_reref_exclude = [];
 end
 
 disp('Rereferencing done.');
