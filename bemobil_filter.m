@@ -1,9 +1,7 @@
-% bemobil_filter() - Filtering of EEG data. Information about the filter is
-% stired in EEG.etc.filter. Filter order can optionally be specified,
-% otherwise EEGLAB default filters are being used. The filters are being
-% applied successively to not use a band-pass filter with the same order.
-% First, the highpass, then the lowpass filter are being run. A zero-phase
-% Hamming window FIR filter is being used.
+% bemobil_filter() - Filtering of EEG data. Information about the filter is stored in EEG.etc.filter. Filter order can
+% optionally be specified, otherwise EEGLAB default filters are being used. The filters are being applied successively
+% to not use a band-pass filter with the same order. First, the highpass, then the lowpass filter are computed. A
+% zero-phase Hamming window FIR filter is being used.
 %
 % Usage:
 %   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, lowerPassbandEdge, higherPassbandEdge);

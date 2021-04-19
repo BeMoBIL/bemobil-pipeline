@@ -1,12 +1,12 @@
-% bemobil_preprocess() - Preprocessing of EEG data: Fill EEG structure with
-% ur-data. Remove unused electrodes of electrode arrays. Import channel
-% locations from vicra file. Change channel names and declare EOG.
-% Resample.
+% bemobil_preprocess() - Preprocessing of EEG data: Fill EEG structure with ur-data, remove unused electrodes of
+% electrode arrays, resample, remove line noise with ZapLine, change channel names, add reference channel with zeros,
+% import channel locations, declare ref channel and channel type (EEG, EOG, REF).
 %
 % Usage:
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, resample_freq);
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, channel_locations_filepath, channels_to_remove, eog_channels, resample_freq, out_filename, out_filepath);
-%
+%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET,...
+%    channel_locations_filepath, channels_to_remove, eog_channels, resample_freq,...
+%    out_filename, out_filepath, rename_channels, ref_channel, zaplineConfig)
+% 
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
 %   EEG                     - current EEGLAB EEG structure
@@ -17,9 +17,18 @@
 %   eog_channels            - cell of channels that should be declared as EOG
 %       for later use (e.g. {'G16' 'G32'}); OR []
 %   resample_freq           - Resample frequency (Hz), if [], no resampling will be applied
-%   out_filename            - output filename (OPTIONAL ARGUMENT)
-%   out_filepath            - output filepath (OPTIONAL ARGUMENT - File will only be saved on disk
-%       if both a name and a path are provided)
+%   out_filename            - output filename OR [] - File will only be saved on disk
+%       if both a name and a path are provided
+%   out_filepath            - output filepath OR [] - File will only be saved on disk
+%       if both a name and a path are provided
+%   rename_channels         - cell array of chars, either just one entry, then this entry will be removed from all
+%                               channels (e.g. when they all have a prefix of their xdf stream), or a n x 2 matrix of  
+%                               channel names (from->to)
+%   ref_channel             - label of the reference channel OR [] - if provided a new channel will be created with this
+%                               label and zero values. This means that during resampling the original reference can be
+%                               preserved
+%   zaplineConfig           - struct with config for zapline OR [] - if provided, must at least contain the field
+%                               "linefreqs". See clean_data_with_zapline for information about the other options.
 %
 % Outputs:
 %   ALLEEG                  - complete EEGLAB data set structure
@@ -85,7 +94,7 @@ if exist('zaplineConfig','var')
     if save_file_on_disk 
         disp('Saving ZapLine figures...')
 
-        filenamesplit = strsplit(out_filename,'.set');
+        filenamesplit = strsplit(out_filename,'_preprocessed.set');
 
         for i_fig = 1:length(plothandles)
         
@@ -145,6 +154,7 @@ if exist('ref_channel','var') && ~isempty(ref_channel)
 end
 
 % 1c) import chanlocs and copy to urchanlocs
+% TODO: check behavior with BIDS loaded datasets that do contain chanlocs
 if ~isempty(channel_locations_filepath)
     EEG = pop_chanedit(EEG, 'load',...
         {channel_locations_filepath 'filetype' 'autodetect'});
@@ -182,7 +192,6 @@ for n = 1:length(EEG.chanlocs)
 end
 
 EEG = eeg_checkset( EEG );
-
 
 %% new data set in EEGLAB
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');

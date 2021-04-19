@@ -1,5 +1,5 @@
-% bemobil_clean_with_iclabel() - Cleans data with the help of the ICLabel classifications. Plots kept and thrown ICs
-% according to their respective summed score (or 1 - said score).
+% bemobil_clean_with_iclabel() - Cleans data with the help of the ICLabel classifications. Plots ICs that are kept
+% scaled to their respective summed score.
 % The classes are: {'Brain'  'Muscle'  'Eye'  'Heart'  'Line Noise'  'Channel Noise'  'Other'}
 %
 % Usage:
@@ -26,6 +26,8 @@
 %
 % See also:
 %   EEGLAB, pop_iclabel, bemobil_plot_patterns
+% 
+% Author: Marius Klug, 2021
 
 function [ALLEEG, EEG, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG , ALLEEG, CURRENTSET, classifier_version,...
     classes_to_keep, threshold_to_keep, out_filename, out_filepath)
@@ -150,11 +152,12 @@ EEG = eeg_checkset( EEG );
 if save_file_on_disk
     
     % save dipole fig
-    print(gcf,fullfile(out_filepath,[out_filename '_brain_dipoles']),'-dpng')
-    savefig(fullfile(out_filepath,[out_filename '_brain_dipoles.fig']))
+    print(gcf,fullfile(out_filepath,[erase(out_filename,'.set') '_brain_dipoles.png']),'-dpng')
+    savefig(fullfile(out_filepath,[erase(out_filename,'.set') '_brain_dipoles.fig']))
+
     close
-    print(fig1,fullfile(out_filepath,[out_filename '_ICs_kept.png']),'-dpng')
+    print(fig1,fullfile(out_filepath,[erase(out_filename,'.set') '_ICs_kept.png']),'-dpng')
     close
-    EEG = pop_saveset( EEG, 'filename',out_filename,'filepath', out_filepath);
+    EEG = pop_saveset( EEG, 'filename',erase(out_filename,'.set'),'filepath', out_filepath);
     disp('...done');
 end
