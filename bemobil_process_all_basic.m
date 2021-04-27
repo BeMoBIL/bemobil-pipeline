@@ -68,12 +68,13 @@ if ~force_recompute
     end
 end
 
-%% plot raw (with 0.5hz filter)
+%% plot raw data at 6 different times throughout the dataset
+% 0.5hz filter just for plotting, so remove DC offset
 
 disp('Filtering data only for plotting!')
 EEG = pop_eegfiltnew(EEG_to_process, 'locutoff',0.5);
 
-%%
+%% create plots
 
 plotfigure = figure('color','w');
 set(plotfigure, 'Position', get(0,'screensize'))
