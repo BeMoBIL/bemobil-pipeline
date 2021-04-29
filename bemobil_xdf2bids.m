@@ -258,6 +258,8 @@ for pi = 1:numel(numericalIDs)
             % initialize an array of booleans indicating whether the streams are continuous
             iscontinuous = false(size(streams));
             
+            names = {};
+            
             % figure out which streams contain continuous/regular and discrete/irregular data
             for i=1:numel(streams)
                 
@@ -387,7 +389,7 @@ for pi = 1:numel(numericalIDs)
             
              % if needed, execute a custom function for any alteration to the data to address dataset specific issues
             % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), pi, si, di);
+            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), participantNr, si, di);
                      
             % save motion start time
             motionStartTime              = motion.time{1}(1);
