@@ -399,7 +399,7 @@ for iSub = 1:numel(subDirList)
     
     for iD = 1:numel(toDelete)
         delete(fullfile(targetDir, subDirList(iSub).name, toDelete{iD}));
-        endF
+    end
     
     % merge EEG sessions
     %----------------------------------------------------------------------
