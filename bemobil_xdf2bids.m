@@ -120,30 +120,49 @@ for iVI = 1:2:numel(varargin)
     end
 end
 
+
+% check if some participant data is already in BIDS folder
+skipIndices = []; 
+for Pi = 1:numel(numericalIDs)
+    pDir = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder, ['sub-' num2str(numericalIDs(Pi),'%03.f')]);  
+    if exist(pDir, 'dir')
+        disp(['Subject directory ' pDir ' exists. Skipping ... '])
+        skipIndices = [skipIndices, Pi]; 
+    end
+end
+
+numericalIDs = numericalIDs(~skipIndices);
+
+if isempty(numericalIDs)
+    disp('All participant folders were already found in BIDS directory.')
+    return; 
+end
+
 % check if numerical IDs match subjectData, if this was specified
 if exist('subjectInfo','var')
     
-    % first sort numerical IDs and rows in subjectdata struct in ascending order
     numericalIDs            = sort(numericalIDs);
     nrColInd                = find(strcmp(subjectInfo.cols, 'nr'));
-    subjectInfo.data        = sortrows(subjectInfo.data, nrColInd);
-    IDsInSData              = [subjectInfo.data{:,nrColInd}];
+    newPInfo                = {}; 
     
-    if ~isequal(numericalIDs,IDsInSData)
-        
-        % throw warning if the two ID arrays do not match and take the latter
-        warning('Input numericalIDs and entries for column nr in participant metadata do not match - using the latter')
-        numericalIDs = IDsInSData;
-        
+    % attempt to find matching rows in subject info 
+    for Pi = 1:numel(numericalIDs)
+        pRowInd          = find(cell2mat(subjectInfo.data(:,nrColInd)) == numericalIDs(Pi),1);       
+        if isempty(pRowInd)
+            warning(['Participant ' num2str(numericalIDs(Pi)) ' info not given : filling with n/a'])
+            emptyRow         = {numericalIDs(Pi)}; 
+            [emptyRow{2:size(subjectInfo.data,2)}] = deal('n/a'); 
+            newPInfo(Pi,:)   = emptyRow;
+        else
+            newPInfo(Pi,:)   = subjectInfo.data(pRowInd,:);
+        end
     end
+    
 else 
     warning('Optional input participant_metadata was not entered - participant.tsv will be omitted (NOT recommended for data sharing)')
 end
 
-%-------------------------------------------------------------------------
-% initialize fieldtrip
-ft_defaults
-
+%--------------------------------------------------------------------------
 % add natsortfiles to path
 [filepath,~,~] = fileparts(which('bemobil_xdf2bids')); 
 addpath(fullfile(filepath, 'resources', 'natsortfiles'))

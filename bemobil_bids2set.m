@@ -81,12 +81,17 @@ skipFlag = false(size(numericalIDs));
 for IDi = 1:numel(numericalIDs)
     [sesfilePath, sesfileName] = sessionfilename(targetDir, 'EEG', bemobil_config, 1, numericalIDs(IDi)); 
     if isfile(fullfile(sesfilePath, sesfileName))
-        disp(['File ' sesfileName ' already found - skipping import for this participant'])
+        disp(['File ' sesfileName ' found - skipping import for this participant'])
         skipFlag(IDi) = true;
     end 
 end
 
 numericalIDs = numericalIDs(~skipFlag); 
+
+if isempty(numericalIDs)
+    disp('All participant data had already been converted from .xdf to BIDS');
+    return;
+end
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
@@ -414,6 +419,8 @@ for iSub = 1:numel(subDirList)
     end
     
 end
+
+disp('.xdf to BIDS conversion finished')
 
 end
 
