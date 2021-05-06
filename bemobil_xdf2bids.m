@@ -69,17 +69,17 @@ bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG');
 bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
 
 if isfield(bemobil_config, 'bids_motion_position_units')
-    if iscell(bemobil_config.bids_motion_position_units)
-        if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config.session_names)
-            if numel(bemobil_config.bids_motion_position_units) == 1
-                bemobil_config.bids_motion_position_units = repmat(bemobil_config.bids_motion_postionunits, 1, numel(bemobil_config.session_names)); 
-                warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
-            else
-                error('Config field bids_motion_position_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
-            end
+    if ~iscell(bemobil_config.bids_motion_position_units)
+        bemobil_config.bids_motion_position_units = {bemobil_config.bids_motion_position_units};
+    end
+    
+    if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config.session_names)
+        if numel(bemobil_config.bids_motion_position_units) == 1
+            bemobil_config.bids_motion_position_units = repmat(bemobil_config.bids_motion_position_units, 1, numel(bemobil_config.session_names));
+            warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
+        else
+            error('Config field bids_motion_position_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
         end
-    else
-        bemobil_config.bids_motion_position_units = {bemobil_config.bids_motion_position_units}; 
     end
 else
     bemobil_config.bids_motion_position_units       = repmat({'m'},1,numel(bemobil_config.session_names));
@@ -87,17 +87,17 @@ else
 end
 
 if isfield(bemobil_config, 'bids_motion_orientation_units')
-    if iscell(bemobil_config.bids_motion_orientation_units)
-        if numel(bemobil_config.bids_motion_orientation_units) ~= numel(bemobil_config.session_names)
-            if numel(bemobil_config.bids_motion_orientation_units) == 1
-                bemobil_config.bids_motion_orientation_units = repmat(bemobil_config.bids_motion_orientation_units, 1, numel(bemobil_config.session_names)); 
-                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
-            else
-                error('Config field bids_motion_orientation_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
-            end
+    if ~iscell(bemobil_config.bids_motion_orientation_units)
+        bemobil_config.bids_motion_orientation_units = {bemobil_config.bids_motion_orientation_units};
+    end
+    
+    if numel(bemobil_config.bids_motion_orientation_units) ~= numel(bemobil_config.session_names)
+        if numel(bemobil_config.bids_motion_orientation_units) == 1
+            bemobil_config.bids_motion_orientation_units = repmat(bemobil_config.bids_motion_orientation_units, 1, numel(bemobil_config.session_names));
+            warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+        else
+            error('Config field bids_motion_orientation_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
         end
-    else
-        bemobil_config.bids_motion_orientation_units = {bemobil_config.bids_motion_orientation_units}; 
     end
 else
     bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
