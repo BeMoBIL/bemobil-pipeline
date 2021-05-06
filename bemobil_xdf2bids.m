@@ -8,15 +8,15 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %   example fields 
 %       bemobil_config.study_folder             = 'E:\Project_BIDS\example_dataset_MWM\';
 %       bemobil_config.filename_prefix          = 'sub_';
-%       bemobil_config.raw_data_folder          = '0_raw-data\';
+%       bemobil_config.source_data_folder       = '0_source-data\';
 %       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
-%       bemobil_config.filenames                = {'VR' 'desktop'}; 
+%       bemobil_config.session_names            = {'VR' 'desktop'}; 
 %       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
-%       bemobil_config.bids_rbsessions          = [1,1; 1,1; 0,1; 0,1; 0,1]; 
+%       bemobil_config.bids_rb_in_sessions      = [1,1; 1,1; 0,1; 0,1; 0,1]; 
 %                                                  logicals : indicate which rbstreams are present in which sessions
-%       bemobil_config.bids_eegkeyword          = {'BrainVision'};
+%       bemobil_config.bids_eeg_keyword         = {'EEG'};
 %                                                  a unique keyword used to identify the eeg stream in the .xdf file             
-%       bemobil_config.bids_tasklabel           = 'VNE1';
+%       bemobil_config.bids_task_label          = 'VNE1';
 %       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc';
 %       bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
 %   
@@ -28,7 +28,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %
 %   Note on multi-session and multi-run data sets :  
 %
-%           Entries in bemobil_config.filenames will search through the 
+%           Entries in bemobil_config.session_names will search through the 
 %           raw data directory of the participant and group together
 %           .xdf files with matching keyword in the name into one session
 %           If there are multiple files in one session, they will be given
@@ -57,64 +57,64 @@ bemobil_config = checkfield(bemobil_config, 'bids_data_folder', '1_BIDS-data\', 
 bemobil_config = checkfield(bemobil_config, 'rigidbody_names', bemobil_config.rigidbody_streams, 'values from field "rigidbody_streams"'); 
 bemobil_config = checkfield(bemobil_config, 'rigidbody_anat', 'Undefined', 'Undefined'); 
 
-if ~isfield(bemobil_config, 'bids_rbsessions')
-    bemobil_config.bids_rbsessions    = true(numel(bemobil_config.filenames),numel(bemobil_config.rigidbody_streams)); 
+if ~isfield(bemobil_config, 'bids_rb_in_sessions')
+    bemobil_config.bids_rb_in_sessions    = true(numel(bemobil_config.session_names),numel(bemobil_config.rigidbody_streams)); 
 else
-    if ~islogical(bemobil_config.bids_rbsessions)
-        bemobil_config.bids_rbsessions = logical(bemobil_config.bids_rbsessions); 
+    if ~islogical(bemobil_config.bids_rb_in_sessions)
+        bemobil_config.bids_rb_in_sessions = logical(bemobil_config.bids_rb_in_sessions); 
     end
 end
 
-bemobil_config = checkfield(bemobil_config, 'bids_eegkeyword','EEG', 'EEG'); 
-bemobil_config = checkfield(bemobil_config, 'bids_tasklabel', 'defaulttask', 'defaulttask'); 
+bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG'); 
+bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
 
-if isfield(bemobil_config, 'bids_motion_positionunits')
-    if iscell(bemobil_config.bids_motion_positionunits)
-        if numel(bemobil_config.bids_motion_positionunits) ~= numel(bemobil_config.filenames)
-            if numel(bemobil_config.bids_motion_positionunits) == 1
-                bemobil_config.bids_motion_positionunits = repmat(bemobil_config.bids_motion_postionunits, 1, numel(bemobil_config.filenames)); 
+if isfield(bemobil_config, 'bids_motion_position_units')
+    if iscell(bemobil_config.bids_motion_position_units)
+        if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config.session_names)
+            if numel(bemobil_config.bids_motion_position_units) == 1
+                bemobil_config.bids_motion_position_units = repmat(bemobil_config.bids_motion_postionunits, 1, numel(bemobil_config.session_names)); 
                 warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
             else
-                error('Config field bids_motion_positionunits must have either one entry or the number of entries (in cell array) have to match number of entries in field filenames')
+                error('Config field bids_motion_position_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
             end
         end
     else
-        bemobil_config.bids_motion_positionunits = {bemobil_config.bids_motion_positionunits}; 
+        bemobil_config.bids_motion_position_units = {bemobil_config.bids_motion_position_units}; 
     end
 else
-    bemobil_config.bids_motion_positionunits       = repmat({'m'},1,numel(bemobil_config.filenames));
-    warning('Config field bids_motion_positionunits unspecified - assuming meters')
+    bemobil_config.bids_motion_position_units       = repmat({'m'},1,numel(bemobil_config.session_names));
+    warning('Config field bids_motion_position_units unspecified - assuming meters')
 end
 
-if isfield(bemobil_config, 'bids_motion_orientationunits')
-    if iscell(bemobil_config.bids_motion_orientationunits)
-        if numel(bemobil_config.bids_motion_orientationunits) ~= numel(bemobil_config.filenames)
-            if numel(bemobil_config.bids_motion_orientationunits) == 1
-                bemobil_config.bids_motion_orientationunits = repmat(bemobil_config.bids_motion_orientationunits, 1, numel(bemobil_config.filenames)); 
+if isfield(bemobil_config, 'bids_motion_orientation_units')
+    if iscell(bemobil_config.bids_motion_orientation_units)
+        if numel(bemobil_config.bids_motion_orientation_units) ~= numel(bemobil_config.session_names)
+            if numel(bemobil_config.bids_motion_orientation_units) == 1
+                bemobil_config.bids_motion_orientation_units = repmat(bemobil_config.bids_motion_orientation_units, 1, numel(bemobil_config.session_names)); 
                 warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
             else
-                error('Config field bids_motion_orientationunits must have either one entry or the number of entries (in cell array) have to match number of entries in field filenames')
+                error('Config field bids_motion_orientation_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
             end
         end
     else
-        bemobil_config.bids_motion_orientationunits = {bemobil_config.bids_motion_orientationunits}; 
+        bemobil_config.bids_motion_orientation_units = {bemobil_config.bids_motion_orientation_units}; 
     end
 else
-    bemobil_config.bids_motion_orientationunits       = repmat({'rad'},1,numel(bemobil_config.filenames));
+    bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
     warning('Config field bids_motion_oreintationunits unspecified - assuming radians')
 end
 
 %--------------------------------------------------------------------------
 % find optional input arguments 
 for iVI = 1:2:numel(varargin)
-    if strcmp(varargin{iVI}, 'generalmetadata')
+    if strcmp(varargin{iVI}, 'general_metadata')
         generalInfo         = varargin{iVI+1}; 
-    elseif strcmp(varargin{iVI}, 'participantmetadata')
+    elseif strcmp(varargin{iVI}, 'participant_metadata')
         subjectInfo         = varargin{iVI+1}; 
-    elseif strcmp(varargin{iVI}, 'motionmetadata')
+    elseif strcmp(varargin{iVI}, 'motion_metadata')
         motionInfo          = varargin{iVI+1}; 
-    elseif strcmp(varargin{iVI}, 'eegmetadata')
-        eegInfo          = varargin{iVI+1}; 
+    elseif strcmp(varargin{iVI}, 'eeg_metadata')
+        eegInfo             = varargin{iVI+1}; 
     else
         warning('One of the optional inputs are not valid : please see help bemobil_xdf2bids')
     end
@@ -137,7 +137,7 @@ if exist('subjectInfo','var')
         
     end
 else 
-    warning('Optional input participantmetadata was not entered - participant.tsv will be omitted (NOT recommended for data sharing)')
+    warning('Optional input participant_metadata was not entered - participant.tsv will be omitted (NOT recommended for data sharing)')
 end
 
 %-------------------------------------------------------------------------
@@ -153,12 +153,12 @@ addpath(fullfile(filepath, 'resources', 'natsortfiles'))
 addpath(fullfile(filepath, 'external', 'xdf'))
 
 % path to sourcedata
-sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.raw_data_folder(1:end-1));
+sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.source_data_folder(1:end-1));
 addpath(genpath(sourceDataPath))
 
 % names of the steams 
 motionStreamNames                       = bemobil_config.rigidbody_streams;
-eegStreamName                           = {bemobil_config.bids_eegkeyword};
+eegStreamName                           = {bemobil_config.bids_eeg_keyword};
 
 
 if isempty(bemobil_config.bids_motionconvert_custom)
@@ -171,7 +171,7 @@ end
 % general metadata that apply to all participants
 if ~exist('generalInfo', 'var')
     
-    warning('Optional input generalmetadata was not entered - using default general metadata (NOT recommended for data sharing)')
+    warning('Optional input general_metadata was not entered - using default general metadata (NOT recommended for data sharing)')
     
     generalInfo = [];
     
@@ -195,7 +195,7 @@ if ~exist('generalInfo', 'var')
     generalInfo.InstitutionalDepartmentName             = 'Biological Psychology and Neuroergonomics';
     generalInfo.InstitutionAddress                      = 'Strasse des 17. Juni 135, 10623, Berlin, Germany';
     generalInfo.TaskDescription                         = 'Default task generated by bemobil bidstools- no metadata present';
-    generalInfo.task                                    = bemobil_config.bids_tasklabel;
+    generalInfo.task                                    = bemobil_config.bids_task_label;
 
 end
 
@@ -213,9 +213,9 @@ for pi = 1:numel(numericalIDs)
     fileNameArray       = {participantFiles.name};
     
     % loop over sessions
-    for si = 1:numel(bemobil_config.filenames)
+    for si = 1:numel(bemobil_config.session_names)
         
-        sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.filenames{si}));
+        sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.session_names{si}));
         
         % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
@@ -228,11 +228,11 @@ for pi = 1:numel(numericalIDs)
             % information needed to construct file paths and names
             cfg.sub                                     = num2str(participantNr,'%03.f');
             cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di});
-            cfg.ses                                     = bemobil_config.filenames{si};
+            cfg.ses                                     = bemobil_config.session_names{si};
             cfg.run                                     = di;
             
             % remove session label in uni-session case
-            if numel(bemobil_config.filenames) == 1
+            if numel(bemobil_config.session_names) == 1
                 cfg = rmfield(cfg, 'ses');
             end
             
@@ -306,7 +306,7 @@ for pi = 1:numel(numericalIDs)
             end
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
-            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rbsessions(si,:))) & iscontinuous);
+            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous);
             xdfmarkers  = streams(~iscontinuous); 
             
             %--------------------------------------------------------------
@@ -389,7 +389,7 @@ for pi = 1:numel(numericalIDs)
             
              % if needed, execute a custom function for any alteration to the data to address dataset specific issues
             % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rbsessions(si,:)), participantNr, si, di);
+            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
                      
             % save motion start time
             motionStartTime              = motion.time{1}(1);
@@ -441,12 +441,12 @@ for pi = 1:numel(numericalIDs)
                 
                 if  contains(motion.hdr.chantype{ci},'position')
                     motion.hdr.chantype{ci} = 'POS';
-                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_positionunits{si};
+                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_position_units{si};
                 end
                 
                 if  contains(motion.hdr.chantype{ci},'orientation')
                     motion.hdr.chantype{ci} = 'ORNT';
-                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientationunits{si};
+                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
                 end
                 
                 splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');

@@ -2,12 +2,11 @@ clear bemobil_config
 
 %% General Setup
 bemobil_config.study_folder = 'path_to_study_folder\data\';
-
 bemobil_config.filename_prefix = 'sub_';
 
 % foldernames (NEED to have a filesep at the end, sorry!) 
-bemobil_config.raw_data_folder = '0_raw-data\';
-bemobil_config.mobilab_data_folder = '1_mobilab-data\';
+bemobil_config.source_data_folder = '0_source-data\';
+bemobil_config.bids_data_folder = '1_BIDS-data\'; 
 bemobil_config.raw_EEGLAB_data_folder = '2_basic-EEGLAB\';
 bemobil_config.spatial_filters_folder = '3_spatial-filters\';
 bemobil_config.spatial_filters_folder_AMICA = '3-1_AMICA\';
