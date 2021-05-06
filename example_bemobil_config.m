@@ -15,7 +15,7 @@ bemobil_config.single_subject_analysis_folder = '4_single-subject-analysis\';
 bemobil_config.mocap_analysis_folder = '5_mocap-analysis\';
 
 % filenames
-bemobil_config.merged_filename = 'merged.set';
+bemobil_config.merged_filename = 'merged_EEG.set';
 bemobil_config.preprocessed_filename = 'preprocessed.set';
 bemobil_config.interpolated_avRef_filename = 'interpolated_avRef.set';
 bemobil_config.filtered_filename = 'filtered.set';
@@ -25,8 +25,7 @@ bemobil_config.warped_dipfitted_filename = 'warped_dipfitted.set';
 bemobil_config.copy_weights_interpolate_avRef_filename = 'interp_avRef_ICA.set';
 bemobil_config.single_subject_cleaned_ICA_filename = 'cleaned_with_ICA.set';
 
-%% Import Settings (TBA)
-
+%% Import Settings 
 % Fields below do not have default values or important for data reading
 % configuration is necessary
 %--------------------------------------------------------------------------

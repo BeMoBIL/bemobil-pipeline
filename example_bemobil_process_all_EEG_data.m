@@ -1,16 +1,36 @@
-% close all; clear
-
-example_bemobil_config;
-
-% enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
-subjects = [1:40]; 
-force_recompute = 0;
-
 %% 
 
+% initialize EEGLAB 
 if ~exist('ALLEEG','var')
 	eeglab;
 end
+
+% initialize FieldTrip 
+ft_defaults
+
+% load configuration 
+example_bemobil_config;
+
+% if present, load additional metadata saved in example_bemobil_bids_metadata.m
+% this is primarily for enhancing documentation and data sharing 
+% (no influence on processing if this step is skipped)
+example_bemobil_bids_metadata; 
+
+% enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
+subjects = [64,66,76,78]; 
+force_recompute = false;
+
+
+%% Import 
+% (no looping over subjects - enter the whole array of IDs)
+
+% step 1 : convert .xdf to bids
+% bemobil_xdf2bids(bemobil_config, subjects) for minimal use 
+bemobil_xdf2bids(bemobil_config, subjects, 'general_metadata', general_info, 'motion_metadata', motion_info, 'eeg_metadata', eeg_info, 'participant_metadata', subject_info)
+
+% step 2 : convert bids to .set
+bemobil_bids2set(bemobil_config, subjects);
+
 
 %% processing loop
 
@@ -40,7 +60,6 @@ for subject = subjects
     end
 	
 	%% load data that is provided by the BIDS importer
-    
     % make sure the data is stored in double precision, large datafiles are supported, and no memory mapped objects are
     % used but data is processed locally
 	try 
@@ -65,8 +84,5 @@ for subject = subjects
 	bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute);
 
 end
-
-subjects
-subject
 
 disp('PROCESSING DONE! YOU CAN CLOSE THE WINDOW NOW!')
