@@ -20,6 +20,7 @@
 %   chan_detect_num_iter                - Number of iterations the bad channel detection should run (default = 10)
 %   chan_detected_fraction_threshold	- Fraction how often a channel has to be detected to be rejected in the final
 %                                           rejection (default 0.5)
+%   flatline_crit                       - Maximum duration a channel can be flat in seconds (default 'off')
 %
 % Outputs:
 %   chans_to_interp                     - vector with channel indices to remove
@@ -34,7 +35,7 @@
 % Authors: Lukas Gehrke, 2017, Marius Klug, 2021
 
 function [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold)
+    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, flatline_crit)
 
 if ~exist('chancorr_crit','var') || isempty(chancorr_crit)
 	chancorr_crit = 0.8;
@@ -47,6 +48,9 @@ if ~exist('chan_detect_num_iter','var') || isempty(chan_detect_num_iter)
 end
 if ~exist('chan_detected_fraction_threshold','var') || isempty(chan_detected_fraction_threshold)
 	chan_detected_fraction_threshold = 0.5;
+end
+if ~exist('flatline_crit','var') || isempty(flatline_crit)
+	flatline_crit = 'off';
 end
 
 %%
@@ -64,8 +68,8 @@ for i = 1:chan_detect_num_iter
     clear hlp_microcache
     % remove bad channels, use default values of clean_artifacts, but specify just in case they may change
     [EEG_chan_removed,EEG_highpass,~,detected_bad_channels(1:EEG.nbchan,i)] = clean_artifacts(EEG,...
-        'burst_crit','off','window_crit','off','ChannelCriterionMaxBadTime',chan_max_broken_time,...
-        'chancorr_crit',chancorr_crit,'line_crit',4,'highpass_band',[0.25 0.75],'flatline_crit','on');
+        'burst_crit','off','window_crit','off','channel_crit_maxbad_time',chan_max_broken_time,...
+        'chancorr_crit',chancorr_crit,'line_crit',4,'highpass_band',[0.25 0.75],'flatline_crit',flatline_crit);
 
 end
 disp('...iterative bad channel detection done!')
