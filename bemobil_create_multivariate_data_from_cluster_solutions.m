@@ -4,20 +4,20 @@
 % 
 % Usage:
 %   >>  [cluster_multivariate_data, data_plot] = bemobil_create_multivariate_data_from_cluster_solutions(STUDY,ALLEEG,...
-%       clustering_solutions,cluster_ROI_talairach)
+%       clustering_solutions,cluster_ROI_MNI)
 %
 % Inputs:
 %   ALLEEG                      - complete EEGLAB data set structure
 %   STUDY                       - STUDY data set of EEGLAB, which has to be loaded previously
 %   clustering_solutions        - struct of all clustering solutions created from bemobil_repeated_clustering
-%   cluster_ROI_talairach       - talairach coordinates of the region of interest (THIS NEEDS TO BE A STRUCT consisting of
+%   cluster_ROI_MNI             - MNI coordinates of the region of interest (THIS NEEDS TO BE A STRUCT consisting of
 %                                   .x, .y, and .z fields)
 %
 % Outputs:
 %   cluster_multivariate_data   - multivariate data set for each solutions' best fitting cluster (to ROI). Struct with
 %                               fields data (the data set consisting of these values: n_subjects,n_ICs,n_ICs/n_subjects,...
 %                               normalized_spread,mean_rv,x,y,z,distance_from_ROI), best_fitting_cluster (the number of
-%                               the best fitting cluster in the solution), and cluster_ROI_talairach (the input)
+%                               the best fitting cluster in the solution), and cluster_ROI_MNI (the input)
 %   data_plot                   - plot of the histograms of all dimensions
 %   
 %
@@ -26,7 +26,7 @@
 %
 % Authors: Marius Klug, 2018
 
-function [cluster_multivariate_data, data_plot] = bemobil_create_multivariate_data_from_cluster_solutions(STUDY,ALLEEG,clustering_solutions,cluster_ROI_talairach)
+function [cluster_multivariate_data, data_plot] = bemobil_create_multivariate_data_from_cluster_solutions(STUDY,ALLEEG,clustering_solutions,cluster_ROI_MNI)
 
 best_fitting_cluster = zeros((length(fields(clustering_solutions))-1),1);
 best_fitting_cluster_distance = inf((length(fields(clustering_solutions))-1),1);
@@ -52,9 +52,9 @@ for solution = 1:(length(fields(clustering_solutions))-1)
     for cluster = 3:length(STUDY.cluster) % cluster 1 contains all ICs and cluster 2 contains the outliers
         
 		% Pythagoras in 3D
-        tmp_distance = sqrt((STUDY.cluster(cluster).dipole.posxyz(1) - cluster_ROI_talairach.x)^2 +...
-							(STUDY.cluster(cluster).dipole.posxyz(2) - cluster_ROI_talairach.y)^2 +...
-							(STUDY.cluster(cluster).dipole.posxyz(3) - cluster_ROI_talairach.z)^2);
+        tmp_distance = sqrt((STUDY.cluster(cluster).dipole.posxyz(1) - cluster_ROI_MNI.x)^2 +...
+							(STUDY.cluster(cluster).dipole.posxyz(2) - cluster_ROI_MNI.y)^2 +...
+							(STUDY.cluster(cluster).dipole.posxyz(3) - cluster_ROI_MNI.z)^2);
         
         if tmp_distance < best_fitting_cluster_distance(solution)
             % declare this cluster to be the best fitting cluster of this solution
@@ -127,4 +127,4 @@ multivariate_data(:,9) = best_fitting_cluster_distance;
 
 cluster_multivariate_data.data = multivariate_data;
 cluster_multivariate_data.best_fitting_cluster = best_fitting_cluster;
-cluster_multivariate_data.cluster_ROI_talairach = cluster_ROI_talairach;
+cluster_multivariate_data.cluster_ROI_MNI = cluster_ROI_MNI;
