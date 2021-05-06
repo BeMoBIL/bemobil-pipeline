@@ -139,10 +139,12 @@ bemobil_config.channel_locations_filename = [];
 %   chan_detect_num_iter                - Number of iterations the bad channel detection should run (default = 10)
 %   chan_detected_fraction_threshold	- Fraction how often a channel has to be detected to be rejected in the final
 %                                           rejection (default 0.5)
+%   flatline_crit                       - Maximum duration a channel can be flat in seconds (default 'off')
 bemobil_config.chancorr_crit = 0.8;
 bemobil_config.chan_max_broken_time = 0.3;
 bemobil_config.chan_detect_num_iter = 10;
 bemobil_config.chan_detected_fraction_threshold = 0.5;
+bemobil_config.flatline_crit = 'off';
 
 % AMICA:
 

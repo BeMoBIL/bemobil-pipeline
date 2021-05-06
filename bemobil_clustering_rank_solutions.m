@@ -8,7 +8,7 @@
 %   cluster_multivariate_data   - multivariate data set for each solutions' best fitting cluster (to ROI). Struct with
 %                               fields data (the data set consisting of these values: n_subjects,n_ICs,n_ICs/n_subjects,...
 %                               normalized_spread,mean_rv,x,y,z,distance_from_ROI), best_fitting_cluster (the number of
-%                               the best fitting cluster in the solution), and cluster_ROI_talairach (the input)
+%                               the best fitting cluster in the solution), and cluster_ROI_MNI (the input)
 %   quality_measure_weights     - vector of weights for quality measures. 6 entries: subjects, ICs/subjects, normalized
 %                               spread, mean RV, distance from ROI, mahalanobis distance from median of multivariate
 %                               distribution (put this very high to get the most "normal" solution)
