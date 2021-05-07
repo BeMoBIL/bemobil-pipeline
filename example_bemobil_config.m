@@ -90,7 +90,7 @@ bemobil_config.eog_channels  = {};
 % if you add a channel here it needs to have a location as well. this means a new channel will be created and the old
 % reference will be back in the dataset 
 % bemobil_config.ref_channel  = 'FCz';
-bemobil_config.ref_channel  = {}; 
+bemobil_config.ref_channel  = []; 
 
 % If all channels have a prefix it can be removed here, by entering a single char in the cell array. it's also possible
 % to rename single channels here if needed. for this, enter a matrix of channel names (nbchans,2 (from->to))
