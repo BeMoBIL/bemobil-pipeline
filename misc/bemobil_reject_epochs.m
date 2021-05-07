@@ -38,7 +38,7 @@ if use_kneepoint
 % 	rejection_index = kneepoint - round(length(sorted)/100*kneepoint_offset);
 % 	reject_epochs = weighted_sum_features > sorted(rejection_index);
     
-	[n_remove, threshold] = bemobil_iterative_threshold_detection(weighted_sum_features);
+	[n_remove, threshold] = iterative_outlier_removal(weighted_sum_features);
     kneepoint = length(weighted_sum_features)-n_remove;
 	rejection_index = kneepoint - round(length(sorted)/100*kneepoint_offset);
     

@@ -32,12 +32,8 @@
 
 function eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
 
-p = fileparts(which('run_bemobil_pipeline'));
-if isempty(p)
-    p = fileparts(which('eeglab'));
-    p = [p filesep 'plugins' filesep 'bemobil_pipeline'];
-end
-addpath(p);
+p = fileparts(which('eegplugin_bemobil_pipeline'));
+addpath(genpath(p));
 
 highlevelmenu = findobj(fig,'Label','Tools');
 
