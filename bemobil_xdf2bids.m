@@ -131,7 +131,9 @@ for Pi = 1:numel(numericalIDs)
     end
 end
 
-numericalIDs = numericalIDs(~skipIndices);
+if ~isempty(skipIndices)
+    numericalIDs = numericalIDs(~skipIndices);
+end
 
 if isempty(numericalIDs)
     disp('All participant folders were already found in BIDS directory.')
