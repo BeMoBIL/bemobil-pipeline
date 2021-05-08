@@ -18,7 +18,7 @@ example_bemobil_bids_metadata;
 
 % enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
 subjects = [64,66,76,78]; 
-force_recompute = false;
+force_recompute = 0;
 
 
 %% Import 
@@ -84,5 +84,8 @@ for subject = subjects
 	bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute);
 
 end
+
+subjects
+subject
 
 disp('PROCESSING DONE! YOU CAN CLOSE THE WINDOW NOW!')
