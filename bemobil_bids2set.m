@@ -172,7 +172,7 @@ for iSub = 1:numel(subDirList)
                 bidsFolderName = 'beh'; 
             otherwise
                 bemobilModality = bidsModality;
-                disp(['Unknown modality' bidsModality ' saved as ' bidsModality '.set'])
+                disp(['Unknown modality' bidsModality ' saved as ' bemobilModality '.set'])
         end
         
         if isMultiSession
@@ -293,6 +293,8 @@ for iSub = 1:numel(subDirList)
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.filenames{iSes}] )
         end
+        
+        EEG = eeg_checkset(EEG); 
         
         % save merged EEG file for the session
         EEG = pop_saveset(EEG, 'filename',[EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
