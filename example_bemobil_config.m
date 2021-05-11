@@ -2,12 +2,11 @@ clear bemobil_config
 
 %% General Setup
 bemobil_config.study_folder = 'path_to_study_folder\data\';
-
 bemobil_config.filename_prefix = 'sub_';
 
 % foldernames (NEED to have a filesep at the end, sorry!) 
-bemobil_config.raw_data_folder = '0_raw-data\';
-bemobil_config.mobilab_data_folder = '1_mobilab-data\';
+bemobil_config.source_data_folder = '0_source-data\';
+bemobil_config.bids_data_folder = '1_BIDS-data\'; 
 bemobil_config.raw_EEGLAB_data_folder = '2_basic-EEGLAB\';
 bemobil_config.spatial_filters_folder = '3_spatial-filters\';
 bemobil_config.spatial_filters_folder_AMICA = '3-1_AMICA\';
@@ -16,7 +15,7 @@ bemobil_config.single_subject_analysis_folder = '4_single-subject-analysis\';
 bemobil_config.mocap_analysis_folder = '5_mocap-analysis\';
 
 % filenames
-bemobil_config.merged_filename = 'merged.set';
+bemobil_config.merged_filename = 'merged_EEG.set';
 bemobil_config.preprocessed_filename = 'preprocessed.set';
 bemobil_config.interpolated_avRef_filename = 'interpolated_avRef.set';
 bemobil_config.filtered_filename = 'filtered.set';
@@ -26,7 +25,56 @@ bemobil_config.warped_dipfitted_filename = 'warped_dipfitted.set';
 bemobil_config.copy_weights_interpolate_avRef_filename = 'interp_avRef_ICA.set';
 bemobil_config.single_subject_cleaned_ICA_filename = 'cleaned_with_ICA.set';
 
-%% Import Settings (TBA)
+%% Import Settings 
+% Fields below do not have default values or important for data reading
+% configuration is necessary
+%--------------------------------------------------------------------------
+
+% scripts will find files containing respective string, sort them incrementally 
+% and output files merged within and between sessions. 
+% _ or - character not recommended (incompatible with bids, potentially breaks parsing)
+bemobil_config.session_names = {'sessionA', 'sessionB'};
+
+% name of the task that is common to all sessions - only relevant for data in BIDS
+bemobil_config.bids_task_label = 'taskname'; 
+
+% a keyword contained in the EEG stream that is unique to EEG. 
+% Non-continuous (marker) streams will not be mixed up even if it contains this string.
+bemobil_config.bids_eeg_keyword = 'EEG';
+
+% keywords in stream names in .xdf file that contain motion data
+bemobil_config.rigidbody_streams = {'RigidBodyKeyword1', 'RigidBodyKeyword2', 'RigidbodyKeyword3'};
+
+% which rigidbody streams are present in which sessions
+% array of logicals number of sessios X number of rigidbody streams
+% in this example, all 3 rigidbodies are present in first session [1,1,1]
+% but only the first is present in the second session [1,0,0]
+bemobil_config.bids_rb_in_sessions = logical([1,1,1;1,0,0]);
+
+
+% Fields below have default values and can be optinally configured
+% most of these are used to either be saved as channel information in BIDS
+% or to be provided as entries in metadata files
+% (simply not creating the fields will leave you with default values)
+%--------------------------------------------------------------------------
+
+% simple, human readable labels of the motion streams
+% default values are taken from field rigidbody_streams
+bemobil_config.rigidbody_names          =  {'Head', 'LeftThigh', 'LeftLowerLeg'};
+
+% if more detailed anatomical description or coordinates are present, specify here
+% default values are taken from field rigidbody_names
+bemobil_config.rigidbody_anat           =  {'central forehead', 'left vastus lateralis', 'left tibialis anterior'};
+
+% for unisessio, just use a string. If multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_position_units      = {'m','vm'};                       
+bemobil_config.bids_motion_orientation_units   = {'rad','rad'};                     % if multisession, cell array of size 1 x session number
+
+% custom function names - customization recommended for data sets that have
+%                         an 'unconventional' naming scheme for motion channels
+bemobil_config.bids_motionconvert_custom    = 'bids_motionconvert_mobiworkshop';
+bemobil_config.bids_parsemarkers_custom     = 'bids_parsemarkers_mobiworkshop';
+
 
 %% EEG Processing Parameters
 
@@ -42,7 +90,7 @@ bemobil_config.eog_channels  = {};
 % if you add a channel here it needs to have a location as well. this means a new channel will be created and the old
 % reference will be back in the dataset 
 % bemobil_config.ref_channel  = 'FCz';
-bemobil_config.ref_channel  = {}; 
+bemobil_config.ref_channel  = []; 
 
 % If all channels have a prefix it can be removed here, by entering a single char in the cell array. it's also possible
 % to rename single channels here if needed. for this, enter a matrix of channel names (nbchans,2 (from->to))

@@ -755,24 +755,7 @@ end
 stats.channelConsistency = fastif(inconsistentChannels > 0, 0, 1);
 stats.eventConsistency   = fastif(inconsistentEvents   > 0, 0, 1);
 
-% study name and study creation
-% -----------------------------
-if strcmpi(opt.metadata, 'off')
-    try
-        if isempty(commands)
-            error('No dataset were found');
-        end
-        studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
-        [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
-        if ~isempty(options)
-            commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
-        else
-            commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
-        end
-    catch ME
-        warning([ME.message ', study creation failed'])
-    end
-end
+
 
 % check BIDS data field present
 % -----------------------------
