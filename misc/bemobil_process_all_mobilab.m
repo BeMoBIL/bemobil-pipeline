@@ -1,8 +1,8 @@
 % bemobil_process_all_mobilab - wrapper function that incorporates all necessary processing steps from raw .xdf to .set
-% files in EEGLAB. Data is being loaded into mobilab, rigidbody mocap streams are processed (filtered, transformed into
+% files in EEGLAB. Data is being loaded into mobilab, rigidbody motion streams are processed (filtered, transformed into
 % euler angles, derived) and data and marker streams are then exported to EEGLAB containing EEG and all other kinds of
 % data. The dataset has the suffix '_MoBI'. This dataset is then split into individual channel types (e.g. 'EEG',
-% 'MOCAP', 'EYE', 'OTHER'), and subsequently all EEG files (from several raw .xdf files) will be merged into one large
+% 'MOTION', 'EYE', 'OTHER'), and subsequently all EEG files (from several raw .xdf files) will be merged into one large
 % EEG file for this participant, which can then be used for further processing (e.g. with bemobil_process_all_AMICA)
 %
 % The intermediate files are stored on the disk.
@@ -163,14 +163,14 @@ if ~exist('EEG_merged','var') || force_recompute
                     
                     mobilab_rb_index = i_stream;
                     
-                    % process mocap channels
+                    % process motion channels
                     
                     % quaternion values can flip their signs, which does indicate the same orientation. we need them to be
                     % a smooth curve for filtering, though
                     unflipped = mobilab.allStreams().item{mobilab_rb_index}.unflipSigns();
                     
                     % lowpass filter with the respective frequency (e.g. 6 Hz), zero-lag FIR filter
-                    filtered = unflipped.lowpass(bemobil_config.mocap_lowpass);
+                    filtered = unflipped.lowpass(bemobil_config.motion_lowpass);
                     
                     % transform quaternion values into Euler angles
                     eulers = filtered.quaternionsToEuler();
@@ -360,7 +360,7 @@ if ~exist('EEG_preprocessed','var')
     end
     
     % preprocessing: enter chanlocs, remove unused channels, declare EOG, resample
-    [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_preprocess(ALLEEG, EEG_merged, CURRENTSET, channel_locations_filepath,...
+    [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_process_EEG_basics(ALLEEG, EEG_merged, CURRENTSET, channel_locations_filepath,...
         bemobil_config.channels_to_remove, bemobil_config.eog_channels, bemobil_config.resample_freq,...
         [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.preprocessed_filename], output_filepath,...
         bemobil_config.rename_channels, bemobil_config.ref_channel, bemobil_config.linefreqs, bemobil_config.zapline_n_remove,...

@@ -173,7 +173,7 @@ for iSub = 1:numel(subDirList)
                 bemobilModality = upper(bidsModality);                      % use string 'EEG' for eeg data
                 bidsFolderName  = 'eeg'; 
             case 'motion'
-                bemobilModality = 'MOCAP';
+                bemobilModality = 'MOTION';
                 bidsFolderName = 'beh'; 
             otherwise
                 bemobilModality = bidsModality;
@@ -312,7 +312,7 @@ for iSub = 1:numel(subDirList)
             
             switch otherDataTypes{iType}
                 case 'motion'
-                    bemobilModality = 'MOCAP';
+                    bemobilModality = 'MOTION';
                 otherwise
                     bemobilModality = otherDataTypes{iType};
                     disp(['Unknown modality' otherDataTypes{iType} ', looking for ' otherDataTypes{iType} '.set'])

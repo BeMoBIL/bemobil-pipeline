@@ -1,10 +1,10 @@
-% pop_bemobil_preprocess() - This pipeline is based on Makotos preprocessing pipeline:
+% pop_bemobil_process_EEG_basics() - This pipeline is based on Makotos preprocessing pipeline:
 %   https://sccn.ucsd.edu/wiki/Makoto's_preprocessing_pipeline with further
 %   discussion and changes. Specifically it is adapted to data recorded at
 %   BeMoBIl.
 %
 % Usage:
-%   >>  [ EEG ] = pop_bemobil_preprocess( EEG )
+%   >>  [ EEG ] = pop_bemobil_process_EEG_basics( EEG )
 %
 % Inputs:
 %   EEG                   - eeglab EEG struct
@@ -13,12 +13,12 @@
 %   EEG     - Preprocessed EEGLAB EEG structure
 %
 % See also: 
-%   BEMOBIL_PREPROCESS, EEGLAB
+%   bemobil_process_EEG_basics, EEGLAB
 
-function [ ALLEEG EEG CURRENTSET ] = pop_bemobil_preprocess( ALLEEG, EEG, CURRENTSET )
+function [ ALLEEG EEG CURRENTSET ] = pop_bemobil_process_EEG_basics( ALLEEG, EEG, CURRENTSET )
 
 if nargin < 1
-	help pop_bemobil_preprocess;
+	help pop_bemobil_process_EEG_basics;
 	return;
 end;	
 
@@ -69,7 +69,7 @@ uilist = {
     };
 
 [ tmp1 tmp2 strhalt structout ] = inputgui('geom', uigom, 'uilist', uilist, ...
-    'title', 'Preprocessing', 'helpcom', 'pophelp(''pop_bemobil_preprocess'');');
+    'title', 'Preprocessing', 'helpcom', 'pophelp(''pop_bemobil_process_EEG_basics'');');
 
 if isempty(strhalt)
     disp('Canceling preprocessing...')
@@ -87,7 +87,7 @@ structout.locutoff = str2double(structout.locutoff);
 structout.highcutoff = str2double(structout.highcutoff);
 
 % run processing function with values from gui input
-[ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET, structout.chanlocs, structout.remove_chans,...
+[ ALLEEG EEG CURRENTSET ] = bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET, structout.chanlocs, structout.remove_chans,...
     structout.heog_chans, structout.locutoff, structout.highcutoff, ...
     structout.resample_freq);
 end

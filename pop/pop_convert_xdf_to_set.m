@@ -1,8 +1,6 @@
 % convert_xdf_to_set() - GUI to convert an XDF file or a folder containing
 % multiple XDF files to EEGLAB .set files
 %
-% Usage:
-%   >>  EEG = bemobil_preprocess( filename, filepath );
 %
 % Inputs:
 %   filename     - filename of a *.xdf file

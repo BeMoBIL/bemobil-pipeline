@@ -1,5 +1,5 @@
 % bemobil_split_MoBI_set() - Splits a MoBI dataset into it's unique data types, as stored in EEG.chanlocs.type. The
-% mobilab export2eeglab() function stores data types (e.g. EEG, MoCap, EyeTracking) automatically.
+% mobilab export2eeglab() function stores data types (e.g. EEG, motion, EyeTracking) automatically.
 %
 % Usage:
 %   >>  [ALLEEG, EEG, CURRENTSET, EEG_split_sets] = bemobil_split_MoBI_set(ALLEEG, MoBI_EEG, CURRENTSET);

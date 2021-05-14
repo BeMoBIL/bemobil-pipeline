@@ -1,4 +1,4 @@
-function EEG_mocap_out = bemobil_mocap_unflipSigns(EEG_mocap_in)
+function EEG_motion_out = bemobil_motion_unflipSigns(EEG_motion_in)
 % Heuristic for unflipping the sign of quaternion values to anable filtering. Quaternions can represent the
 % same value two ways, whereas only the sign changes. Sometimes the representation flips in the time series.
 % If this gets filtered, it creates an artifact, so this is why we want to unflip it first. It won't make a
@@ -6,7 +6,7 @@ function EEG_mocap_out = bemobil_mocap_unflipSigns(EEG_mocap_in)
 % The principle idea is to check if the difference between consecutive values becomes smaller if we flip them.
 %
 % Input arguments:
-%       EEG dataset containing mocap channels with quaternion data (must have exactly 4 channels with labels
+%       EEG dataset containing motion channels with quaternion data (must have exactly 4 channels with labels
 %       containing "quat_x/y/z/w")
 %
 % Output argument:
@@ -15,24 +15,24 @@ function EEG_mocap_out = bemobil_mocap_unflipSigns(EEG_mocap_in)
 % Usage:
 
 
-for channel = 1:EEG_mocap_in.nbchan
+for channel = 1:EEG_motion_in.nbchan
     
     % checking for already present euls
-    if any(~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'eul')))
+    if any(~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'eul')))
         error('You can only unflip Quaternions, this dataset contains eul angles, try it with the original data set.')
     end
     
 end
 
 
-data = EEG_mocap_in.data';
+data = EEG_motion_in.data';
 
 % find correct channelindex for the quaternion values of
 % this RB
-quaternionX = ~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'quat_x'));
-quaternionY = ~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'quat_y'));
-quaternionZ = ~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'quat_z'));
-quaternionW = ~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'quat_w'));
+quaternionX = ~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'quat_x'));
+quaternionY = ~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'quat_y'));
+quaternionZ = ~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'quat_z'));
+quaternionW = ~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'quat_w'));
 
 % take the values
 X = data(:,quaternionX);
@@ -116,8 +116,8 @@ data(:,quaternionZ) = Z;
 data(:,quaternionW) = W;
 
 %%
-EEG_mocap_out = EEG_mocap_in;
+EEG_motion_out = EEG_motion_in;
 
-EEG_mocap_out.data = data';
+EEG_motion_out.data = data';
 
 end

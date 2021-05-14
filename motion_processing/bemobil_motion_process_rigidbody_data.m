@@ -4,18 +4,18 @@
 % and acceleration).
 %
 % Input:
-%       EEG_mocap_in                - EEGLAB dataset containing mocap channels with 6 DOF
-%       lowpass_mocap               - (OPTIONAL) lowpass passband edge for filtering the raw mocap data. If empty, no 
+%       EEG_motion_in                - EEGLAB dataset containing motion channels with 6 DOF
+%       lowpass_motion               - (OPTIONAL) lowpass passband edge for filtering the raw motion data. If empty, no 
 %                                       filter is applied. 7Hz is recommended.
 %       lowpass_after_derivative    - (OPTIONAL) lowpass passband edge for filtering during after time derivative. If 
 %                                       empty, no filter is applied. Can help if the derivatives are too noisy, but not
 %                                       specifically recommended.
 %
 % Output:
-%       EEG_mocap_out               - EEGLAB dataset containing processed mocap channels with 6 DOF in eul angles, plus
+%       EEG_motion_out               - EEGLAB dataset containing processed motion channels with 6 DOF in eul angles, plus
 %                                       the first two derivatives (18 channels altogether)
 
-function EEG_mocap_out = bemobil_process_rigidbody_data(EEG_mocap_in,lowpass_mocap,lowpass_after_derivative)
+function EEG_motion_out = bemobil_motion_process_rigidbody_data(EEG_motion_in,lowpass_motion,lowpass_after_derivative)
 
 % make sure to use double precision
 try
@@ -26,11 +26,11 @@ end
 
 % make sure data is in euler angles, so we can clean the data
 try
-    EEG = bemobil_mocap_quat2eul(EEG_mocap_in);
+    EEG = bemobil_motion_quat2eul(EEG_motion_in);
 catch ME
     if strcmp(ME.message,'Dataset already contains eul data.')
         disp('Assuming original dataset is in euler angles.')
-        EEG = EEG_mocap_in;
+        EEG = EEG_motion_in;
     else
         error('Unexpected error see following warning:')
         warning(ME.message)
@@ -38,7 +38,7 @@ catch ME
 end
 
 % clean euler angle data
-EEG = bemobil_mocap_clean_euler(EEG,20);
+EEG = bemobil_motion_clean_euler(EEG,20);
 
 % empty EEGLAB entries
 ALLEEG = []; CURRENTSET=[];
@@ -47,9 +47,9 @@ ALLEEG = []; CURRENTSET=[];
 eul_indices = find(~cellfun(@isempty,strfind(lower({EEG.chanlocs.labels}),'eul')));
 EEG.data(eul_indices,:) = unwrap(EEG.data(eul_indices,:),[],2);
 
-% lowpass mocap data
-if exist('lowpass_mocap','var') && ~isempty(lowpass_mocap)
-    [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, [],lowpass_mocap,[], []);
+% lowpass motion data
+if exist('lowpass_motion','var') && ~isempty(lowpass_motion)
+    [ ALLEEG EEG CURRENTSET ] = bemobil_filter(ALLEEG, EEG, CURRENTSET, [],lowpass_motion,[], []);
 end
 
 % wrap the euler angles back to pi
@@ -60,24 +60,24 @@ end
 % create new derivatives datasets (filtering after taking a derivative is recommended but optional, as just using the
 % diff increases the noise level). Derivatives account for jumps in eul orientation from 0 to 360 degrees and subtract
 % accordingly.
-EEG_vel = bemobil_mocap_timeDerivative(EEG);
+EEG_vel = bemobil_motion_timeDerivative(EEG);
 
 % filter if set up
 if exist('lowpass_after_derivative','var') && ~isempty(lowpass_after_derivative)
     [ ALLEEG EEG_vel CURRENTSET ] = bemobil_filter(ALLEEG, EEG_vel, CURRENTSET, [],lowpass_after_derivative,[], []);
 end
 
-EEG_acc = bemobil_mocap_timeDerivative(EEG_vel);
+EEG_acc = bemobil_motion_timeDerivative(EEG_vel);
 
 % filter if set up
 if exist('lowpass_after_derivative','var') && ~isempty(lowpass_after_derivative)
     [ ALLEEG EEG_acc CURRENTSET ] = bemobil_filter(ALLEEG, EEG_acc, CURRENTSET, [],lowpass_after_derivative,[], []);
 end
 
-% merge the three mocap datasets
-EEG_mocap_out = EEG;
+% merge the three motion datasets
+EEG_motion_out = EEG;
 
-EEG_mocap_out.nbchan = 18;
-EEG_mocap_out.chanlocs = [EEG_mocap_out.chanlocs EEG_vel.chanlocs EEG_acc.chanlocs];
+EEG_motion_out.nbchan = 18;
+EEG_motion_out.chanlocs = [EEG_motion_out.chanlocs EEG_vel.chanlocs EEG_acc.chanlocs];
 
-EEG_mocap_out.data = [EEG_mocap_out.data; EEG_vel.data; EEG_acc.data];
+EEG_motion_out.data = [EEG_motion_out.data; EEG_vel.data; EEG_acc.data];

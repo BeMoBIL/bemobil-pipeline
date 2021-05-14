@@ -5,10 +5,6 @@
 % end_segment must be correspondingly ['end1' 'end2']. The routine then
 % extracts segment between 'start1' and 'end1' as well as between 'start2' and 'end2'. 
 %
-% Usage:
-%   >>  EEG = bemobil_preprocess( EEG, 'key', 'value');
-%   >>  EEG = bemobil_preprocess( EEG, 'start_segment', ['start1'], 'end_segment', ['end1']);
-%
 % Inputs:
 %   keep_or_remove     - 'keep' or 'remove'
 %   start_segment      - 'start_marker' of a segment of interest

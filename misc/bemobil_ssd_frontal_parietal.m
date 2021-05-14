@@ -1,38 +1,3 @@
-% bemobil_process_all_mobilab - wrapper function that incorporates all necessary processing steps from raw .xdf to .set
-% files in EEGLAB. Data is being loaded into mobilab, rigidbody mocap streams are processed (filtered, transformed into
-% euler angles, derived) and data and marker streams are then exported to EEGLAB containing EEG and all other kinds of
-% data. The dataset has the suffix '_MoBI'. This dataset is then split into individual channel types (e.g. 'EEG',
-% 'MOCAP', 'EYE', 'OTHER'), and subsequently all EEG files (from several raw .xdf files) will be merged into one large
-% EEG file for this participant, which can then be used for further processing (e.g. with bemobil_process_all_AMICA)
-%
-% The intermediate files are stored on the disk.
-%
-% Usage:
-%   >>  [ALLEEG, EEG_merged, CURRENTSET] = bemobil_process_all_mobilab(subject, bemobil_config, ALLEEG, CURRENTSET, mobilab)
-%
-% Inputs:
-%   subject                   - subject number of the current subject (necessary for filepaths and storage)
-%   bemobil_config            - configuration struct with all necessary information. See EEG_processing_example file
-%                                that comes with this function!
-%   ALLEEG                    - complete EEGLAB data set structure
-%   CURRENTSET                - index of current EEGLAB EEG structure within ALLEEG
-%	mobilab					  - container for the mobilab application. execute "runmobilab" before this script to get it
-%   out_filename           - output filename
-%   out_filepath           - output filepath (File will only be saved on disk
-%                               if both a name and a path are provided)
-%
-% Outputs:
-%   ALLEEG                    - complete EEGLAB data set structure
-%   EEG_merged				  - merged EEGLAB EEG structure, contains EEG datasets of all conditions.
-%   CURRENTSET                - index of current EEGLAB EEG structure within ALLEEG
-%
-%   .set data file of EEGLAB EEG structures are stored on disk according to their names in the bemobil_config
-%
-% See also:
-%   EEGLAB
-%
-% Authors: Marius Klug, 2019
-
 function [ALLEEG, EEG, CURRENTSET] = bemobil_ssd_frontal_parietal(ALLEEG, EEG, CURRENTSET, bemobil_config, out_filename, out_filepath)
 
 % only save a file on disk if both a name and a path are provided

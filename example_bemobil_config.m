@@ -12,7 +12,7 @@ bemobil_config.spatial_filters_folder = '3_spatial-filters\';
 bemobil_config.spatial_filters_folder_AMICA = '3-1_AMICA\';
 bemobil_config.spatial_filters_folder_SSD = '3-2_SSD\';
 bemobil_config.single_subject_analysis_folder = '4_single-subject-analysis\';
-bemobil_config.mocap_analysis_folder = '5_mocap-analysis\';
+bemobil_config.motion_analysis_folder = '5_motion-analysis\';
 
 % filenames
 bemobil_config.merged_filename = 'merged_EEG.set';
@@ -24,6 +24,7 @@ bemobil_config.amica_filename_output = 'postAMICA_cleaned.set';
 bemobil_config.warped_dipfitted_filename = 'warped_dipfitted.set';
 bemobil_config.copy_weights_interpolate_avRef_filename = 'interp_avRef_ICA.set';
 bemobil_config.single_subject_cleaned_ICA_filename = 'cleaned_with_ICA.set';
+bemobil_config.processed_motion_filename = 'motion_processed.set';
 
 %% Import Settings 
 % Fields below do not have default values or important for data reading
@@ -200,6 +201,8 @@ bemobil_config.iclabel_threshold = -1;
 
 %% Motion Processing Parameters
 
-% mocap processing
-bemobil_config.mocap_lowpass = 6;
-bemobil_config.rigidbody_derivatives = 2;
+% motion processing
+bemobil_config.lowpass_motion = 6;
+bemobil_config.lowpass_motion_after_derivative = 18;
+% bemobil_config.lowpass_motion = [];
+% bemobil_config.lowpass_motion_after_derivative = [];

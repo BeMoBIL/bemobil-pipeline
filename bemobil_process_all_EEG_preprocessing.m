@@ -1,10 +1,10 @@
-% bemobil_process_all_basic - wrapper function that incorporates all necessary processing steps from the basic EEG
+% bemobil_process_all_preprocessing - wrapper function that incorporates all necessary processing steps from the basic EEG
 % struct (e.g. all blocks merged together, nothing else done before except resampling) up to the preprocessed dataset
 % which has line noise removed, channels interpolated, average reference, and relevant information stored in the EEG
 % struct. Also plots several analytics plots along the way which are stored on disk alongside their respective files.
 %
 % Usage:
-%   >>  [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_basic(subject, bemobil_config, ALLEEG, EEG_merged,...
+%   >>  [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG_merged,...
 %     CURRENTSET, force_recompute)
 % 
 % Inputs:
@@ -25,11 +25,11 @@
 %   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
 % See also:
-%   EEGLAB, bemobil_preprocess, bemobil_detect_bad_channels, bemobil_interp_avref
+%   EEGLAB, bemobil_process_EEG_basics, bemobil_detect_bad_channels, bemobil_interp_avref
 %
 % Authors: Marius Klug, 2021
 
-function [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_basic(subject, bemobil_config, ALLEEG, EEG_to_process,...
+function [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG_to_process,...
     CURRENTSET, force_recompute)
 
 %% basic setup
@@ -203,7 +203,7 @@ if ~exist('EEG_preprocessed','var')
     end
     
     % preprocessing: enter chanlocs, remove unused channels, declare EOG, resample
-    [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_preprocess(ALLEEG, EEG_to_process, CURRENTSET, channel_locations_filepath,...
+    [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_process_EEG_basics(ALLEEG, EEG_to_process, CURRENTSET, channel_locations_filepath,...
         bemobil_config.channels_to_remove, bemobil_config.eog_channels, bemobil_config.resample_freq,...
         [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.preprocessed_filename], filepath,...
         bemobil_config.rename_channels, bemobil_config.ref_channel, bemobil_config.zaplineConfig);

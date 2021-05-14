@@ -7,8 +7,9 @@
 % The intermediate files are stored on the disk.
 %
 % Usage:
-%   >>  [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_to_process, CURRENTSET, subject, bemobil_config)
-%
+%   >>  [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET,...
+%     subject, bemobil_config, force_recompute)
+% 
 % Inputs:
 %   ALLEEG                    - complete EEGLAB data set structure
 %   EEG_to_process            - EEGLAB EEG structure that should be processed. Best to have all blocks merged into one
@@ -23,14 +24,15 @@
 %   EEG_single_subject_final  - current EEGLAB EEG structure
 %   Currentset                - index of current EEGLAB EEG structure within ALLEEG
 %
-%   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
+%   .set data file of current EEGLAB EEG structure stored on disk 
 %
 % See also:
 %   EEGLAB
 %
 % Authors: Marius Klug, 2021
 
-function [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute)
+function [ALLEEG, EEG_single_subject_final, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET,...
+    subject, bemobil_config, force_recompute)
 
 % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
 % larger than 2gb)
@@ -103,7 +105,7 @@ if ~exist('EEG_single_subject_final','var')
         %         turns out the data rank reduction due to bridges does not really solve the issue of a high D value when
         %         computing AMICA, and since PCA before ICA was shown the be problematic, I removed it again: Artoni, F.,
         %         Delorme, A., & Makeig, S. (2018) Applying dimension reduction to EEG data by Principal Component Analysis
-        %         reduces the quality of its subsequent Independent Component decomposition. Neuroimage, 175, 176–187.
+        %         reduces the quality of its subsequent Independent Component decomposition. Neuroimage, 175, 176-187.
         
         %         data_rank = EEG_filtered_for_AMICA.etc.rank;
         %         [rank_reduction_of_bridges,EEG_filtered_for_AMICA] = bemobil_find_gel_bridges(EEG_filtered_for_AMICA,0.98);

@@ -78,7 +78,7 @@ for subject = subjects
     %% processing wrappers for basic processing and AMICA
     
     % do basic preprocessing, line noise removal, and channel interpolation
-	[ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_basic(subject, bemobil_config, ALLEEG, EEG, CURRENTSET, force_recompute);
+	[ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG, CURRENTSET, force_recompute);
 
     % start the processing pipeline for AMICA
 	bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute);

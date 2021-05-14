@@ -3,9 +3,6 @@
 % treated, start_segment and end_segment must be string arrays with the
 % same number of elements.
 %
-% Usage:
-%   >>  EEG = bemobil_preprocess( EEG );
-%
 % Inputs:
 %   EEG     - EEGLAB EEG structure
 %    

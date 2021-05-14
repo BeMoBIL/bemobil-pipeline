@@ -3,27 +3,27 @@
 % derivative is stored in a new object.
 %
 % Input:
-%       EEG dataset containing mocap channels with Euler angles data in radians (6 channels)
+%       EEG dataset containing motion channels with Euler angles data in radians (6 channels)
 %
 % Output:
-%       EEG dataset containing mocap channels and their first and second derivatives (18 channels altogether)
+%       EEG dataset containing motion channels and their first and second derivatives (18 channels altogether)
 
-function EEG_mocap_out = bemobil_mocap_timeDerivative(EEG_mocap_in)
+function EEG_motion_out = bemobil_motion_timeDerivative(EEG_motion_in)
 
 % checking for Quaternionvalues
 
 disp('Computing time derivatives...');
 
-for channel = 1:EEG_mocap_in.nbchan
+for channel = 1:EEG_motion_in.nbchan
     
     % checking for already present euls
-    if any(~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'quat')))
+    if any(~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'quat')))
         error('Dataset contains quaternion data. Please transfor to eul before deriving')
     end
 end
 
-dt = 1/EEG_mocap_in.srate;
-tmpData = EEG_mocap_in.data;
+dt = 1/EEG_motion_in.srate;
+tmpData = EEG_motion_in.data;
 
 for channel=1:size(tmpData,1)
     
@@ -33,7 +33,7 @@ for channel=1:size(tmpData,1)
     
     % check if channel is eul angles and if so,
     % correct for turns over pi or -pi respectively
-    if contains(lower(EEG_mocap_in.chanlocs(channel).labels),'eul') && ~contains(lower(EEG_mocap_in.chanlocs(channel).labels),'_derivative')
+    if contains(lower(EEG_motion_in.chanlocs(channel).labels),'eul') && ~contains(lower(EEG_motion_in.chanlocs(channel).labels),'_derivative')
         
         dataChannel = tmpData(channel,:);
         
@@ -51,11 +51,11 @@ for channel=1:size(tmpData,1)
 end
 
 % creating the new object and filling the derived data
-EEG_mocap_out = EEG_mocap_in;
-EEG_mocap_out.data = tmpData;
+EEG_motion_out = EEG_motion_in;
+EEG_motion_out.data = tmpData;
 
-for channel = 1:EEG_mocap_out.nbchan
+for channel = 1:EEG_motion_out.nbchan
     
-    EEG_mocap_out.chanlocs(channel).labels = [EEG_mocap_out.chanlocs(channel).labels '_derivative'];
+    EEG_motion_out.chanlocs(channel).labels = [EEG_motion_out.chanlocs(channel).labels '_derivative'];
     
 end

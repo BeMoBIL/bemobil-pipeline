@@ -29,7 +29,7 @@
 %   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
 % See also:
-%   EEGLAB, pop_eegfiltnew, bemobil_preprocess
+%   EEGLAB, pop_eegfiltnew
 % 
 % Authors: Marius Klug, 2020
 

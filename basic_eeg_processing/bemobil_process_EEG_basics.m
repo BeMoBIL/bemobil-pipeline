@@ -1,9 +1,9 @@
-% bemobil_preprocess() - Preprocessing of EEG data: Fill EEG structure with ur-data, remove unused electrodes of
+% bemobil_process_EEG_basics() - Preprocessing of EEG data: Fill EEG structure with ur-data, remove unused electrodes of
 % electrode arrays, resample, remove line noise with ZapLine, change channel names, add reference channel with zeros,
 % import channel locations, declare ref channel and channel type (EEG, EOG, REF).
 %
 % Usage:
-%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET,...
+%   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET,...
 %    channel_locations_filepath, channels_to_remove, eog_channels, resample_freq,...
 %    out_filename, out_filepath, rename_channels, ref_channel, zaplineConfig)
 % 
@@ -42,7 +42,7 @@
 %
 % Authors: Lukas Gehrke, 2017, Marius Klug, 2021
 
-function [ ALLEEG EEG CURRENTSET ] = bemobil_preprocess(ALLEEG, EEG, CURRENTSET,...
+function [ ALLEEG EEG CURRENTSET ] = bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET,...
     channel_locations_filepath, channels_to_remove, eog_channels, resample_freq,...
     out_filename, out_filepath, rename_channels, ref_channel, zaplineConfig)
 

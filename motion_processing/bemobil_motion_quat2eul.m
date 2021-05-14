@@ -2,37 +2,37 @@
 % human-interpretable. Quat values will be taken out, and eul angles will be assigned as new channels.
 %
 % Input:
-%       EEG dataset containing mocap channels with quaternion data (must have exactly 4 channels with labels
+%       EEG dataset containing motion channels with quaternion data (must have exactly 4 channels with labels
 %       containing "quat_x/y/z/w")
 %
 % Output:
-%       EEG dataset containing mocap channels with eul data (will have no quaternion channels but instead
+%       EEG dataset containing motion channels with eul data (will have no quaternion channels but instead
 %       eul angle channels with the replaced names of "eul_x/y/z")
 
 
-function EEG_mocap_out = bemobil_mocap_quat2eul(EEG_mocap_in)
+function EEG_motion_out = bemobil_motion_quat2eul(EEG_motion_in)
 
 
-for channel = 1:EEG_mocap_in.nbchan
+for channel = 1:EEG_motion_in.nbchan
     
     % checking for already present euls
-    if any(~cellfun(@isempty,strfind(lower({EEG_mocap_in.chanlocs.labels}),'eul')))
+    if any(~cellfun(@isempty,strfind(lower({EEG_motion_in.chanlocs.labels}),'eul')))
         error('Dataset already contains eul data.')
     end
     
 end
 
-assert(EEG_mocap_in.nbchan == 7,'Rigidbody quaternion dataset needs to have exactly 7 channels: XYZ position and XYZW quaternions.')
+assert(EEG_motion_in.nbchan == 7,'Rigidbody quaternion dataset needs to have exactly 7 channels: XYZ position and XYZW quaternions.')
 % no euls are present, therefore each RB has 7 channels:
 % XYZABCD, from which ABCD are the quaternion values
 
-data = EEG_mocap_in.data';
+data = EEG_motion_in.data';
 newData = zeros(size(data,1),6);
 newLabel = cell(6,1);
 % the new eul data has 1 channel less than the quaternions
 
 % fill the new data set and its label with all initial position data
-channel_labels = {EEG_mocap_in.chanlocs.labels};
+channel_labels = {EEG_motion_in.chanlocs.labels};
 non_quat_indices = cellfun(@isempty,strfind(lower(channel_labels),'quat'));
 
 newLabel(1:sum(non_quat_indices)) = channel_labels(non_quat_indices);
@@ -87,15 +87,15 @@ newLabel{5} = strcat(channel_labels{quaternionX}(1:strfind(lower(channel_labels{
 newLabel{6} = strcat(channel_labels{quaternionX}(1:strfind(lower(channel_labels{quaternionX}),'quat_x')-1),'eul_z');
 
 % make new set
-EEG_mocap_out = EEG_mocap_in;
-EEG_mocap_out.nbchan = 6;
-EEG_mocap_out.data = newData';
-EEG_mocap_out.chanlocs(end) = [];
-EEG_mocap_out.chanlocs(1).labels = newLabel{1};
-EEG_mocap_out.chanlocs(2).labels = newLabel{2};
-EEG_mocap_out.chanlocs(3).labels = newLabel{3};
-EEG_mocap_out.chanlocs(4).labels = newLabel{4};
-EEG_mocap_out.chanlocs(5).labels = newLabel{5};
-EEG_mocap_out.chanlocs(6).labels = newLabel{6};
+EEG_motion_out = EEG_motion_in;
+EEG_motion_out.nbchan = 6;
+EEG_motion_out.data = newData';
+EEG_motion_out.chanlocs(end) = [];
+EEG_motion_out.chanlocs(1).labels = newLabel{1};
+EEG_motion_out.chanlocs(2).labels = newLabel{2};
+EEG_motion_out.chanlocs(3).labels = newLabel{3};
+EEG_motion_out.chanlocs(4).labels = newLabel{4};
+EEG_motion_out.chanlocs(5).labels = newLabel{5};
+EEG_motion_out.chanlocs(6).labels = newLabel{6};
 
-EEG_mocap_out.etc.quat2eul_sequence = 'Body-ZYX';
+EEG_motion_out.etc.quat2eul_sequence = 'Body-ZYX';
