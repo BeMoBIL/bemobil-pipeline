@@ -26,6 +26,7 @@
 %   AMICA_autoreject                - flag for doing rejection of time points, def=1 (OPTIONAL)
 %   AMICA_n_rej                     - for rejection, number of rejections to perform, def=5 (OPTIONAL)
 %   AMICA_reject_sigma_threshold    - for rejection, sigma threshold of log likelyhood of samples to reject, def=3 (OPTIONAL)
+%   AMICA_max_iter                  - maximum number of iterations for AMICA
 %
 % Outputs:
 %   ALLEEG                          - complete EEGLAB data set structure
@@ -41,7 +42,7 @@
 
 function [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
 	amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject,...
-    AMICA_n_rej, AMICA_reject_sigma_threshold)
+    AMICA_n_rej, AMICA_reject_sigma_threshold, AMICA_max_iter)
 
 % only save a file on disk if both a name and a path are provided
 save_file_on_disk = (exist('out_filename', 'var') && exist('out_filepath', 'var') && ...
@@ -75,6 +76,10 @@ if amica
     if ~exist('AMICA_n_rej', 'var')
 		AMICA_reject_sigma_threshold = 3;
     end
+    
+    if ~exist('AMICA_max_iter', 'var')
+		AMICA_max_iter = 2000;
+    end
 	
     if isfield(EEG,'datfile') && ~isempty(EEG.datfile)
         disp('Found datfile.');
@@ -87,7 +92,9 @@ if amica
     end
     
     % delete potentially preexistent folder since it will interfere in case AMICA crashes
-    if ~isempty(dir(fullfile(out_filepath, out_filename, '_AMICA'))); rmdir(fullfile(out_filepath, out_filename, '_AMICA'),'s'); end
+    try
+        rmdir(fullfile(out_filepath, [erase(out_filename,'.set') '_outfiles']),'s'); 
+    end
     
     disp('Starting AMICA...');
     while maxx_threads > 0
@@ -97,9 +104,10 @@ if amica
             [w, s, mods] = runamica15(data,...
                 'num_models', numb_models,...
                 'max_threads', maxx_threads,...
-                'outdir', fullfile(out_filepath, [out_filename '_AMICA']),...
+                'outdir', fullfile(out_filepath, [erase(out_filename,'.set') '_outfiles']),...
                 'num_chans', EEG.nbchan,...
-                'writestep', 2000,...
+                'max_iter',AMICA_max_iter,...
+                'writestep', AMICA_max_iter,...
                 'pcakeep',data_rank,...
 				'do_reject',AMICA_autoreject,...
 				'numrej',AMICA_n_rej,...

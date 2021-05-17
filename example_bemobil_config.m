@@ -7,22 +7,21 @@ bemobil_config.filename_prefix = 'sub_';
 % foldernames (NEED to have a filesep at the end, sorry!) 
 bemobil_config.source_data_folder = '0_source-data\';
 bemobil_config.bids_data_folder = '1_BIDS-data\'; 
-bemobil_config.raw_EEGLAB_data_folder = '2_basic-EEGLAB\';
-bemobil_config.spatial_filters_folder = '3_spatial-filters\';
-bemobil_config.spatial_filters_folder_AMICA = '3-1_AMICA\';
-bemobil_config.spatial_filters_folder_SSD = '3-2_SSD\';
-bemobil_config.single_subject_analysis_folder = '4_single-subject-analysis\';
-bemobil_config.motion_analysis_folder = '5_motion-analysis\';
+bemobil_config.raw_EEGLAB_data_folder = '2_raw-EEGLAB\';
+bemobil_config.EEG_preprocessing_data_folder = '3_EEG-preprocessing\';
+bemobil_config.spatial_filters_folder = '4_spatial-filters\';
+bemobil_config.spatial_filters_folder_AMICA = '4-1_AMICA\';
+bemobil_config.single_subject_analysis_folder = '5_single-subject-EEG-analysis\';
+bemobil_config.motion_analysis_folder = '6_single-subject-motion-analysis\';
 
 % filenames
 bemobil_config.merged_filename = 'merged_EEG.set';
+bemobil_config.basic_prepared_filename = 'basic_prepared.set';
 bemobil_config.preprocessed_filename = 'preprocessed.set';
-bemobil_config.interpolated_avRef_filename = 'interpolated_avRef.set';
 bemobil_config.filtered_filename = 'filtered.set';
-bemobil_config.amica_raw_filename_output = 'postAMICA_raw.set';
-bemobil_config.amica_filename_output = 'postAMICA_cleaned.set';
-bemobil_config.warped_dipfitted_filename = 'warped_dipfitted.set';
-bemobil_config.copy_weights_interpolate_avRef_filename = 'interp_avRef_ICA.set';
+bemobil_config.amica_filename_output = 'AMICA.set';
+bemobil_config.dipfitted_filename = 'dipfitted.set';
+bemobil_config.preprocessed_and_ICA_filename = 'preprocessed_and_ICA.set';
 bemobil_config.single_subject_cleaned_ICA_filename = 'cleaned_with_ICA.set';
 bemobil_config.processed_motion_filename = 'motion_processed.set';
 
