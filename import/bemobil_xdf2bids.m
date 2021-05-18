@@ -165,10 +165,6 @@ else
 end
 
 %--------------------------------------------------------------------------
-% add natsortfiles to path
-[filepath,~,~] = fileparts(which('bemobil_xdf2bids')); 
-addpath(fullfile(filepath, 'resources', 'natsortfiles'))
-
 % add load_xdf
 [filepath,~,~] = fileparts(which('ft_defaults')); 
 addpath(fullfile(filepath, 'external', 'xdf'))
