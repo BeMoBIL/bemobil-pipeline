@@ -364,8 +364,7 @@ for iSub = 1:numel(subDirList)
             end
         end
         
-        % unwrap any kind of angular data before resampling 
-        DATA.data(angleind,:)   = unwrap(DATA.data(angleind,:));
+        DATA.data(angleind,:)   = unwrap(DATA.data(angleind,:),[],2);
         
         % resample to EEG times 
         newTimes                = (EEG.times(1):1000/newSRate:EEG.times(end))/1000;
