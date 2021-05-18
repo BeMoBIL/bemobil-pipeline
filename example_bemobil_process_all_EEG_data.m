@@ -1,4 +1,3 @@
-%% 
 
 % initialize EEGLAB 
 if ~exist('ALLEEG','var')
@@ -18,15 +17,17 @@ example_bemobil_bids_metadata;
 
 % enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
 subjects = [64,66,76,78]; 
-force_recompute = 0;
 
+% set to 1 if all files should be computed, independently of whether they are present on disk or not
+force_recompute = 0; 
 
 %% Import 
 % (no looping over subjects - enter the whole array of IDs)
 
 % step 1 : convert .xdf to bids
 % bemobil_xdf2bids(bemobil_config, subjects) for minimal use 
-bemobil_xdf2bids(bemobil_config, subjects, 'general_metadata', general_info, 'motion_metadata', motion_info, 'eeg_metadata', eeg_info, 'participant_metadata', subject_info)
+bemobil_xdf2bids(bemobil_config, subjects, 'general_metadata', general_info, 'motion_metadata', motion_info, 'eeg_metadata',...
+    eeg_info, 'participant_metadata', subject_info)
 
 % step 2 : convert bids to .set
 bemobil_bids2set(bemobil_config, subjects);
@@ -78,10 +79,10 @@ for subject = subjects
     %% processing wrappers for basic processing and AMICA
     
     % do basic preprocessing, line noise removal, and channel interpolation
-	[ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG, CURRENTSET, force_recompute);
+	[ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_process_all_EEG_preprocessing(subject, bemobil_config, ALLEEG, EEG, CURRENTSET, force_recompute);
 
     % start the processing pipeline for AMICA
-	bemobil_process_all_AMICA(ALLEEG, EEG_interp_avRef, CURRENTSET, subject, bemobil_config, force_recompute);
+	bemobil_process_all_AMICA(ALLEEG, EEG_preprocessed, CURRENTSET, subject, bemobil_config, force_recompute);
 
 end
 
