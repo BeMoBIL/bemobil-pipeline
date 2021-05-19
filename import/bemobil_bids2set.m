@@ -256,8 +256,8 @@ for iSub = 1:numel(subDirList)
         % resample and merge EEG
         %------------------------------------------------------------------
         if isempty(bemobil_config.resample_freq)
-            newSRate        = round(EEG.srate);
-            warning(['No resample frequency specified - data is still resampled to the nearest integer ' num2str(newSRate) 'Hz'])
+            newSRate        = 250;
+            warning('No resample frequency specified - data is still resampled to the default 250 Hz')
         else
             newSRate        = bemobil_config.resample_freq;
         end
