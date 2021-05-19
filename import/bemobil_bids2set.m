@@ -325,6 +325,10 @@ for iSub = 1:numel(subDirList)
                 newSRate        = bemobil_config.resample_freq;
             end
             
+            if numel(eegFiles) ~= numel(dataFiles)
+                error('Number of EEG and other data files do not match within a session')
+            end
+            
             if numel(dataFiles) > 1
                 
                 DATAFileNameWithRun     = dataFiles{1};
@@ -387,7 +391,7 @@ for iSub = 1:numel(subDirList)
     
 end
 
-disp('.xdf to BIDS conversion finished')
+disp('BIDS to .set conversion finished')
 
 end
 
