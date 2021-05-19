@@ -262,6 +262,9 @@ for iSub = 1:numel(subDirList)
             newSRate        = bemobil_config.resample_freq;
         end
         
+        % initializa a matrix storing EEG first and last time stamps (this is used to synch other streams)
+        eegTimes = NaN(2,numel(eegFiles)); 
+        
         if numel(eegFiles) > 1
 
             % multi-run case 
@@ -272,9 +275,10 @@ for iSub = 1:numel(subDirList)
             
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
-            for Si = 1:numel(bemobil_config.session_names)
+            for Ri = 1:numel(eegFiles)
                 EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Si});
-                [EEG]       = resampleToTime(EEG, newSRate); 
+                eegTimes(:,Ri) = [EEG.times(1); EEG.times(end)];
+                [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
             [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
@@ -283,7 +287,8 @@ for iSub = 1:numel(subDirList)
         elseif numel(eegFiles) == 1
             EEGSessionFileName  = eegFiles{1};
             EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
-            [EEG]               = resampleToTime(EEG, newSRate);
+            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)]; 
+            [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample 
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.session_names{iSes}] )
         end
@@ -329,59 +334,31 @@ for iSub = 1:numel(subDirList)
                 
                 % loop over runs
                 ALLDATA = []; CURRENTSET = [];
-                for Si = 1:numel(bemobil_config.session_names)
+                for Ri = 1:numel(dataFiles)
                     DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Si});
-                    [DATA]       = resampleToTime(DATA, newSRate);
+                    DATA         = unwrapAngles(DATA); % unwrap angles before resampling
+                    % start time has to be buffered before data can be synched to EEG 
+                    DATA.times   = DATA.times + DATA.etc.starttime*1000;
+                    [DATA]       = resampleToTime(DATA, newSRate, eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime);
+                    DATA         = wrapAngles(DATA);
                     [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
                 end
                 [~, DATAMerged, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), DATASessionFileName, fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
-                DATA                    = DATAMerged;
+                DATA             = DATAMerged;
                 
             elseif numel(dataFiles) == 1
                 DATASessionFileName  = dataFiles{1};
                 DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
-                [DATA]               = resampleToTime(DATA, newSRate);
+                DATA             = unwrapAngles(DATA);
+                % start time has to be buffered before data can be synched to EEG
+                DATA.times   = DATA.times;
+                [DATA]           = resampleToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);
+                DATA             = wrapAngles(DATA);
             else
                 warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.session_names{iSes}] )
             end 
         end
        
-        
-        % unwrap any kind of angular data before resampling 
-        angleind = []; 
-        for Ci = 1:numel(DATA.chanlocs)
-            if  contains(DATA.chanlocs(Ci).units, 'rad') 
-                angleind =  [angleind Ci]; 
-            end
-        end
-        
-        DATA.data(angleind,:)   = unwrap(DATA.data(angleind,:),[],2);
-        
-        % resample to EEG times 
-        newTimes                = (EEG.times(1):1000/newSRate:EEG.times(end))/1000;
-        resamplecfg.time        = {newTimes};
-        resamplecfg.detrend     = 'no';
-        resamplecfg.extrapval   = nan; 
-        DATA.group = 1; DATA.condition = 1;
-        ftData                  = eeglab2fieldtrip(DATA, 'raw', 'none' ); % here offset information is lost (onset corrected to zero): start time to be accounted for 
-        ftData.time{1}          = ftData.time{1} + DATA.etc.starttime; % offset has to be added here 
-        resampledData           = ft_resampledata(resamplecfg, ftData); % the resamplecfg used for EEG
-        
-        % assign the data back to the .set file 
-        DATA.data                = resampledData.trial{1};
-        
-        % wrap back angular data to [pi, -pi]
-        DATA.data(angleind,:)    = wrapToPi(DATA.data(angleind,:));
-        DATA.srate               = newSRate;
-        DATA.times               = resampledData.time{1}*1000;
-        DATA.pnts                = size(DATA.data,2);
-        
-        % copy events from EEG
-        DATA.event = EEG.event;
-        
-        % checkset 
-        DATA = eeg_checkset(DATA, 'makeur');
-        
         % save merged data file for the session
         DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
         disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
@@ -422,15 +399,18 @@ outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)
 
 end
 
-function [outEEG] = resampleToTime(EEG, newSRate)
-
+function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
+% offset is in seconds 
+%--------------------------------------------------------------------------
 % Note that in fieldtrip time is in seconds
-newTimes                = (EEG.times(1):1000/newSRate:EEG.times(end))/1000;
+newTimes                = (tFirst:1000/newSRate:tLast)/1000;
+
 resamplecfg.time        = {newTimes};
 resamplecfg.detrend     = 'no';
-resamplecfg.extrapval   = nan;
+resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
+ftData.time{1}          = ftData.time{1} + offset; 
 resampledData           = ft_resampledata(resamplecfg, ftData);
 EEG.data                = resampledData.trial{1};
 EEG.srate               = newSRate;
@@ -445,5 +425,34 @@ EEG.setname = EEG.filename(1:end-8);
 
 % checkset
 outEEG = eeg_checkset(EEG, 'makeur');
+
+end
+
+function [DATA] = unwrapAngles(DATA)
+
+% unwrap any kind of angular data before resampling
+angleind = [];
+for Ci = 1:numel(DATA.chanlocs)
+    if  contains(DATA.chanlocs(Ci).units, 'rad')
+        angleind =  [angleind Ci];
+    end
+end
+
+DATA.data(angleind,:)   = unwrap(DATA.data(angleind,:),[],2);
+
+end
+
+
+function [DATA] = wrapAngles(DATA)
+
+% wrap any kind of angular data before resampling
+angleind = [];
+for Ci = 1:numel(DATA.chanlocs)
+    if  contains(DATA.chanlocs(Ci).units, 'rad')
+        angleind =  [angleind Ci];
+    end
+end
+
+DATA.data(angleind,:)   = wrapToPi(DATA.data(angleind,:));
 
 end
