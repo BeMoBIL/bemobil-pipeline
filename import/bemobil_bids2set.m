@@ -25,19 +25,8 @@ function bemobil_bids2set(bemobil_config, numericalIDs)
 % author : seinjeung@gmail.com
 %--------------------------------------------------------------------------
 
-% To Do  :  json file names 
-%           test files with eloc 
-%           test multi run files 
-%           make it possible to import only selected data 
-%           implement natsortorder
-
 % input check and default value assignment 
 %--------------------------------------------------------------------------
-
-% add natsortfiles to path
-[filepath,~,~] = fileparts(which('bemobil_bids2set')); 
-addpath(fullfile(filepath, 'resources', 'natsortfiles'))
-
 
 if ~isfield(bemobil_config, 'bids_data_folder')
     bemobil_config.bids_data_folder = '1_BIDS-data\';
@@ -262,7 +251,7 @@ for iSub = 1:numel(subDirList)
          
         % find all EEG data
         eegFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.session_names{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
-        eegFiles = natsortfiles(eegFiles); % not using natsortorder here - potentially problematic for more than 10 runs? (implausible)  
+        eegFiles = natsortfiles(eegFiles); 
         
         % resample and merge EEG
         %------------------------------------------------------------------
