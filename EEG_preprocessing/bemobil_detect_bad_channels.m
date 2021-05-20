@@ -103,7 +103,11 @@ yticks([])
 title('final')
 set(gca,'fontsize',12)
 
-%%
+%% select the final channels to remove and remove them from a dataset to plot
+
+% give actual channel numbers as output
+chans_to_interp = find(chans_to_interp);
+
 disp('Detected bad channels: ')
 disp({EEG.chanlocs(chans_to_interp).labels})
 
@@ -116,11 +120,13 @@ chans_to_interp(strcmp({EEG.chanlocs(chans_to_interp).type},'EOG'))=[];
 disp('Final bad channels: ')
 disp({EEG.chanlocs(chans_to_interp).labels})
 
-EEG_chan_removed = pop_select( EEG_highpass,'nochannel',find(chans_to_interp));
-EEG_chan_removed.etc.clean_channel_mask = ~chans_to_interp;
 
-% give actual channel numbers as output
-chans_to_interp = find(chans_to_interp);
+% remove channels and store channel mask for plotting
+EEG_chan_removed = pop_select( EEG_highpass,'nochannel',chans_to_interp);
+
+clean_channel_mask = ones(EEG.nbchan,1);
+clean_channel_mask(chans_to_interp) = 0;
+EEG_chan_removed.etc.clean_channel_mask = logical(clean_channel_mask);
 
 %% plot
 
