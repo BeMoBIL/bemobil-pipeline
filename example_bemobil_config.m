@@ -112,11 +112,16 @@ bemobil_config.resample_freq = 250;
 %   chan_detected_fraction_threshold	- Fraction how often a channel has to be detected to be rejected in the final
 %                                           rejection (default 0.5)
 %   flatline_crit                       - Maximum duration a channel can be flat in seconds (default 'off')
+%   line_noise_crit                     - If a channel has more line noise relative to its signal than this value, in
+%                                           standard deviations based on the total channel population, it is considered
+%                                           abnormal. (default: 'off')
+
 bemobil_config.chancorr_crit = 0.8;
 bemobil_config.chan_max_broken_time = 0.3;
 bemobil_config.chan_detect_num_iter = 10;
 bemobil_config.chan_detected_fraction_threshold = 0.5;
 bemobil_config.flatline_crit = 'off';
+bemobil_config.line_noise_crit = 'off';
 
 % channel locations: leave this empty if you have standard channel names that should use standard 10-20 locations,
 % otherwise every dataset needs to have a channel locations file in the raw_data folder, and the chanloc file needs to
