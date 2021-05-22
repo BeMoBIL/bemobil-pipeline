@@ -510,6 +510,14 @@ for iSubject = 2:size(bids.participants,1)
                             %                         end
                         end
                         EEG.event = events;
+                        
+                        % rename event fields to account for different usage of some field names 
+                        if strcmpi(EEG.event(1).type, 'Markers') 
+                           [EEG.event(:).type] = EEG.event(:).value;
+                            EEG.event       = rmfield(EEG.event, 'value'); 
+                            EEG.event       = rmfield(EEG.event, 'sample');
+                        end
+                        
                         EEG = eeg_checkset(EEG, 'eventconsistency');
                     end
                     
