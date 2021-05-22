@@ -29,6 +29,8 @@
 function [ALLEEG, EEG_motion_out, CURRENTSET] = bemobil_process_all_motion(ALLEEG, EEG_motion_in, CURRENTSET,...
     subject, bemobil_config, force_recompute)
 
+% check config
+bemobil_config = bemobil_check_config(bemobil_config);
 
 % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
 % larger than 2gb)
@@ -47,7 +49,7 @@ if force_recompute
 end
 
 
-% check if the entire processing was done already
+%% check if the entire processing was done already
 output_filepath = fullfile(bemobil_config.study_folder, bemobil_config.motion_analysis_folder, [bemobil_config.filename_prefix num2str(subject)]);
 
 if ~force_recompute

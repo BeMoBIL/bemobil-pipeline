@@ -32,6 +32,9 @@
 function [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG_to_process,...
     CURRENTSET, force_recompute)
 
+% check config
+bemobil_config = bemobil_check_config(bemobil_config);
+
 %% basic setup
 
 % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
