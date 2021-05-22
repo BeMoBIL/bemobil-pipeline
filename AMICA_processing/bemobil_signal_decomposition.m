@@ -7,7 +7,7 @@
 % Usage:
 %   >>  [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET,...
 %           amica, numb_models, maxx_threads, data_rank, other_algorithm, out_filename, out_filepath, AMICA_autoreject,...
-%           AMICA_n_rej, AMICA_reject_sigma_threshold)
+%           AMICA_n_rej, AMICA_reject_sigma_threshold, AMICA_max_iter)
 
 % Inputs:
 %   ALLEEG                          - complete EEGLAB data set structure

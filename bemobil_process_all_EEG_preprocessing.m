@@ -219,7 +219,7 @@ clear EEG_to_process
 
 [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG_basic, ALLEEG, CURRENTSET,...
     bemobil_config.chancorr_crit,bemobil_config.chan_max_broken_time, bemobil_config.chan_detect_num_iter,...
-    bemobil_config.chan_detected_fraction_threshold);
+    bemobil_config.chan_detected_fraction_threshold,bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
 
 %% save fig of bad channels
 

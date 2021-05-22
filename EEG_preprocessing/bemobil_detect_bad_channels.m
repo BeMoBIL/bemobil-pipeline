@@ -5,7 +5,7 @@
 %
 % Usage:
 %   >>  [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-%     chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold)
+%     chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold,flatline_crit,line_noise_crit)
 % 
 % Inputs:
 %   EEG                                 - current EEGLAB EEG structure
@@ -21,6 +21,9 @@
 %   chan_detected_fraction_threshold	- Fraction how often a channel has to be detected to be rejected in the final
 %                                           rejection (default 0.5)
 %   flatline_crit                       - Maximum duration a channel can be flat in seconds (default 'off')
+%   line_noise_crit                     - If a channel has more line noise relative to its signal than this value, in
+%                                           standard deviations based on the total channel population, it is considered
+%                                           abnormal. (default: 'off')
 %
 % Outputs:
 %   chans_to_interp                     - vector with channel indices to remove
@@ -35,7 +38,7 @@
 % Authors: Lukas Gehrke, 2017, Marius Klug, 2021
 
 function [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, flatline_crit)
+    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, flatline_crit, line_noise_crit)
 
 if ~exist('chancorr_crit','var') || isempty(chancorr_crit)
 	chancorr_crit = 0.8;
@@ -51,6 +54,9 @@ if ~exist('chan_detected_fraction_threshold','var') || isempty(chan_detected_fra
 end
 if ~exist('flatline_crit','var') || isempty(flatline_crit)
 	flatline_crit = 'off';
+end
+if ~exist('line_noise_crit','var') || isempty(line_noise_crit)
+	line_noise_crit = 'off';
 end
 
 %%
@@ -69,7 +75,7 @@ for i = 1:chan_detect_num_iter
     % remove bad channels, use default values of clean_artifacts, but specify just in case they may change
     [EEG_chan_removed,EEG_highpass,~,detected_bad_channels(1:EEG.nbchan,i)] = clean_artifacts(EEG,...
         'burst_crit','off','window_crit','off','channel_crit_maxbad_time',chan_max_broken_time,...
-        'chancorr_crit',chancorr_crit,'line_crit',4,'highpass_band',[0.25 0.75],'flatline_crit',flatline_crit);
+        'chancorr_crit',chancorr_crit,'line_crit',line_noise_crit,'highpass_band',[0.25 0.75],'flatline_crit',flatline_crit);
 
 end
 disp('...iterative bad channel detection done!')
@@ -103,7 +109,11 @@ yticks([])
 title('final')
 set(gca,'fontsize',12)
 
-%%
+%% select the final channels to remove and remove them from a dataset to plot
+
+% give actual channel numbers as output
+chans_to_interp = find(chans_to_interp);
+
 disp('Detected bad channels: ')
 disp({EEG.chanlocs(chans_to_interp).labels})
 
@@ -116,11 +126,13 @@ chans_to_interp(strcmp({EEG.chanlocs(chans_to_interp).type},'EOG'))=[];
 disp('Final bad channels: ')
 disp({EEG.chanlocs(chans_to_interp).labels})
 
-EEG_chan_removed = pop_select( EEG_highpass,'nochannel',find(chans_to_interp));
-EEG_chan_removed.etc.clean_channel_mask = ~chans_to_interp;
 
-% give actual channel numbers as output
-chans_to_interp = find(chans_to_interp);
+% remove channels and store channel mask for plotting
+EEG_chan_removed = pop_select( EEG_highpass,'nochannel',chans_to_interp);
+
+clean_channel_mask = ones(EEG.nbchan,1);
+clean_channel_mask(chans_to_interp) = 0;
+EEG_chan_removed.etc.clean_channel_mask = logical(clean_channel_mask);
 
 %% plot
 
