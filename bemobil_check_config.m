@@ -3,7 +3,7 @@
 % and an error is thrown.
 %
 % Usage:
-%   >>  [bemobil_config] = bemobil_detect_bad_channels(bemobil_config)
+%   >>  [bemobil_config] = bemobil_check_config(bemobil_config)
 % 
 % Inputs:
 %   bemobil_config              - current bemobil_config struct
