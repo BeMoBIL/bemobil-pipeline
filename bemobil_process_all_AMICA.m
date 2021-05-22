@@ -34,6 +34,9 @@
 function [ALLEEG, EEG_preprocessed_and_ICA, CURRENTSET] = bemobil_process_all_AMICA(ALLEEG, EEG_preprocessed, CURRENTSET,...
     subject, bemobil_config, force_recompute)
 
+% check config
+bemobil_config = bemobil_check_config(bemobil_config);
+
 % get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
 % larger than 2gb)
 % mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
