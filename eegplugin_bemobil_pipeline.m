@@ -32,12 +32,8 @@
 
 function eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
 
-p = fileparts(which('run_bemobil_pipeline'));
-if isempty(p)
-    p = fileparts(which('eeglab'));
-    p = [p filesep 'plugins' filesep 'bemobil_pipeline0.2'];
-end
-addpath(p);
+p = fileparts(which('eegplugin_bemobil_pipeline'));
+addpath(genpath(p));
 
 highlevelmenu = findobj(fig,'Label','Tools');
 
@@ -49,7 +45,7 @@ uimenu( load_data_menu, 'label', 'Convert .xdf to .set', 'CallBack', 'disp(''Sta
 uimenu( load_data_menu, 'label', 'From .set file(s)', 'CallBack', 'disp(''Loading data for eeglab...''); ALLEEG = pop_loadset(); eeglab redraw; disp(''Done.'')');
 uimenu( load_data_menu, 'label', 'Merge multiple .set files and save the created file (optional step)', 'CallBack', 'disp(''Starting merging datasets...''); [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET ); eeglab redraw; disp(''Done.'')');
 
-preprocess_menu = uimenu(menu, 'label', '2. Preprocessing', 'CallBack', 'disp(''Starting preprocessing...''); [ ALLEEG EEG CURRENTSET ] = pop_bemobil_preprocess(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
+preprocess_menu = uimenu(menu, 'label', '2. Preprocessing', 'CallBack', 'disp(''Starting preprocessing...''); [ ALLEEG EEG CURRENTSET ] = pop_bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
 
 channel_data_cleaning_menu = uimenu(menu, 'label', '3. Data cleaning (channel level)');
 uimenu( channel_data_cleaning_menu, 'label', '1. Reject irrelevant experiment segments', 'CallBack', 'disp(''Starting segments GUI...''); EEG = pop_bemobil_segment(EEG); eeglab redraw;');
