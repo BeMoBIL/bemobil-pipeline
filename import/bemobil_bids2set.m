@@ -1,9 +1,7 @@
 function bemobil_bids2set(bemobil_config, numericalIDs)
 % This function reads in BIDS datasets using the eeglab plugin 
 % "bids-matlab-tools" and reorganizes the output to be compatible with 
-% BeMoBIL pipeline. For now only EEG data are read and restructured
-% To be added :
-%           support separate output files for multi-run and multi-session
+% BeMoBIL pipeline. 
 %
 % Usage
 %       bemobil_bids2set(bemobil_config)
