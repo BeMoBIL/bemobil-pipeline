@@ -276,7 +276,7 @@ for iSub = 1:numel(subDirList)
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
-                EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Si});
+                EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
                 eegTimes(:,Ri) = [EEG.times(1); EEG.times(end)];
                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
@@ -339,7 +339,7 @@ for iSub = 1:numel(subDirList)
                 % loop over runs
                 ALLDATA = []; CURRENTSET = [];
                 for Ri = 1:numel(dataFiles)
-                    DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Si});
+                    DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
                     DATA         = unwrapAngles(DATA); % unwrap angles before resampling
                     % start time has to be buffered before data can be synched to EEG 
                     DATA.times   = DATA.times + DATA.etc.starttime*1000;
@@ -360,13 +360,11 @@ for iSub = 1:numel(subDirList)
                 DATA             = wrapAngles(DATA);
             else
                 warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.session_names{iSes}] )
-            end 
+            end
+            % save merged data file for the session
+            DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
+            disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
         end
-       
-        % save merged data file for the session
-        DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
-        disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
-        
     end
     
     % remove unnecessary files prior to merging
