@@ -1,7 +1,6 @@
 function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 
 % Examaple script for converting .xdf recordings to BIDS
-% see bemobil_bidstools.md 
 % 
 % Inputs : 
 %   bemobil_config
@@ -140,7 +139,7 @@ if isempty(numericalIDs)
     return; 
 end
 
-% check if numerical IDs match subjectData, if this was specified
+% check if numerical IDs match subject info, if this was specified
 if exist('subjectInfo','var')
     
     numericalIDs            = sort(numericalIDs);
@@ -176,7 +175,6 @@ addpath(genpath(sourceDataPath))
 % names of the steams 
 motionStreamNames                       = bemobil_config.rigidbody_streams;
 eegStreamName                           = {bemobil_config.bids_eeg_keyword};
-
 
 if isempty(bemobil_config.bids_motionconvert_custom)
     % funcions that resolve dataset-specific problems
@@ -306,6 +304,8 @@ for pi = 1:numel(numericalIDs)
                         t_end        = streams{i}.time_stamps(end);
                         duration     = t_end - t_begin;
                         
+                        % if sampling rate is higher than 20 Hz,    
+                        % the stream is considered continuous
                         if (num_samples - 1) / duration >= 20
                             iscontinuous(i) =  true;
                             if ~isfield(streams{i}.info, 'effective_srate')
@@ -374,7 +374,6 @@ for pi = 1:numel(numericalIDs)
             end
             
             % read in the event stream (synched to the EEG stream)
-            %events                = ft_read_event(cfg.dataset);
             events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps); 
             
             % event parser script
@@ -585,7 +584,7 @@ for Si = 1:numel(inStreams)
         [eventsInStream.type]       = deal(inStreams{Si}.info.type);
         times                       = num2cell(inStreams{Si}.time_stamps);
         [eventsInStream.timestamp]  = times{:};
-        samples                     = num2cell(cellfun(@(x) find(dataTimes >= x, 1,'first'), times));
+        samples                     = cellfun(@(x) find(dataTimes >= x, 1,'first'), times, 'UniformOutput', false);
         [eventsInStream.sample]     = samples{:};
         [eventsInStream.offset]     = deal([]);
         [eventsInStream.duration]   = deal([]);
