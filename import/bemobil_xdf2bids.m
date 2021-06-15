@@ -353,13 +353,6 @@ for pi = 1:numel(numericalIDs)
             eegcfg.datatype                     = 'eeg';
             eegcfg.method                       = 'convert';
             
-            if isfield(bemobil_config, 'elec_struct')
-                eegcfg.elec                         = bemobil_config.elec_struct; 
-            else
-                % full path to eloc file
-                eegcfg.elec                         = fullfile(participantDir, bemobil_config.channel_locations_filename);
-            end
-            
             if ~isempty(bemobil_config.channel_locations_filename)
                 eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
                 eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
@@ -401,7 +394,10 @@ for pi = 1:numel(numericalIDs)
             
             eegcfg.events = events;
             
-            if isfield(bemobil_config, 'channel_locations_filename')      
+          
+            if isfield(bemobil_config, 'elec_struct')
+                eegcfg.elec                         = bemobil_config.elec_struct;
+            elseif isfield(bemobil_config, 'channel_locations_filename')      
                 eegcfg.elec = fullfile(participantDir, [bemobil_config.filename_prefix, num2str(participantNr) '_' bemobil_config.channel_locations_filename]); 
             end
             
