@@ -9,6 +9,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.filename_prefix          = 'sub_';
 %       bemobil_config.source_data_folder       = '0_source-data\';
 %       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
+%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; (or bemobil_config.elec_struct = elec)  
 %       bemobil_config.session_names            = {'VR' 'desktop'}; 
 %       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
 %       bemobil_config.bids_rb_in_sessions      = [1,1; 1,1; 0,1; 0,1; 0,1]; 
@@ -341,8 +342,12 @@ for pi = 1:numel(numericalIDs)
             eegcfg.datatype                     = 'eeg';
             eegcfg.method                       = 'convert';
             
-            % full path to eloc file
-            eegcfg.elec                         = fullfile(participantDir, bemobil_config.channel_locations_filename);
+            if isfield(bemobil_config, 'elec_struct')
+                eegcfg.elec                         = bemobil_config.elec_struct; 
+            else
+                % full path to eloc file
+                eegcfg.elec                         = fullfile(participantDir, bemobil_config.channel_locations_filename);
+            end
             
             if ~isempty(bemobil_config.channel_locations_filename)
                 eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
