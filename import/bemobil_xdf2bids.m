@@ -11,14 +11,18 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
 %       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; (or bemobil_config.elec_struct = elec)  
 %       bemobil_config.session_names            = {'VR' 'desktop'}; 
-%       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
-%       bemobil_config.bids_rb_in_sessions      = [1,1; 1,1; 0,1; 0,1; 0,1]; 
+%       bemobil_config.other_data_types         = {'motion'}; 
+%       bemobil_config.rigidbody_streams        = {'rb_1', 'rb_2', 'rb_3', 'rb_4'}; 
+%       bemobil_config.rigidbody_names          = {'playerTransform','rightHand', 'leftHand', 'Torso'};
+%       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
+%       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0]; 
 %                                                  logicals : indicate which rbstreams are present in which sessions
 %       bemobil_config.bids_eeg_keyword         = {'EEG'};
 %                                                  a unique keyword used to identify the eeg stream in the .xdf file             
 %       bemobil_config.bids_task_label          = 'VNE1';
-%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc';
-%       bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
+%       bemobil_config.bids_source_zeropad      = 2; 
+%       bemobil_config.bids_motionconvert_custom = 'motion_customfunctionname';
+
 %   
 %   numericalIDs
 %       array of participant numerical IDs in the data set
@@ -103,6 +107,8 @@ else
     bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
     warning('Config field bids_motion_oreintationunits unspecified - assuming radians')
 end
+
+bemobil_config = checkfield(bemobil_config, 'bids_source_zeropad', 0, '0'); 
 
 %--------------------------------------------------------------------------
 % find optional input arguments 
@@ -222,7 +228,12 @@ cfg = generalInfo;
 for pi = 1:numel(numericalIDs)
     
     participantNr   = numericalIDs(pi);
-    participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
+    
+    if bemobil_config.bids_source_zeropad == 0
+        participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
+    else
+        participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr, ['%0' num2str(bemobil_config.bids_source_zeropad) '.f'])]);
+    end
     
     % find all .xdf files for the given session in the participant directory
     participantFiles    = dir(participantDir);
