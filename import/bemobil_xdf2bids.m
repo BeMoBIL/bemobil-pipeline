@@ -62,6 +62,14 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %--------------------------------------------------------------------------
 
 bemobil_config = checkfield(bemobil_config, 'bids_data_folder', '1_BIDS-data\', '1_BIDS-data\'); 
+bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG'); 
+bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
+bemobil_config = checkfield(bemobil_config, 'bids_source_zeropad', 0, '0'); 
+bemobil_config = checkfield(bemobil_config, 'other_data_types', {'motion'}, 'motion'); 
+
+% motion-related fields 
+%--------------------------------------------------------------------------
+bemobil_config = checkfield(bemobil_config, 'rigidbody_streams', {}, 'none'); 
 bemobil_config = checkfield(bemobil_config, 'rigidbody_names', bemobil_config.rigidbody_streams, 'values from field "rigidbody_streams"'); 
 bemobil_config = checkfield(bemobil_config, 'rigidbody_anat', 'Undefined', 'Undefined'); 
 
@@ -72,9 +80,6 @@ else
         bemobil_config.bids_rb_in_sessions = logical(bemobil_config.bids_rb_in_sessions); 
     end
 end
-
-bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG'); 
-bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
 
 if isfield(bemobil_config, 'bids_motion_position_units')
     if ~iscell(bemobil_config.bids_motion_position_units)
@@ -109,11 +114,36 @@ if isfield(bemobil_config, 'bids_motion_orientation_units')
     end
 else
     bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
-    warning('Config field bids_motion_oreintationunits unspecified - assuming radians')
+    warning('Config field bids_motion_orientationunits unspecified - assuming radians')
 end
 
-bemobil_config = checkfield(bemobil_config, 'bids_source_zeropad', 0, '0'); 
-bemobil_config = checkfield(bemobil_config, 'other_data_types', {'motion'}, 'motion'); 
+% physio-related fields 
+%--------------------------------------------------------------------------
+bemobil_config = checkfield(bemobil_config, 'physio_streams', {}, 'none'); 
+bemobil_config = checkfield(bemobil_config, 'physio_names', bemobil_config.physio_streams, 'values from field "physio_streams"'); 
+
+if ~isfield(bemobil_config, 'bids_phys_in_sessions')
+    bemobil_config.bids_phys_in_sessions    = true(numel(bemobil_config.session_names),numel(bemobil_config.physio_streams)); 
+else
+    if ~islogical(bemobil_config.bids_phys_in_sessions)
+        bemobil_config.bids_phys_in_sessions = logical(bemobil_config.bids_phys_in_sessions); 
+    end
+end
+
+% names of the steams 
+motionStreamNames                       = bemobil_config.rigidbody_streams;
+physioStreamNames                       = bemobil_config.physio_streams;
+eegStreamName                           = {bemobil_config.bids_eeg_keyword};
+
+if isempty(bemobil_config.bids_motionconvert_custom)
+    % funcions that resolve dataset-specific problems
+    motionCustom            = 'bemobil_bids_motionconvert';
+else 
+    motionCustom            = bemobil_config.bids_motionconvert_custom; 
+end
+
+% no custom function for physio processing supported yet
+physioCustom        = 'bemobil_bids_physioconvert';
 
 %--------------------------------------------------------------------------
 % find optional input arguments 
@@ -185,21 +215,6 @@ addpath(fullfile(filepath, 'external', 'xdf'))
 % path to sourcedata
 sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.source_data_folder(1:end-1));
 addpath(genpath(sourceDataPath))
-
-% names of the steams 
-motionStreamNames                       = bemobil_config.rigidbody_streams;
-physioStreamNames                       = bemobil_config.physio_streams;
-eegStreamName                           = {bemobil_config.bids_eeg_keyword};
-
-if isempty(bemobil_config.bids_motionconvert_custom)
-    % funcions that resolve dataset-specific problems
-    motionCustom            = 'bemobil_bids_motionconvert';
-else 
-    motionCustom            = bemobil_config.bids_motionconvert_custom; 
-end
-
-% no custom function for physio processing supported yet
-physioCustom        = 'bemobil_bids_physioconvert';
 
 % general metadata that apply to all participants
 if ~exist('generalInfo', 'var')

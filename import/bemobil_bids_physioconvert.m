@@ -11,10 +11,6 @@ for iP = 1:numel(physioIn)
 
     physioStream                  = physioIn{iP};
     labelsPre                     = [physioStream.label];
-    physioStream.label            = [];
-    physioStream.hdr.label        = [];
-    physioStream.hdr.chantype     = [];
-    physioStream.hdr.chanunit     = [];
     
     dataPre                 = physioStream.trial{1};
     dataPost                = [];
@@ -32,17 +28,9 @@ for iP = 1:numel(physioIn)
         % no particular processing done here
         dataPost                   = dataPre;
         
-        % enter channel information     
-        for ci = 1:size(dataPost,1)
-            physioStream.label{end + 1}                 = [labelsPre{ci}];
-            physioStream.hdr.label{end + 1}             = [labelsPre{ci}];
-            physioStream.hdr.chantype{end + 1}          = 'n/a';
-            physioStream.hdr.chanunit{end + 1}          = 'n/a';
-        end
-        
     end
     
-    % only include streams that have data from at least one object 
+    % do not include streams that contain 0 objects
     if oi > 0 
         physioStream.trial{1}     = dataPost;
         physioStream.hdr.nChans   = numel(physioStream.hdr.chantype);
@@ -97,7 +85,8 @@ if numel(physioStreamAll)>1
         cfg                 = [];
         cfg.time            = regularTime;
         cfg.detrend         = 'no'; 
-        physioStreamAll{i} = ft_resampledata(cfg, physioStreamAll{i});
+        physioStreamAll{i}  = ft_struct2double(physioStreamAll{i});
+        physioStreamAll{i}  = ft_resampledata(cfg, physioStreamAll{i});
     end
     
     % append all data structures
