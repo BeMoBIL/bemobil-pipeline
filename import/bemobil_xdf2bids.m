@@ -411,16 +411,19 @@ for pi = 1:numel(numericalIDs)
             
             % read in the event stream (synched to the EEG stream)
             if ~isempty(xdfmarkers)
-                events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
-                
-                % event parser script
-                if isempty(bemobil_config.bids_parsemarkers_custom)
-                    [events, eventsJSON] = bemobil_bids_parsemarkers(events);
-                else
-                    [events, eventsJSON] = feval(bemobil_config.bids_parsemarkers_custom, events);
+                if ~isempty(xdfmarkers{1}.time_series)
+                    
+                    events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
+                    
+                    % event parser script
+                    if isempty(bemobil_config.bids_parsemarkers_custom)
+                        [events, eventsJSON] = bemobil_bids_parsemarkers(events);
+                    else
+                        [events, eventsJSON] = feval(bemobil_config.bids_parsemarkers_custom, events);
+                    end
+                    
+                    eegcfg.events = events;
                 end
-                
-                eegcfg.events = events;
             end
             
             if isfield(bemobil_config, 'elec_struct')

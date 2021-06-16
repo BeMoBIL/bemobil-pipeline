@@ -10,7 +10,7 @@ physioStreamAll    = cell(numel(physioIn), 1);
 for iP = 1:numel(physioIn)
 
     physioStream                  = physioIn{iP};
-    labelsPre                     = [physioStream.label];
+    labelsPre                     = [physioStream.hdr.orig.name];
     
     dataPre                 = physioStream.trial{1};
     dataPost                = [];
@@ -36,7 +36,6 @@ for iP = 1:numel(physioIn)
         physioStream.hdr.nChans   = numel(physioStream.hdr.chantype);
         physioStreamAll{iP}       = physioStream;
     end
-    
     
 end
 
