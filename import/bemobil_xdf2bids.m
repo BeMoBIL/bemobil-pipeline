@@ -437,9 +437,14 @@ for pi = 1:numel(numericalIDs)
                 switch bemobil_config.other_data_types{Ti}
                     
                     case 'motion'
-                        %----------------------------------------------------------
-                        %                Convert Motion Data to BIDS
-                        %----------------------------------------------------------
+                        %--------------------------------------------------
+                        %            Convert Motion Data to BIDS
+                        %--------------------------------------------------
+                        % check if any motion data was found at all
+                        if isempty(xdfmotion)
+                            continue; 
+                        end
+                        
                         ftmotion = {};
                         
                         % construct fieldtrip data
@@ -459,7 +464,7 @@ for pi = 1:numel(numericalIDs)
                         motioncfg       = cfg;
                         motioncfg.datatype                                = 'motion';
                         
-                        %--------------------------------------------------------------
+                        %--------------------------------------------------
                         if ~exist('motionInfo', 'var')
                             
                             % data type and acquisition label
@@ -489,7 +494,7 @@ for pi = 1:numel(numericalIDs)
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
                         
-                        %--------------------------------------------------------------
+                        %--------------------------------------------------
                         % rename and fill out motion-specific fields to be used in channels_tsv
                         motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
                         motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1);
@@ -524,8 +529,7 @@ for pi = 1:numel(numericalIDs)
                                 end
                             end
                             
-                            motioncfg.channels.component{ci}    = splitlabel{end};                  % REQUIRED. Component of the representational system that the channel contains.
-                            motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
+                            motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.
                             
                         end
                         
@@ -533,9 +537,14 @@ for pi = 1:numel(numericalIDs)
                         data2bids(motioncfg, motion);
                         
                     case 'physio'
-                        %----------------------------------------------------------
-                        %             Convert Generic Physio Data to BIDS
-                        %----------------------------------------------------------
+                        %--------------------------------------------------
+                        %         Convert Generic Physio Data to BIDS
+                        %--------------------------------------------------
+                        % check if any motion data was found at all
+                        if isempty(xdfphysio)
+                            continue;
+                        end
+                        
                         ftphysio = {};
                         
                         % construct fieldtrip data
