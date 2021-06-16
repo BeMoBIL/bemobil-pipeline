@@ -11,11 +11,15 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
 %       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; (or bemobil_config.elec_struct = elec)  
 %       bemobil_config.session_names            = {'VR' 'desktop'}; 
-%       bemobil_config.other_data_types         = {'motion'}; 
+%       bemobil_config.other_data_types         = {'motion', 'physio'};  
 %       bemobil_config.rigidbody_streams        = {'rb_1', 'rb_2', 'rb_3', 'rb_4'}; 
 %       bemobil_config.rigidbody_names          = {'playerTransform','rightHand', 'leftHand', 'Torso'};
 %       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
 %       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0]; 
+%                                                  logicals : indicate which rbstreams are present in which sessions
+%       bemobil_config.physio_streams           = {'ph_1', 'ph_2'};
+%       bemobil_config.physio_names             = {'eyetrack', 'forceplate'}; 
+%       bemobil_config.bids_phys_in_sessions    = [1,1;1,0]; 
 %                                                  logicals : indicate which rbstreams are present in which sessions
 %       bemobil_config.bids_eeg_keyword         = {'EEG'};
 %                                                  a unique keyword used to identify the eeg stream in the .xdf file             
@@ -122,6 +126,8 @@ for iVI = 1:2:numel(varargin)
         motionInfo          = varargin{iVI+1}; 
     elseif strcmp(varargin{iVI}, 'eeg_metadata')
         eegInfo             = varargin{iVI+1}; 
+    elseif strcmp(varargin{iVI}, 'physio_metadata')
+        physioInfo             = varargin{iVI+1}; 
     else
         warning('One of the optional inputs are not valid : please see help bemobil_xdf2bids')
     end
@@ -182,6 +188,7 @@ addpath(genpath(sourceDataPath))
 
 % names of the steams 
 motionStreamNames                       = bemobil_config.rigidbody_streams;
+physioStreamNames                       = bemobil_config.physio_streams;
 eegStreamName                           = {bemobil_config.bids_eeg_keyword};
 
 if isempty(bemobil_config.bids_motionconvert_custom)
@@ -190,6 +197,9 @@ if isempty(bemobil_config.bids_motionconvert_custom)
 else 
     motionCustom            = bemobil_config.bids_motionconvert_custom; 
 end
+
+% no custom function for physio processing supported yet
+physioCustom        = 'bemobil_bids_physioconvert';
 
 % general metadata that apply to all participants
 if ~exist('generalInfo', 'var')
@@ -337,6 +347,7 @@ for pi = 1:numel(numericalIDs)
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
             xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous);
+            xdfphysio   = streams(contains(names,physioStreamNames(bemobil_config.bids_phys_in_sessions(si,:))) & iscontinuous);
             xdfmarkers  = streams(~iscontinuous); 
             
             %--------------------------------------------------------------
@@ -413,7 +424,6 @@ for pi = 1:numel(numericalIDs)
                         %----------------------------------------------------------
                         %                Convert Motion Data to BIDS
                         %----------------------------------------------------------
-                        motionsrates = [];
                         ftmotion = {};
                         
                         % construct fieldtrip data
@@ -505,6 +515,48 @@ for pi = 1:numel(numericalIDs)
                         
                         % write motion files in bids format
                         data2bids(motioncfg, motion);
+                        
+                    case 'physio'
+                        %----------------------------------------------------------
+                        %             Convert Generic Physio Data to BIDS
+                        %----------------------------------------------------------
+                        ftphysio = {};
+                        
+                        % construct fieldtrip data
+                        for iP = 1:numel(xdfphysio)
+                            ftphysio{iP} = stream2ft(xdfphysio{iP});
+                        end
+                        
+                        % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
+                        physio = feval(physioCustom, ftphysio, physioStreamNames(bemobil_config.bids_phys_in_sessions(si,:)), participantNr, si, di);
+                        
+                        % save motion start time
+                        physioStartTime              = physio.time{1}(1);
+                        
+                        % construct motion metadata
+                        % copy general fields
+                        physiocfg               = cfg;
+                        physiocfg.datatype      = 'physio';
+                        
+                        %--------------------------------------------------------------
+                        if ~exist('physioInfo', 'var')
+                            
+                            % motion specific fields in json
+                            physioInfo.physio.Manufacturer                     = 'Undefined';
+                            physioInfo.physio.ManufacturersModelName           = 'Undefined';
+                            physioInfo.physio.RecordingType                    = 'continuous';
+                            
+                        end
+                        
+                        % physio specific fields in json
+                        physiocfg.physio                                  = physioInfo.physio;
+                        
+                        % start time
+                        physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
+                      
+                        % write motion files in bids format
+                        data2bids(physiocfg, physio);
+                        
                     otherwise
                         warning(['Unknown data type' bemobil_config.other_data_types{Ti}])
                 end
