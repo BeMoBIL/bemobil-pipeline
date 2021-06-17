@@ -17,8 +17,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
 %       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0]; 
 %                                                  logicals : indicate which rbstreams are present in which sessions
-%       bemobil_config.physio_streams           = {'ph_1', 'ph_2'};
-%       bemobil_config.physio_names             = {'eyetrack', 'forceplate'}; 
+%       bemobil_config.physio_streams           = {'eyetrack', 'forceplate'};
 %       bemobil_config.bids_phys_in_sessions    = [1,1;1,0]; 
 %                                                  logicals : indicate which rbstreams are present in which sessions
 %       bemobil_config.bids_eeg_keyword         = {'EEG'};
@@ -120,7 +119,6 @@ end
 % physio-related fields 
 %--------------------------------------------------------------------------
 bemobil_config = checkfield(bemobil_config, 'physio_streams', {}, 'none'); 
-bemobil_config = checkfield(bemobil_config, 'physio_names', bemobil_config.physio_streams, 'values from field "physio_streams"'); 
 
 if ~isfield(bemobil_config, 'bids_phys_in_sessions')
     bemobil_config.bids_phys_in_sessions    = true(numel(bemobil_config.session_names),numel(bemobil_config.physio_streams)); 
