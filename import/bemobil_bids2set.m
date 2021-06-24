@@ -414,7 +414,10 @@ if any(hasNonZero == 0)
 else
     resampleMethod = 'pchip'; 
 end
-        
+
+% save old times
+oldTimes                = EEG.times; 
+
 % Note that in fieldtrip time is in seconds
 newTimes                = (tFirst:1000/newSRate:tLast)/1000;
 
@@ -432,7 +435,7 @@ EEG.times               = newTimes*1000; % convert back to miliseconds
 EEG.pnts                = size(EEG.data,2);
 EEG.urevent             = EEG.event;
 for iE = 1:numel(EEG.event)
-    EEG.event(iE).latency        = find(EEG.times > EEG.urevent(iE).latency,1,'first');
+    EEG.event(iE).latency        = find(EEG.times > oldTimes(round(EEG.urevent(iE).latency)),1,'first');
 end
 
 EEG.setname = EEG.filename(1:end-8);
