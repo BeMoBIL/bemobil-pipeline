@@ -65,6 +65,7 @@ bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG');
 bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
 bemobil_config = checkfield(bemobil_config, 'bids_source_zeropad', 0, '0'); 
 bemobil_config = checkfield(bemobil_config, 'other_data_types', {'motion'}, 'motion'); 
+bemobil_config = checkfield(bemobil_config, 'bids_parsemarkers_custom', [], 'none'); 
 
 % motion-related fields 
 %--------------------------------------------------------------------------
@@ -133,13 +134,14 @@ motionStreamNames                       = bemobil_config.rigidbody_streams;
 physioStreamNames                       = bemobil_config.physio_streams;
 eegStreamName                           = {bemobil_config.bids_eeg_keyword};
 
-if isempty(bemobil_config.bids_motionconvert_custom)
-    % funcions that resolve dataset-specific problems
-    motionCustom            = 'bemobil_bids_motionconvert';
-else 
-    motionCustom            = bemobil_config.bids_motionconvert_custom; 
+if contains(bemobil_config.other_data_types, 'motion')
+    if isempty(bemobil_config.bids_motionconvert_custom)
+        % funcions that resolve dataset-specific problems
+        motionCustom            = 'bemobil_bids_motionconvert';
+    else
+        motionCustom            = bemobil_config.bids_motionconvert_custom;
+    end
 end
-
 % no custom function for physio processing supported yet
 physioCustom        = 'bemobil_bids_physioconvert';
 
@@ -409,7 +411,8 @@ for pi = 1:numel(numericalIDs)
             
             % read in the event stream (synched to the EEG stream)
             if ~isempty(xdfmarkers)
-                if ~isempty(xdfmarkers{1}.time_series)
+                
+                if any(cellfun(@(x) isempty(x.time_series), xdfmarkers))
                     
                     events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
                     
