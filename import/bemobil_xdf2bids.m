@@ -5,20 +5,20 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 % Inputs : 
 %   bemobil_config
 %   example fields 
-%       bemobil_config.study_folder             = 'E:\Project_BIDS\example_dataset_MWM\';
-%       bemobil_config.filename_prefix          = 'sub_';
-%       bemobil_config.source_data_folder       = '0_source-data\';
-%       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
-%       bemobil_config.session_names            = {'VR' 'desktop'}; 
-%       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
-%       bemobil_config.bids_rb_in_sessions      = [1,1; 1,1; 0,1; 0,1; 0,1]; 
-%                                                  logicals : indicate which rbstreams are present in which sessions
-%       bemobil_config.bids_eeg_keyword         = {'EEG'};
-%                                                  a unique keyword used to identify the eeg stream in the .xdf file             
-%       bemobil_config.bids_task_label          = 'VNE1';
-%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc';
-%       bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
-%   
+%        bemobil_config.study_folder             = 'E:\Project_BIDS\example_dataset_MWM\';
+%        bemobil_config.filename_prefix          = 'sub_';
+%        bemobil_config.source_data_folder       = '0_source-data\';
+%        bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
+%        bemobil_config.session_names            = {'VR' 'desktop'}; 
+%        bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
+%        bemobil_config.bids_rb_in_sessions      = [1,1; 1,1; 0,1; 0,1; 0,1]; 
+%                                                   logicals : indicate which rbstreams are present in which sessions
+%        bemobil_config.bids_eeg_keyword         = {'EEG'};
+%                                                   a unique keyword used to identify the eeg stream in the .xdf file             
+%        bemobil_config.bids_task_label          = 'VNE1';
+%        bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc';
+%        bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
+   
 %   numericalIDs
 %       array of participant numerical IDs in the data set
 %  
@@ -72,7 +72,7 @@ if isfield(bemobil_config, 'bids_motion_position_units')
         bemobil_config.bids_motion_position_units = {bemobil_config.bids_motion_position_units};
     end
     
-    if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config.session_names)
+    if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config)
         if numel(bemobil_config.bids_motion_position_units) == 1
             bemobil_config.bids_motion_position_units = repmat(bemobil_config.bids_motion_position_units, 1, numel(bemobil_config.session_names));
             warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
@@ -172,12 +172,12 @@ addpath(fullfile(filepath, 'external', 'xdf'))
 sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.source_data_folder(1:end-1));
 addpath(genpath(sourceDataPath))
 
-% names of the steams 
+% names of the streams 
 motionStreamNames                       = bemobil_config.rigidbody_streams;
 eegStreamName                           = {bemobil_config.bids_eeg_keyword};
 
 if isempty(bemobil_config.bids_motionconvert_custom)
-    % funcions that resolve dataset-specific problems
+    % functions that resolve dataset-specific problems
     motionCustom            = 'bemobil_bids_motionconvert';
 else 
     motionCustom            = bemobil_config.bids_motionconvert_custom; 
