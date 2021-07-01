@@ -1,0 +1,119 @@
+% example script for BeMoBIL BIDS tools xdf2bids
+
+% setup paths
+addpath('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\tools\eeglab_current\eeglab2021.0');
+addpath(genpath('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\code\bemobil-pipeline'));
+addpath('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\tools\fieldtrip');
+eeglab;
+ft_defaults
+ftPath = fileparts(which('ft_defaults'));
+addpath(fullfile(ftPath, 'external','xdf')); 
+
+% check 
+which bemobil_xdf2bids 
+which load_xdf
+
+% configuration 
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+bemobil_config.study_folder             = 'C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\';
+bemobil_config.filename_prefix          = 'vp-';
+bemobil_config.source_data_folder          = 'spotrotation\';
+bemobil_config.session_names            = {'body', 'joy'}; 
+bemobil_config.resample_freq            = [];
+bemobil_config.channel_locations_filename = [];
+
+% these streams should be processed as rigid body streams containing 3 dof position and 3 dof orientation data (e.g. derivatives and filters applied)
+bemobil_config.rigidbody_streams        = {'headRigid', 'headRigid'};
+bemobil_config.rigidbody_names          =  {'Head', 'JoyStickRotation'}; 
+bemobil_config.rigidbody_anat           = {'head', 'n/a'}; 
+
+% motion data 
+bemobil_config.bids_rb_in_sessions                 = [1, 0; 0, 1];
+bemobil_config.bids_motion_positionunits       = {'m', 'virtual meters'};                  % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_orientationunits    = {'rad', 'radians'};                 % if multisession, cell array of size 1 x session number
+bemobil_config.bids_data_folder         = '1_BIDS-data\';
+bemobil_config.bids_eeg_keyword          = 'BrainVision RDA';                  % marker streams also contain these strings. However, only the continuous stream is imported
+bemobil_config.bids_tasklabel           = 'spotrotation';
+
+% custom function names - customization recommended for data sets that have
+%                         an 'unconventional' naming scheme for motion channels
+bemobil_config.bids_motionconvert_custom    = 'spotrotation_motionconvert';
+bemobil_config.bids_parsemarkers_custom     = [];
+
+% general metadata shared across all modalities
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+generalInfo = [];
+
+% root directory (where you want your bids data to be saved)
+generalInfo.bidsroot                                = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder); 
+
+% required for dataset_description.json
+generalInfo.dataset_description.Name                = 'Spot rotation with body and joystick';
+generalInfo.dataset_description.BIDSVersion         = 'unofficial extension';
+
+% optional for dataset_description.json
+generalInfo.dataset_description.License             = 'n/a';
+generalInfo.dataset_description.Authors             = 'Gramann, K., Hohlefeld, F.U., Gehrke, L., Klug, M';
+generalInfo.dataset_description.Acknowledgements    = 'Acknowledgements here';
+generalInfo.dataset_description.Funding             = 'n/a';
+generalInfo.dataset_description.ReferencesAndLinks  = 'n/a';
+generalInfo.dataset_description.DatasetDOI          = 'n/a';
+
+% general information shared across modality specific json files 
+generalInfo.InstitutionName                         = 'Technische Universitaet zu Berlin';
+generalInfo.InstitutionalDepartmentName             = 'Biological Psychology and Neuroergonomics';
+generalInfo.InstitutionAddress                      = 'Strasse des 17. Juni 135, 10623, Berlin, Germany';
+generalInfo.TaskDescription                         = 'Participants equipped with VR HMD rotated either physically or using a joystick.';
+generalInfo.task                                    = bemobil_config.bids_tasklabel;  
+
+% information about the motion recording system 
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+% data type and acquisition label
+motionInfo.acq                                     = 'motion';
+
+% motion specific fields in json
+motionInfo.motion.Manufacturer                     = 'HTC';
+motionInfo.motion.ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.RecordingType                    = 'continuous';
+
+% coordinate system
+motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';
+motionInfo.coordsystem.MotionRotationRule          = 'left-hand';
+motionInfo.coordsystem.MotionRotationOrder         = 'ZXY';
+
+% participant information 
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+% here describe the fields in the participant file
+% for numerical values  : 
+%       subjectData.fields.[insert your field name here].Description    = 'describe what the field contains';
+%       subjectData.fields.[insert your field name here].Unit           = 'write the unit of the quantity';
+% for values with discrete levels :
+%       subjectData.fields.[insert your field name here].Description    = 'describe what the field contains';
+%       subjectData.fields.[insert your field name here].Levels.[insert the name of the first level] = 'describe what the level means';
+%       subjectData.fields.[insert your field name here].Levels.[insert the name of the Nth level]   = 'describe what the level means';
+%--------------------------------------------------------------------------
+subjectInfo.fields.age.Description      = 'age of the participant'; 
+subjectInfo.fields.age.Unit             = 'years'; 
+subjectInfo.fields.sex.Description      = 'sex of the participant'; 
+subjectInfo.fields.sex.Levels.M         = 'male'; 
+subjectInfo.fields.sex.Levels.F         = 'female'; 
+subjectInfo.fields.group.Description    = 'experiment group';
+subjectInfo.fields.handedness.Description    = 'handedness of the participant';
+subjectInfo.fields.handedness.Levels.R       = 'right-handed';
+subjectInfo.fields.handedness.Levels.L       = 'left-handed';
+
+% names of the columns - 'nr' column is just the numerical IDs of subjects
+%                         do not change the name of this column
+subjectInfo.cols = {'nr',   'age',  'sex', 'handedness'};
+subjectInfo.data = {6,     20,     'F',    'R' ; ...
+                    7,     20,     'M',    'R' };
+
+% numerical IDs 
+%--------------------------------------------------------------------------
+numericalIDs                            = [6,7]; 
+
+bemobil_xdf2bids(bemobil_config, numericalIDs, 'general_metadata', generalInfo, 'motion_metadata', motionInfo)
