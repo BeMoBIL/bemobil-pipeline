@@ -176,6 +176,8 @@ addpath(genpath(sourceDataPath))
 motionStreamNames                       = bemobil_config.rigidbody_streams;
 eegStreamName                           = {bemobil_config.bids_eeg_keyword};
 
+
+% set custom motion conversion if necessary
 if isempty(bemobil_config.bids_motionconvert_custom)
     % functions that resolve dataset-specific problems
     motionCustom            = 'bemobil_bids_motionconvert';
@@ -225,12 +227,12 @@ for pi = 1:numel(numericalIDs)
     
     % find all .xdf files for the given session in the participant directory
     participantFiles    = dir(participantDir);
-    fileNameArray       = {participantFiles.name};
+    fileNameArray       = {participantFiles.name}; % finds individual files in participantDir
     
     % loop over sessions
     for si = 1:numel(bemobil_config.session_names)
         
-        sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.session_names{si}));
+        sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.session_names{si})); % compares individual files with xdf and session names
         
         % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
