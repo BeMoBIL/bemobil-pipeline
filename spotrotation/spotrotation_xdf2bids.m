@@ -75,9 +75,12 @@ generalInfo.task                                    = bemobil_config.bids_taskla
 motionInfo.acq                                     = 'motion';
 
 % motion specific fields in json
-motionInfo.motion.Manufacturer                     = 'HTC';
-motionInfo.motion.ManufacturersModelName           = 'Vive Pro';
-motionInfo.motion.RecordingType                    = 'continuous';
+motionInfo.motion.DeviceSystem                     = [];
+motionInfo.motion.DeviceSystem.IMU                 = [];
+motionInfo.motion.DeviceSystem.IMU.Manufacturer                     = 'HTC';
+motionInfo.motion.DeviceSystem.IMU.ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.DeviceSystem.IMU.RecordingType                    = 'continuous';
+
 
 % coordinate system
 motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';
