@@ -244,7 +244,7 @@ for pi = 1:numel(numericalIDs)
             % construct file and participant- and file- specific config
             % information needed to construct file paths and names
             cfg.sub                                     = num2str(participantNr,'%03.f');
-            cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di});
+            cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di}); % tells loadxdf where to find dataset
             cfg.ses                                     = bemobil_config.session_names{si};
             cfg.run                                     = di;
             
@@ -325,7 +325,7 @@ for pi = 1:numel(numericalIDs)
             end
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
-            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous);
+            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous); % for spotrotation should select 4 and/or 6
             xdfmarkers  = streams(~iscontinuous); 
             
             %--------------------------------------------------------------
@@ -403,12 +403,13 @@ for pi = 1:numel(numericalIDs)
             % construct fieldtrip data
             for iM = 1:numel(xdfmotion)
                 ftmotion{iM} = stream2ft(xdfmotion{iM}); 
-            end
             
-             % if needed, execute a custom function for any alteration to the data to address dataset specific issues
-            % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
-                     
+                 % if needed, execute a custom function for any alteration to the data to address dataset specific issues
+                % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
+                
+                % access ftmotion via index so that motionCustom can access struct fields
+                motion = feval(motionCustom, ftmotion{iM}, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di); 
+            end         
             % save motion start time
             motionStartTime              = motion.time{1}(1);
             
@@ -531,7 +532,7 @@ end
 function [ftdata] = stream2ft(xdfstream)
 
 % construct header
-hdr.Fs                  = xdfstream.info.effective_srate;
+% hdr.Fs                  = xdfstream.info.effective_srate;
 hdr.nSamplesPre         = 0;
 hdr.nSamples            = length(xdfstream.time_stamps);
 hdr.nTrials             = 1;
