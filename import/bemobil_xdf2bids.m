@@ -247,6 +247,7 @@ for pi = 1:numel(numericalIDs)
             cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di}); % tells loadxdf where to find dataset
             cfg.ses                                     = bemobil_config.session_names{si};
             cfg.run                                     = di;
+            cfg.devicesys                               = 'OPT_pos';
             
             % remove session label in uni-session case
             if numel(bemobil_config.session_names) == 1
@@ -325,7 +326,7 @@ for pi = 1:numel(numericalIDs)
             end
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
-            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous); % for spotrotation should select 4 and/or 6
+            xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous); 
             xdfmarkers  = streams(~iscontinuous); 
             
             %--------------------------------------------------------------
