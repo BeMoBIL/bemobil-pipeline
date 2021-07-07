@@ -247,7 +247,8 @@ for pi = 1:numel(numericalIDs)
             cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di}); % tells loadxdf where to find dataset
             cfg.ses                                     = bemobil_config.session_names{si};
             cfg.run                                     = di;
-            cfg.devicesys                               = 'OPT_pos';
+            cfg.tracksys                               = [];
+           
             
             % remove session label in uni-session case
             if numel(bemobil_config.session_names) == 1
@@ -440,6 +441,11 @@ for pi = 1:numel(numericalIDs)
             % data type and acquisition label
             motioncfg.acq                                     = motionInfo.acq;
             
+            % recording system
+            motioncfg.tracksys                               = motionInfo.tracksys{si};
+%             motioncfg.tracksys                               = motionInfo.tracksys;
+            
+            
             % motion specific fields in json
             motioncfg.motion                                  = motionInfo.motion;
             
@@ -489,12 +495,19 @@ for pi = 1:numel(numericalIDs)
                 
             end
             
+            
             % write motion files in bids format
             data2bids(motioncfg, motion);
             
         end
     end
 end
+
+
+
+
+
+
 
 % add general json files
 %--------------------------------------------------------------------------
