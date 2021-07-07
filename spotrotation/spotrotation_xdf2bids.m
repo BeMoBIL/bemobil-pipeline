@@ -24,7 +24,7 @@ bemobil_config.resample_freq            = [];
 bemobil_config.channel_locations_filename = [];
 
 % these streams should be processed as rigid body streams containing 3 dof position and 3 dof orientation data (e.g. derivatives and filters applied)
-bemobil_config.rigidbody_streams        = {'headRigid', 'headRigid'};
+bemobil_config.rigidbody_streams        = {'headRigid', 'headRigid2'};
 bemobil_config.rigidbody_names          =  {'Head', 'JoyStickRotation'}; 
 bemobil_config.rigidbody_anat           = {'head', 'n/a'}; 
 
@@ -72,14 +72,26 @@ generalInfo.task                                    = bemobil_config.bids_taskla
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % data type and acquisition label
-motionInfo.acq                                     = 'motion';
+motionInfo.acq                                     = [];
+
+% device systems
+motionInfo.tracksys                               = {'OPTpos', 'VIRpos'}; %index corresponds to session 
+
 
 % motion specific fields in json
-motionInfo.motion.DeviceSystem                     = [];
-motionInfo.motion.DeviceSystem.IMU                 = [];
-motionInfo.motion.DeviceSystem.IMU.Manufacturer                     = 'HTC';
-motionInfo.motion.DeviceSystem.IMU.ManufacturersModelName           = 'Vive Pro';
-motionInfo.motion.DeviceSystem.IMU.RecordingType                    = 'continuous';
+motionInfo.motion.TrackingSystem                     = [];
+motionInfo.motion.TrackingSystem.OPTpos                 = [];
+motionInfo.motion.TrackingSystem.OPTpos.Manufacturer                     = 'HTC';
+motionInfo.motion.TrackingSystem.OPTpos.ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.TrackingSystem.OPTpos.RecordingType                    = 'continuous';
+
+motionInfo.motion.TrackingSystem.VIRpos                 = [];
+motionInfo.motion.TrackingSystem.VIRpos.Manufacturer                     = 'Virtual System Manufacturer';
+motionInfo.motion.TrackingSystem.VIRTpos.ManufacturersModelName          = 'Virtual System Manufacturer Model';
+motionInfo.motion.TrackingSystem.VIRpos.RecordingType                    = 'continuous';
+
+
+
 
 
 % coordinate system
