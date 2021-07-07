@@ -254,6 +254,7 @@ cfg = generalInfo;
 for pi = 1:numel(numericalIDs)
     
     participantNr   = numericalIDs(pi);
+    disp(['Importing .xdf for participant ' num2str(participantNr)])
     
     if bemobil_config.bids_source_zeropad == 0
         participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
@@ -264,11 +265,19 @@ for pi = 1:numel(numericalIDs)
     % find all .xdf files for the given session in the participant directory
     participantFiles    = dir(participantDir);
     fileNameArray       = {participantFiles.name};
-    
+
     % loop over sessions
     for si = 1:numel(bemobil_config.session_names)
         
         sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.session_names{si}));
+        
+        if isempty(sessionFiles)
+            warning(['No files in session ' bemobil_config.session_names{si} ' found for participant ' num2str(participantNr) ', in dir ' participantDir '. Check file path and name'])
+        else
+            for Fi = 1:numel(sessionFiles)
+                disp(['File ' sessionFiles(Fi).name ' found.'])
+            end
+        end
         
         % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
