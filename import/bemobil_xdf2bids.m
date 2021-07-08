@@ -421,9 +421,10 @@ for pi = 1:numel(numericalIDs)
             % read in the event stream (synched to the EEG stream)
             if ~isempty(xdfmarkers)
                 
-                if any(cellfun(@(x) isempty(x.time_series), xdfmarkers))
+                if any(cellfun(@(x) ~isempty(x.time_series), xdfmarkers))
                     
-                    events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
+                    events                  = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
+                    eventsFound             = 1; 
                     
                     % event parser script
                     if isempty(bemobil_config.bids_parsemarkers_custom)
@@ -433,6 +434,7 @@ for pi = 1:numel(numericalIDs)
                     end
                     
                     eegcfg.events = events;
+                    
                 end
             end
             
@@ -615,11 +617,13 @@ if exist('subjectInfo', 'var')
     fwrite(pfid, pString); fclose(pfid);
 end
 
-% events.json
-eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
-efid            = fopen(eJSONName, 'wt');
-eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
-fwrite(efid, eString); fclose(efid);
+if eventsFound
+    % events.json
+    eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
+    efid            = fopen(eJSONName, 'wt');
+    eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
+    fwrite(efid, eString); fclose(efid);
+end
 
 end
 
