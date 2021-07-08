@@ -24,7 +24,7 @@ bemobil_config.resample_freq            = [];
 bemobil_config.channel_locations_filename = [];
 
 % these streams should be processed as rigid body streams containing 3 dof position and 3 dof orientation data (e.g. derivatives and filters applied)
-bemobil_config.rigidbody_streams        = {'headRigid', 'headRigid2'};
+bemobil_config.rigidbody_streams        = {'headRigid', 'headRigid'};
 bemobil_config.rigidbody_names          =  {'Head', 'JoyStickRotation'}; 
 bemobil_config.rigidbody_anat           = {'head', 'n/a'}; 
 
@@ -74,25 +74,22 @@ generalInfo.task                                    = bemobil_config.bids_taskla
 % data type and acquisition label
 motionInfo.acq                                     = [];
 
-% device systems
-motionInfo.tracksys                               = {'OPTpos', 'VIRpos'}; %index corresponds to session 
-
+% tracking systems
+motionInfo.tracksys                               = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
 
 % motion specific fields in json
-motionInfo.motion.TrackingSystem                     = [];
-motionInfo.motion.TrackingSystem.OPTpos                 = [];
-motionInfo.motion.TrackingSystem.OPTpos.Manufacturer                     = 'HTC';
-motionInfo.motion.TrackingSystem.OPTpos.ManufacturersModelName           = 'Vive Pro';
-motionInfo.motion.TrackingSystem.OPTpos.RecordingType                    = 'continuous';
+motionInfo.motion = [];
+motionInfo.motion.TrackingSystem                     = []; 
 
-motionInfo.motion.TrackingSystem.VIRpos                 = [];
-motionInfo.motion.TrackingSystem.VIRpos.Manufacturer                     = 'Virtual System Manufacturer';
-motionInfo.motion.TrackingSystem.VIRTpos.ManufacturersModelName          = 'Virtual System Manufacturer Model';
-motionInfo.motion.TrackingSystem.VIRpos.RecordingType                    = 'continuous';
+% system 1 information
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).Manufacturer                     = 'HTC';
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).RecordingType                    = 'continuous';
 
-
-
-
+% system 2 information
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).RecordingType                    = 'continuous';
 
 % coordinate system
 motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';
