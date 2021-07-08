@@ -442,8 +442,8 @@ for pi = 1:numel(numericalIDs)
             motioncfg.acq                                     = motionInfo.acq;
             
             % recording system
-            motioncfg.tracksys                               = motionInfo.tracksys{si};
-%             motioncfg.tracksys                               = motionInfo.tracksys;
+            motioncfg.tracksys                                = motionInfo.tracksys{si};
+            motioncfg.tracksysAll                             = motionInfo.tracksys; % needed for removing general trackingsys info 
             
             
             % motion specific fields in json
@@ -494,7 +494,6 @@ for pi = 1:numel(numericalIDs)
                 motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
                 
             end
-            
             
             % write motion files in bids format
             data2bids(motioncfg, motion);
