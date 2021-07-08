@@ -175,7 +175,7 @@ for Pi = 1:numel(numericalIDs)
 end
 
 if ~isempty(skipIndices)
-    numericalIDs = numericalIDs(~skipIndices);
+    numericalIDs(skipIndices) = [];
 end
 
 if isempty(numericalIDs)
