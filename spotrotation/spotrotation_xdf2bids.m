@@ -84,12 +84,14 @@ motionInfo.motion.TrackingSystem                     = [];
 % system 1 information
 motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).Manufacturer                     = 'HTC';
 motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).RecordingType                    = 'continuous';
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).RecordingType                    = 'continuous'; %change
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).SoftwareFilters                  = 'n/a';
 
 % system 2 information
 motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
 motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
 motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).RecordingType                    = 'continuous';
+motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).SoftwareFilters                  = 'n/a';
 
 % coordinate system
 motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';
