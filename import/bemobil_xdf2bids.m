@@ -411,6 +411,7 @@ for pi = 1:numel(numericalIDs)
                 
                 % access ftmotion via index so that motionCustom can access struct fields
                 motion = feval(motionCustom, ftmotion{iM}, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di); 
+                display (class(motion))
             end         
             % save motion start time
             motionStartTime              = motion.time{1}(1);
@@ -443,14 +444,18 @@ for pi = 1:numel(numericalIDs)
             
             % recording system
             motioncfg.tracksys                                = motionInfo.tracksys{si};
-            motioncfg.tracksysAll                             = motionInfo.tracksys; % needed for removing general trackingsys info 
-            
             
             % motion specific fields in json
             motioncfg.motion                                  = motionInfo.motion;
             
+            % number of all tracking systems
+            motioncfg.motion.tracksys_all                     = motionInfo.tracksys; % needed for removing general trackingsys info 
+            
+            % number of all tracking systems used in session
+            motioncfg.motion.TrackingSystemCount              = numel(xdfmotion);
+            
             % start time
-            motioncfg.motion.StartTime                        = motionStartTime - eegStartTime;
+            motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
             
             % coordinate system
             motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
@@ -545,7 +550,7 @@ end
 function [ftdata] = stream2ft(xdfstream)
 
 % construct header
-% hdr.Fs                  = xdfstream.info.effective_srate;
+hdr.Fs                  = xdfstream.info.effective_srate;
 hdr.nSamplesPre         = 0;
 hdr.nSamples            = length(xdfstream.time_stamps);
 hdr.nTrials             = 1;
