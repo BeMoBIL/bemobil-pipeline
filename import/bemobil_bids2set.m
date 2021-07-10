@@ -434,8 +434,14 @@ EEG.srate               = newSRate;
 EEG.times               = newTimes*1000; % convert back to miliseconds
 EEG.pnts                = size(EEG.data,2);
 EEG.urevent             = EEG.event;
+
+% sometimes broken recordings lead to NaN values in the latency fields
 for iE = 1:numel(EEG.event)
-    EEG.event(iE).latency        = find(EEG.times > oldTimes(round(EEG.urevent(iE).latency)),1,'first');
+    if isnan(EEG.urevent(iE).latency)
+        warning(['NaN value detected in event ' num2str(iE)])
+    else
+        EEG.event(iE).latency        = find(EEG.times > oldTimes(round(EEG.urevent(iE).latency)),1,'first');
+    end
 end
 
 EEG.setname = EEG.filename(1:end-8);
