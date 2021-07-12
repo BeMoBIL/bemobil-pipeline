@@ -72,7 +72,7 @@ if isfield(bemobil_config, 'bids_motion_position_units')
         bemobil_config.bids_motion_position_units = {bemobil_config.bids_motion_position_units};
     end
     
-    if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config)
+    if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config.session_names)
         if numel(bemobil_config.bids_motion_position_units) == 1
             bemobil_config.bids_motion_position_units = repmat(bemobil_config.bids_motion_position_units, 1, numel(bemobil_config.session_names));
             warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
@@ -443,13 +443,13 @@ for pi = 1:numel(numericalIDs)
             motioncfg.acq                                     = motionInfo.acq;
             
             % recording system
-            motioncfg.tracksys                                = motionInfo.tracksys{si};
+            motioncfg.tracksys                                = motionInfo.motion.tracksys {si};
             
             % motion specific fields in json
             motioncfg.motion                                  = motionInfo.motion;
             
             % number of all tracking systems
-            motioncfg.motion.tracksys_all                     = motionInfo.tracksys; % needed for removing general trackingsys info 
+            motioncfg.motion.tracksys_all                     = motionInfo.motion.tracksys ; % needed for removing general trackingsys info 
             
             % number of all tracking systems used in session
             motioncfg.motion.TrackingSystemCount              = numel(xdfmotion);
@@ -463,12 +463,13 @@ for pi = 1:numel(numericalIDs)
             %--------------------------------------------------------------
             % rename and fill out motion-specific fields to be used in channels_tsv
             motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
+            motioncfg.channels.trackingsystem       = cell(motion.hdr.nChans,1);
             motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1);
             motioncfg.channels.component            = cell(motion.hdr.nChans,1);
             motioncfg.channels.placement            = cell(motion.hdr.nChans,1);
             motioncfg.channels.datafile             = cell(motion.hdr.nChans,1);
             
-            for ci  = 1:motion.hdr.nChans
+            for ci  = 1:motion.hdr.nChans % add other channel types
                 
                 if  contains(motion.hdr.chantype{ci},'position')
                     motion.hdr.chantype{ci} = 'POS';
@@ -480,12 +481,14 @@ for pi = 1:numel(numericalIDs)
                     motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
                 end
                 
+                
                 splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
                 motioncfg.channels.name{ci}         = motion.hdr.label{ci};
                 
-                % assign object names and anatomical positions
+                % assign object names, anatomical positions and tracking system
                 for iRB = 1:numel(bemobil_config.rigidbody_streams)
                     if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
+                        motioncfg.channels.trackingsystem{ci}      = motionInfo.motion.tracksys {iRB};
                         motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
                         if iscell(bemobil_config.rigidbody_anat)
                             motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
@@ -495,8 +498,9 @@ for pi = 1:numel(numericalIDs)
                     end
                 end
                 
+                
                 motioncfg.channels.component{ci}    = splitlabel{end};                  % REQUIRED. Component of the representational system that the channel contains.
-                motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
+%                 motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
                 
             end
             
