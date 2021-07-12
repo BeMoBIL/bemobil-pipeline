@@ -18,7 +18,7 @@ which load_xdf
 %--------------------------------------------------------------------------
 bemobil_config.study_folder             = 'C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\';
 bemobil_config.filename_prefix          = 'vp-';
-bemobil_config.source_data_folder          = 'spotrotation\';
+bemobil_config.source_data_folder       = 'spotrotation\';
 bemobil_config.session_names            = {'body', 'joy'}; 
 bemobil_config.resample_freq            = [];
 bemobil_config.channel_locations_filename = [];
@@ -30,8 +30,8 @@ bemobil_config.rigidbody_anat           = {'head', 'n/a'};
 
 % motion data 
 bemobil_config.bids_rb_in_sessions                 = [1, 0; 0, 1];
-bemobil_config.bids_motion_positionunits       = {'m', 'virtual meters'};                  % if multisession, cell array of size 1 x session number
-bemobil_config.bids_motion_orientationunits    = {'rad', 'radians'};                 % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_position_units       = {'m', 'virtual meters'};                  % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_orientation_units    = {'rad', 'radians'};                 % if multisession, cell array of size 1 x session number
 bemobil_config.bids_data_folder         = '1_BIDS-data\';
 bemobil_config.bids_eeg_keyword          = 'BrainVision RDA';                  % marker streams also contain these strings. However, only the continuous stream is imported
 bemobil_config.bids_tasklabel           = 'spotrotation';
@@ -74,24 +74,24 @@ generalInfo.task                                    = bemobil_config.bids_taskla
 % data type and acquisition label
 motionInfo.acq                                     = [];
 
-% tracking systems
-motionInfo.tracksys                               = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
 
 % motion specific fields in json
 motionInfo.motion = [];
 motionInfo.motion.TrackingSystem                     = []; 
+motionInfo.motion.tracksys                           = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
+
 
 % system 1 information
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).Manufacturer                     = 'HTC';
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).RecordingType                    = 'continuous'; %change
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{1}).SoftwareFilters                  = 'n/a';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).Manufacturer                     = 'HTC';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).RecordingType                    = 'continuous'; %change
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).SoftwareFilters                  = 'n/a';
 
 % system 2 information
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).RecordingType                    = 'continuous';
-motionInfo.motion.TrackingSystem.(motionInfo.tracksys{2}).SoftwareFilters                  = 'n/a';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).RecordingType                    = 'continuous';
+motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).SoftwareFilters                  = 'n/a';
 
 % coordinate system
 motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';
