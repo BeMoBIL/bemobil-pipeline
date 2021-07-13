@@ -1,8 +1,42 @@
-% streams test
-streams = load_xdf('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\spotrotation\vp-6\vp-6_control_body.xdf');
 
+%% dot indexing problem in motionconvert [solved]
+
+% streams import spotrotation
+streams = load_xdf('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\spotrotation\vp-6\vp-6_control_body.xdf');
+% streams = load_xdf('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\spotrotation\vp-6\vp-6_control_joy.xdf');
+streams = load_xdf('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\spotrotation\vp-7\vp-7_control_joy.xdf');
 % select stream 
-xdfstream = streams{6};
+ % stream body
+ xdfstream = streams{4};
+ 
+ % stream joy
+ xdfstream = streams{3};
+
+ streamNr = 3; 
+
+% load .xdf data to check what is in there
+streams = load_xdf('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data\spotrotation\vp-7\vp-7_control_joy.xdf');
+streamnames     = cellfun(@(x) x.info.name, streams, 'UniformOutput', 0)'
+channelnames    = cellfun(@(x) x.label, streams{streamNr}.info.desc.channels.channel, 'UniformOutput', 0)'
+
+% visualize position streams 
+figure; plot(streams{streamNr}.time_series(1:3,:)', 'LineWidth', 2)
+set(gca,'FontSize',15) 
+legend('X', 'Y', 'Z')
+title(['Stream ' streamnames{streamNr} ' position streams'], 'Interpreter','none')
+
+% visualize orientation streams 
+figure; plot(streams{streamNr}.time_series(4:7,:)', 'LineWidth', 2)
+set(gca,'FontSize',15) 
+legend('A', 'B', 'C', 'D')
+title(['Stream ' streamnames{streamNr} ' quaternion streams'], 'Interpreter','none')
+
+% % streams import mobiworkshop
+% streams = load_xdf('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\MoBI Workshop\data\0_source-data\vp_24\vp_24_walk.xdf');
+% 
+% % select stream 
+% xdfstream = streams{1};
+
 
 %--------------------------------------------------------------
 %                Convert Motion Data to BIDS
@@ -12,7 +46,8 @@ motionsrates = [];
 ftmotion = [];
 
 % construct header
-% hdr.Fs                  = xdfstream.info.effective_srate;
+% hdr.Fs                  = xdfstream.info.effective_srate; % depends on calculating .effective_srate which is not important atm
+hdr.nominalSampleRate   = str2num(xdfstream.info.nominal_srate);
 hdr.nSamplesPre         = 0;
 hdr.nSamples            = length(xdfstream.time_stamps);
 hdr.nTrials             = 1;
@@ -64,11 +99,13 @@ eulerComponents         = {'z','y','x'};
 cartCoordinates         = {'X','Y','Z'};
 
 motionIn = ftdata;
+bemobil_config.rigidbody_streams        = {'headRigid', 'vizardFirstControllerRigid'};
+motionStreamNames = {'headRigid', 'vizardFirstControllerRigid'}
+objects = motionStreamNames;
 
 motion                  = motionIn;
-motion.label            = [];
 labelsPre               = [motion.label];
-
+motion.label            = [];
 
 motion.hdr.label        = []; 
 motion.hdr.chantype     = []; 
@@ -134,4 +171,54 @@ motion.trial{1}     = dataPost;
 motion.hdr.nChans   = numel(motion.hdr.chantype);
 motionOut           = motion; 
 
+
+ftmotion{1} = ftdata
             
+            % construct fieldtrip data
+            for iM = 1:numel(xdfmotion)
+%                 ftmotion{iM} = stream2ft(xdfmotion{iM}); 
+           
+                % if needed, execute a custom function for any alteration to the data to address dataset specific issues
+                % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
+                motion = feval(motionCustom, ftmotion{iM}, {'headRigid'}, participantNr, si, di);
+                
+            end
+
+%% construct tracked points
+
+bemobil_config.rigidbody_streams        = {'headRigid', 'vizardFirstControllerRigid'};
+bemobil_config.rigidbody_names          =  {'Head', 'JoyStickRotation'}; 
+bemobil_config.rigidbody_anat           = {'head', 'n/a'}; 
+motioncfg.channels.placement            = [];
+ 
+
+for ci = numel(motionOut.hdr.label)
+                splitlabel                          = regexp(hdr.label{ci}, '_', 'split');
+                motioncfg.channels.name{ci}         = motionOut.hdr.label{ci};
+    
+                % assign object names and anatomical positions
+                for iRB = 1:numel(bemobil_config.rigidbody_streams)
+                    if contains(motionOut.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
+                        motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
+                        if iscell(bemobil_config.rigidbody_anat)
+                            motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
+                        else
+                            motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
+                        end
+                    end
+                end
+                
+                motioncfg.channels.component{ci}    = splitlabel{end};                  % REQUIRED. Component of the representational system that the channel contains.
+%                 motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
+  
+end 
+
+for ci = numel(motionOut.hdr.label)
+                motioncfg.channels.name{ci}         = motionOut.hdr.label{ci};
+end 
+
+%% count tracked points
+trackedpoints = numel(bemobil_config.rigidbody_anat) - sum(strcmpi(bemobil_config.rigidbody_anat, 'n/a'))
+
+
+

@@ -4,6 +4,7 @@
 addpath('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\tools\eeglab_current\eeglab2021.0');
 addpath(genpath('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\code\bemobil-pipeline'));
 addpath('C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\tools\fieldtrip');
+dataFolder = 'C:\Users\sgrot\Documents\Uni\01_Master\6. Semester\00_MA\Themenfindung\BIDs\data';
 eeglab;
 ft_defaults
 ftPath = fileparts(which('ft_defaults'));
@@ -12,6 +13,29 @@ addpath(fullfile(ftPath, 'external','xdf'));
 % check 
 which bemobil_xdf2bids 
 which load_xdf
+
+streamNr = 3; 
+% eegStreamNr = 5; 
+
+% load .xdf data to check what is in there
+% streams = load_xdf(fullfile(dataFolder, '\spotrotation\vp-6\vp-6_control_body.xdf'));
+streams = load_xdf(fullfile(dataFolder, '\spotrotation\vp-7\vp-7_control_joy.xdf'));
+streamnames     = cellfun(@(x) x.info.name, streams, 'UniformOutput', 0)'
+channelnames    = cellfun(@(x) x.label, streams{streamNr}.info.desc.channels.channel, 'UniformOutput', 0)'
+
+% visualize position streams 
+figure; plot(streams{streamNr}.time_series(1:3,:)', 'LineWidth', 2)
+set(gca,'FontSize',15) 
+legend('X', 'Y', 'Z')
+title(['Stream ' streamnames{streamNr} ' position streams'], 'Interpreter','none')
+
+% visualize orientation streams 
+figure; plot(streams{streamNr}.time_series(4:7,:)', 'LineWidth', 2)
+set(gca,'FontSize',15) 
+legend('A', 'B', 'C', 'D')
+title(['Stream ' streamnames{streamNr} ' quaternion streams'], 'Interpreter','none')
+
+
 
 % configuration 
 %--------------------------------------------------------------------------
@@ -77,21 +101,20 @@ motionInfo.acq                                     = [];
 
 % motion specific fields in json
 motionInfo.motion = [];
-motionInfo.motion.TrackingSystem                     = []; 
-motionInfo.motion.tracksys                           = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
+motionInfo.motion.RecordingType                       = 'continuous';
+motionInfo.motion.TrackingSystems                     = []; 
+motionInfo.motion.tracksys                            = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
 
 
 % system 1 information
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).Manufacturer                     = 'HTC';
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).RecordingType                    = 'continuous'; %change
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{1}).SoftwareFilters                  = 'n/a';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).Manufacturer                     = 'HTC';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).SoftwareFilters                  = 'n/a';
 
 % system 2 information
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).RecordingType                    = 'continuous';
-motionInfo.motion.TrackingSystem.(motionInfo.motion.tracksys{2}).SoftwareFilters                  = 'n/a';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).SoftwareFilters                  = 'n/a';
 
 % coordinate system
 motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';

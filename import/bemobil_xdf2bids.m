@@ -411,7 +411,6 @@ for pi = 1:numel(numericalIDs)
                 
                 % access ftmotion via index so that motionCustom can access struct fields
                 motion = feval(motionCustom, ftmotion{iM}, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di); 
-                display (class(motion))
             end         
             % save motion start time
             motionStartTime              = motion.time{1}(1);
@@ -485,6 +484,7 @@ for pi = 1:numel(numericalIDs)
                 splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
                 motioncfg.channels.name{ci}         = motion.hdr.label{ci};
                 
+                display (motion.hdr.label)
                 % assign object names, anatomical positions and tracking system
                 for iRB = 1:numel(bemobil_config.rigidbody_streams)
                     if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
@@ -554,13 +554,14 @@ end
 function [ftdata] = stream2ft(xdfstream)
 
 % construct header
-hdr.Fs                  = xdfstream.info.effective_srate;
+hdr.Fs   = str2num(xdfstream.info.nominal_srate);
+% hdr.Fs                  = xdfstream.info.effective_srate;
+% hdr.NominalSampleRate   = str2num(xdfstream.info.nominal_srate);
 hdr.nSamplesPre         = 0;
 hdr.nSamples            = length(xdfstream.time_stamps);
 hdr.nTrials             = 1;
 hdr.FirstTimeStamp      = xdfstream.time_stamps(1);
 hdr.TimeStampPerSample  = (xdfstream.time_stamps(end)-xdfstream.time_stamps(1)) / (length(xdfstream.time_stamps) - 1);
-
 if isfield(xdfstream.info.desc, 'channels')
     hdr.nChans    = numel(xdfstream.info.desc.channels.channel);
 else
