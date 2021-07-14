@@ -161,7 +161,10 @@ for iSub = 1:numel(subDirList)
                 bidsFolderName  = 'eeg'; 
             case 'motion'
                 bemobilModality = 'MOTION';
-                bidsFolderName = 'beh'; 
+                bidsFolderName = 'beh';
+            case 'physio'
+                bemobilModality = 'PHYSIO';
+                bidsFolderName = 'beh';
             otherwise
                 bemobilModality = bidsModality;
                 disp(['Unknown modality' bidsModality ' saved as ' bemobilModality '.set'])
@@ -305,6 +308,8 @@ for iSub = 1:numel(subDirList)
             switch otherDataTypes{iType}
                 case 'motion'
                     bemobilModality = 'MOTION';
+                case 'physio'
+                    bemobilModality = 'PHYSIO';
                 otherwise
                     bemobilModality = otherDataTypes{iType};
                     disp(['Unknown modality' otherDataTypes{iType} ', looking for ' otherDataTypes{iType} '.set'])
@@ -324,7 +329,7 @@ for iSub = 1:numel(subDirList)
             end
             
             if numel(eegFiles) ~= numel(dataFiles)
-                error('Number of EEG and other data files do not match within a session')
+                warning('Number of EEG and other data files do not match within a session')
             end
             
             if numel(dataFiles) > 1
@@ -402,11 +407,23 @@ end
 function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
+% check if any row is all zeros - use nearest interp if so
+hasNonZero = any(EEG.data,2);
+if any(hasNonZero == 0)
+    resampleMethod = 'nearest'; 
+else
+    resampleMethod = 'pchip'; 
+end
+
+% save old times
+oldTimes                = EEG.times; 
+
 % Note that in fieldtrip time is in seconds
 newTimes                = (tFirst:1000/newSRate:tLast)/1000;
 
 resamplecfg.time        = {newTimes};
 resamplecfg.detrend     = 'no';
+resamplecfg.method      = resampleMethod; 
 resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
@@ -417,8 +434,14 @@ EEG.srate               = newSRate;
 EEG.times               = newTimes*1000; % convert back to miliseconds
 EEG.pnts                = size(EEG.data,2);
 EEG.urevent             = EEG.event;
+
+% sometimes broken recordings lead to NaN values in the latency fields
 for iE = 1:numel(EEG.event)
-    EEG.event(iE).latency        = find(EEG.times > EEG.urevent(iE).latency,1,'first');
+    if isnan(EEG.urevent(iE).latency)
+        warning(['NaN value detected in event ' num2str(iE)])
+    else
+        EEG.event(iE).latency        = find(EEG.times > oldTimes(round(EEG.urevent(iE).latency)),1,'first');
+    end
 end
 
 EEG.setname = EEG.filename(1:end-8);
@@ -433,8 +456,10 @@ function [DATA] = unwrapAngles(DATA)
 % unwrap any kind of angular data before resampling
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
-    if  contains(DATA.chanlocs(Ci).units, 'rad')
-        angleind =  [angleind Ci];
+    if ischar(DATA.chanlocs(Ci).units)
+        if  contains(DATA.chanlocs(Ci).units, 'rad')
+            angleind =  [angleind Ci];
+        end
     end
 end
 
@@ -448,8 +473,10 @@ function [DATA] = wrapAngles(DATA)
 % wrap any kind of angular data before resampling
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
-    if  contains(DATA.chanlocs(Ci).units, 'rad')
-        angleind =  [angleind Ci];
+    if ~isempty(DATA.chanlocs(Ci).units)
+        if  contains(DATA.chanlocs(Ci).units, 'rad')
+            angleind =  [angleind Ci];
+        end
     end
 end
 
