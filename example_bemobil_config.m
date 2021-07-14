@@ -42,15 +42,14 @@ bemobil_config.bids_task_label = 'taskname';
 % Non-continuous (marker) streams will not be mixed up even if it contains this string.
 bemobil_config.bids_eeg_keyword = 'EEG';
 
-% keywords in stream names in .xdf file that contain motion data
+% [motion] keywords in stream names in .xdf file that contain motion data
 bemobil_config.rigidbody_streams = {'RigidBodyKeyword1', 'RigidBodyKeyword2', 'RigidbodyKeyword3'};
 
-% which rigidbody streams are present in which sessions
+% [motion] which rigidbody streams are present in which sessions
 % array of logicals number of sessios X number of rigidbody streams
 % in this example, all 3 rigidbodies are present in first session [1,1,1]
 % but only the first is present in the second session [1,0,0]
 bemobil_config.bids_rb_in_sessions = logical([1,1,1;1,0,0]);
-
 
 % Fields below have default values and can be optinally configured
 % most of these are used to either be saved as channel information in BIDS
@@ -58,20 +57,24 @@ bemobil_config.bids_rb_in_sessions = logical([1,1,1;1,0,0]);
 % (simply not creating the fields will leave you with default values)
 %--------------------------------------------------------------------------
 
-% simple, human readable labels of the motion streams
+% other data types present
+% default value {'motion'}, if importing only EEG, enter {} 
+bemobil_config.other_data_types         = {'motion'}; 
+
+% [motion] simple, human readable labels of the motion streams
 % default values are taken from field rigidbody_streams
 bemobil_config.rigidbody_names          =  {'Head', 'LeftThigh', 'LeftLowerLeg'};
 
-% if more detailed anatomical description or coordinates are present, specify here
+% [motion] if more detailed anatomical description or coordinates are present, specify here
 % default values are taken from field rigidbody_names
 bemobil_config.rigidbody_anat           =  {'central forehead', 'left vastus lateralis', 'left tibialis anterior'};
 
-% for unisessio, just use a string. If multisession, cell array of size 1 x session number
+% [motion] for unisession, just use a string. If multisession, cell array of size 1 x session number
 bemobil_config.bids_motion_position_units      = {'m','vm'};                       
 bemobil_config.bids_motion_orientation_units   = {'rad','rad'};                     % if multisession, cell array of size 1 x session number
 
-% custom function names - customization recommended for data sets that have
-%                         an 'unconventional' naming scheme for motion channels
+% [motion] custom function names - customization recommended for data sets that have
+%                                  an 'unconventional' naming scheme for motion channels
 bemobil_config.bids_motionconvert_custom    = 'bids_motionconvert_mobiworkshop';
 bemobil_config.bids_parsemarkers_custom     = 'bids_parsemarkers_mobiworkshop';
 

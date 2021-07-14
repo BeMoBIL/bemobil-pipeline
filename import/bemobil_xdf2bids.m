@@ -1,7 +1,6 @@
 function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 
 % Examaple script for converting .xdf recordings to BIDS
-% see bemobil_bidstools.md 
 % 
 % Inputs : 
 %   bemobil_config
@@ -10,15 +9,23 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.filename_prefix          = 'sub_';
 %       bemobil_config.source_data_folder       = '0_source-data\';
 %       bemobil_config.bids_data_folder         = '1_BIDS-data\'; 
+%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; (or bemobil_config.elec_struct = elec)  
 %       bemobil_config.session_names            = {'VR' 'desktop'}; 
-%       bemobil_config.rigidbody_streams        = {'playerTransform','playerTransfom','rightHand', 'leftHand', 'Torso'};
-%       bemobil_config.bids_rb_in_sessions      = [1,1; 1,1; 0,1; 0,1; 0,1]; 
+%       bemobil_config.other_data_types         = {'motion', 'physio'};  
+%       bemobil_config.rigidbody_streams        = {'rb_1', 'rb_2', 'rb_3', 'rb_4'}; 
+%       bemobil_config.rigidbody_names          = {'playerTransform','rightHand', 'leftHand', 'Torso'};
+%       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
+%       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0]; 
+%                                                  logicals : indicate which rbstreams are present in which sessions
+%       bemobil_config.physio_streams           = {'eyetrack', 'forceplate'};
+%       bemobil_config.bids_phys_in_sessions    = [1,1;1,0]; 
 %                                                  logicals : indicate which rbstreams are present in which sessions
 %       bemobil_config.bids_eeg_keyword         = {'EEG'};
 %                                                  a unique keyword used to identify the eeg stream in the .xdf file             
 %       bemobil_config.bids_task_label          = 'VNE1';
-%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc';
-%       bemobil_config.bids_motioncustom        = 'motion_customfunctionname';
+%       bemobil_config.bids_source_zeropad      = 2; 
+%       bemobil_config.bids_motionconvert_custom = 'motion_customfunctionname';
+
 %   
 %   numericalIDs
 %       array of participant numerical IDs in the data set
@@ -54,6 +61,15 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %--------------------------------------------------------------------------
 
 bemobil_config = checkfield(bemobil_config, 'bids_data_folder', '1_BIDS-data\', '1_BIDS-data\'); 
+bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG'); 
+bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
+bemobil_config = checkfield(bemobil_config, 'bids_source_zeropad', 0, '0'); 
+bemobil_config = checkfield(bemobil_config, 'other_data_types', {'motion'}, 'motion'); 
+bemobil_config = checkfield(bemobil_config, 'bids_parsemarkers_custom', [], 'none'); 
+
+% motion-related fields 
+%--------------------------------------------------------------------------
+bemobil_config = checkfield(bemobil_config, 'rigidbody_streams', {}, 'none'); 
 bemobil_config = checkfield(bemobil_config, 'rigidbody_names', bemobil_config.rigidbody_streams, 'values from field "rigidbody_streams"'); 
 bemobil_config = checkfield(bemobil_config, 'rigidbody_anat', 'Undefined', 'Undefined'); 
 
@@ -64,9 +80,6 @@ else
         bemobil_config.bids_rb_in_sessions = logical(bemobil_config.bids_rb_in_sessions); 
     end
 end
-
-bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG'); 
-bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask'); 
 
 if isfield(bemobil_config, 'bids_motion_position_units')
     if ~iscell(bemobil_config.bids_motion_position_units)
@@ -101,8 +114,36 @@ if isfield(bemobil_config, 'bids_motion_orientation_units')
     end
 else
     bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
-    warning('Config field bids_motion_oreintationunits unspecified - assuming radians')
+    warning('Config field bids_motion_orientationunits unspecified - assuming radians')
 end
+
+% physio-related fields 
+%--------------------------------------------------------------------------
+bemobil_config = checkfield(bemobil_config, 'physio_streams', {}, 'none'); 
+
+if ~isfield(bemobil_config, 'bids_phys_in_sessions')
+    bemobil_config.bids_phys_in_sessions    = true(numel(bemobil_config.session_names),numel(bemobil_config.physio_streams)); 
+else
+    if ~islogical(bemobil_config.bids_phys_in_sessions)
+        bemobil_config.bids_phys_in_sessions = logical(bemobil_config.bids_phys_in_sessions); 
+    end
+end
+
+% names of the steams 
+motionStreamNames                       = bemobil_config.rigidbody_streams;
+physioStreamNames                       = bemobil_config.physio_streams;
+eegStreamName                           = {bemobil_config.bids_eeg_keyword};
+
+if contains(bemobil_config.other_data_types, 'motion')
+    if isempty(bemobil_config.bids_motionconvert_custom)
+        % funcions that resolve dataset-specific problems
+        motionCustom            = 'bemobil_bids_motionconvert';
+    else
+        motionCustom            = bemobil_config.bids_motionconvert_custom;
+    end
+end
+% no custom function for physio processing supported yet
+physioCustom        = 'bemobil_bids_physioconvert';
 
 %--------------------------------------------------------------------------
 % find optional input arguments 
@@ -115,6 +156,8 @@ for iVI = 1:2:numel(varargin)
         motionInfo          = varargin{iVI+1}; 
     elseif strcmp(varargin{iVI}, 'eeg_metadata')
         eegInfo             = varargin{iVI+1}; 
+    elseif strcmp(varargin{iVI}, 'physio_metadata')
+        physioInfo             = varargin{iVI+1}; 
     else
         warning('One of the optional inputs are not valid : please see help bemobil_xdf2bids')
     end
@@ -132,7 +175,7 @@ for Pi = 1:numel(numericalIDs)
 end
 
 if ~isempty(skipIndices)
-    numericalIDs = numericalIDs(~skipIndices);
+    numericalIDs(skipIndices) = [];
 end
 
 if isempty(numericalIDs)
@@ -140,7 +183,7 @@ if isempty(numericalIDs)
     return; 
 end
 
-% check if numerical IDs match subjectData, if this was specified
+% check if numerical IDs match subject info, if this was specified
 if exist('subjectInfo','var')
     
     numericalIDs            = sort(numericalIDs);
@@ -172,18 +215,6 @@ addpath(fullfile(filepath, 'external', 'xdf'))
 % path to sourcedata
 sourceDataPath                          = fullfile(bemobil_config.study_folder, bemobil_config.source_data_folder(1:end-1));
 addpath(genpath(sourceDataPath))
-
-% names of the steams 
-motionStreamNames                       = bemobil_config.rigidbody_streams;
-eegStreamName                           = {bemobil_config.bids_eeg_keyword};
-
-
-if isempty(bemobil_config.bids_motionconvert_custom)
-    % funcions that resolve dataset-specific problems
-    motionCustom            = 'bemobil_bids_motionconvert';
-else 
-    motionCustom            = bemobil_config.bids_motionconvert_custom; 
-end
 
 % general metadata that apply to all participants
 if ~exist('generalInfo', 'var')
@@ -223,16 +254,30 @@ cfg = generalInfo;
 for pi = 1:numel(numericalIDs)
     
     participantNr   = numericalIDs(pi);
-    participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
+    disp(['Importing .xdf for participant ' num2str(participantNr)])
+    
+    if bemobil_config.bids_source_zeropad == 0
+        participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
+    else
+        participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr, ['%0' num2str(bemobil_config.bids_source_zeropad) '.f'])]);
+    end
     
     % find all .xdf files for the given session in the participant directory
     participantFiles    = dir(participantDir);
     fileNameArray       = {participantFiles.name};
-    
+
     % loop over sessions
     for si = 1:numel(bemobil_config.session_names)
         
         sessionFiles        = participantFiles(contains(fileNameArray, '.xdf') & contains(fileNameArray, bemobil_config.session_names{si}));
+        
+        if isempty(sessionFiles)
+            warning(['No files in session ' bemobil_config.session_names{si} ' found for participant ' num2str(participantNr) ', in dir ' participantDir '. Check file path and name'])
+        else
+            for Fi = 1:numel(sessionFiles)
+                disp(['File ' sessionFiles(Fi).name ' found.'])
+            end
+        end
         
         % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
@@ -306,6 +351,8 @@ for pi = 1:numel(numericalIDs)
                         t_end        = streams{i}.time_stamps(end);
                         duration     = t_end - t_begin;
                         
+                        % if sampling rate is higher than 20 Hz,    
+                        % the stream is considered continuous
                         if (num_samples - 1) / duration >= 20
                             iscontinuous(i) =  true;
                             if ~isfield(streams{i}.info, 'effective_srate')
@@ -324,6 +371,7 @@ for pi = 1:numel(numericalIDs)
             
             xdfeeg      = streams(contains(names,eegStreamName) & iscontinuous);
             xdfmotion   = streams(contains(names,motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:))) & iscontinuous);
+            xdfphysio   = streams(contains(names,physioStreamNames(bemobil_config.bids_phys_in_sessions(si,:))) & iscontinuous);
             xdfmarkers  = streams(~iscontinuous); 
             
             %--------------------------------------------------------------
@@ -340,9 +388,6 @@ for pi = 1:numel(numericalIDs)
             eegcfg                              = cfg;
             eegcfg.datatype                     = 'eeg';
             eegcfg.method                       = 'convert';
-            
-            % full path to eloc file
-            eegcfg.elec                         = fullfile(participantDir, bemobil_config.channel_locations_filename);
             
             if ~isempty(bemobil_config.channel_locations_filename)
                 eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
@@ -374,121 +419,188 @@ for pi = 1:numel(numericalIDs)
             end
             
             % read in the event stream (synched to the EEG stream)
-            %events                = ft_read_event(cfg.dataset);
-            events                = stream2events(xdfmarkers, xdfeeg{1}.time_stamps); 
-            
-            % event parser script
-            if isempty(bemobil_config.bids_parsemarkers_custom)
-                [events, eventsJSON] = bemobil_bids_parsemarkers(events);
-            else
-                [events, eventsJSON] = feval(bemobil_config.bids_parsemarkers_custom, events);
+            if ~isempty(xdfmarkers)
+                
+                if any(cellfun(@(x) ~isempty(x.time_series), xdfmarkers))
+                    
+                    events                  = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
+                    eventsFound             = 1; 
+                    
+                    % event parser script
+                    if isempty(bemobil_config.bids_parsemarkers_custom)
+                        [events, eventsJSON] = bemobil_bids_parsemarkers(events);
+                    else
+                        [events, eventsJSON] = feval(bemobil_config.bids_parsemarkers_custom, events);
+                    end
+                    
+                    eegcfg.events = events;
+                    
+                end
             end
             
-            eegcfg.events = events;
-            
-            if isfield(bemobil_config, 'channel_locations_filename')      
+            if isfield(bemobil_config, 'elec_struct')
+                eegcfg.elec                         = bemobil_config.elec_struct;
+            elseif isfield(bemobil_config, 'channel_locations_filename')      
                 eegcfg.elec = fullfile(participantDir, [bemobil_config.filename_prefix, num2str(participantNr) '_' bemobil_config.channel_locations_filename]); 
             end
             
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
             
-            %--------------------------------------------------------------
-            %                Convert Motion Data to BIDS
-            %--------------------------------------------------------------
-            motionsrates = []; 
-            ftmotion = {};
-            
-            % construct fieldtrip data
-            for iM = 1:numel(xdfmotion)
-                ftmotion{iM} = stream2ft(xdfmotion{iM}); 
-            end
-            
-             % if needed, execute a custom function for any alteration to the data to address dataset specific issues
-            % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-            motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
-                     
-            % save motion start time
-            motionStartTime              = motion.time{1}(1);
-            
-            % construct motion metadata
-            % copy general fields
-            motioncfg       = cfg;
-            motioncfg.datatype                                = 'motion';
-            
-            %--------------------------------------------------------------
-            if ~exist('motionInfo', 'var')
+            for Ti = 1:numel(bemobil_config.other_data_types)
                 
-                % data type and acquisition label
-                motionInfo.acq                                     = 'Motion';
-                
-                % motion specific fields in json
-                motionInfo.motion.Manufacturer                     = 'Undefined';
-                motionInfo.motion.ManufacturersModelName           = 'Undefined';
-                motionInfo.motion.RecordingType                    = 'continuous';
-                
-                % coordinate system
-                motionInfo.coordsystem.MotionCoordinateSystem      = 'Undefined';
-                motionInfo.coordsystem.MotionRotationRule          = 'Undefined';
-                motionInfo.coordsystem.MotionRotationOrder         = 'Undefined';
-                
-            end
-            
-            % data type and acquisition label
-            motioncfg.acq                                     = motionInfo.acq;
-            
-            % motion specific fields in json
-            motioncfg.motion                                  = motionInfo.motion;
-            
-            % start time
-            motioncfg.motion.StartTime                        = motionStartTime - eegStartTime;
-            
-            % coordinate system
-            motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
-            
-            %--------------------------------------------------------------
-            % rename and fill out motion-specific fields to be used in channels_tsv
-            motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
-            motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1);
-            motioncfg.channels.component            = cell(motion.hdr.nChans,1);
-            motioncfg.channels.placement            = cell(motion.hdr.nChans,1);
-            motioncfg.channels.datafile             = cell(motion.hdr.nChans,1);
-            
-            for ci  = 1:motion.hdr.nChans
-                
-                if  contains(motion.hdr.chantype{ci},'position')
-                    motion.hdr.chantype{ci} = 'POS';
-                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_position_units{si};
-                end
-                
-                if  contains(motion.hdr.chantype{ci},'orientation')
-                    motion.hdr.chantype{ci} = 'ORNT';
-                    motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
-                end
-                
-                splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
-                motioncfg.channels.name{ci}         = motion.hdr.label{ci};
-                
-                % assign object names and anatomical positions
-                for iRB = 1:numel(bemobil_config.rigidbody_streams)
-                    if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
-                        motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
-                        if iscell(bemobil_config.rigidbody_anat)
-                            motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
-                        else
-                            motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
+                switch bemobil_config.other_data_types{Ti}
+                    
+                    case 'motion'
+                        %--------------------------------------------------
+                        %            Convert Motion Data to BIDS
+                        %--------------------------------------------------
+                        % check if any motion data was found at all
+                        if isempty(xdfmotion)
+                            continue; 
                         end
-                    end
+                        
+                        ftmotion = {};
+                        
+                        % construct fieldtrip data
+                        for iM = 1:numel(xdfmotion)
+                            ftmotion{iM} = stream2ft(xdfmotion{iM});
+                        end
+                        
+                        % if needed, execute a custom function for any alteration to the data to address dataset specific issues
+                        % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
+                        motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
+                        
+                        % save motion start time
+                        motionStartTime              = motion.time{1}(1);
+                        
+                        % construct motion metadata
+                        % copy general fields
+                        motioncfg       = cfg;
+                        motioncfg.datatype                                = 'motion';
+                        
+                        %--------------------------------------------------
+                        if ~exist('motionInfo', 'var')
+                            
+                            % data type and acquisition label
+                            motionInfo.acq                                     = 'Motion';
+                            
+                            % motion specific fields in json
+                            motionInfo.motion.Manufacturer                     = 'Undefined';
+                            motionInfo.motion.ManufacturersModelName           = 'Undefined';
+                            motionInfo.motion.RecordingType                    = 'continuous';
+                            
+                            % coordinate system
+                            motionInfo.coordsystem.MotionCoordinateSystem      = 'Undefined';
+                            motionInfo.coordsystem.MotionRotationRule          = 'Undefined';
+                            motionInfo.coordsystem.MotionRotationOrder         = 'Undefined';
+                            
+                        end
+                        
+                        % data type and acquisition label
+                        motioncfg.acq                                     = motionInfo.acq;
+                        
+                        % motion specific fields in json
+                        motioncfg.motion                                  = motionInfo.motion;
+                        
+                        % start time
+                        motioncfg.motion.StartTime                        = motionStartTime - eegStartTime;
+                        
+                        % coordinate system
+                        motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
+                        
+                        %--------------------------------------------------
+                        % rename and fill out motion-specific fields to be used in channels_tsv
+                        motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
+                        motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1);
+                        motioncfg.channels.component            = cell(motion.hdr.nChans,1);
+                        motioncfg.channels.placement            = cell(motion.hdr.nChans,1);
+                        motioncfg.channels.datafile             = cell(motion.hdr.nChans,1);
+                        
+                        for ci  = 1:motion.hdr.nChans
+                            
+                            if  contains(motion.hdr.chantype{ci},'position')
+                                motion.hdr.chantype{ci} = 'POS';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_position_units{si};
+                            end
+                            
+                            if  contains(motion.hdr.chantype{ci},'orientation')
+                                motion.hdr.chantype{ci} = 'ORNT';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
+                            
+                            splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
+                            motioncfg.channels.name{ci}         = motion.hdr.label{ci};
+                            
+                            % assign object names and anatomical positions
+                            for iRB = 1:numel(bemobil_config.rigidbody_streams)
+                                if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
+                                    motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
+                                    if iscell(bemobil_config.rigidbody_anat)
+                                        motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
+                                    else
+                                        motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
+                                    end
+                                end
+                            end
+                            
+                            motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.
+                            
+                        end
+                        
+                        % write motion files in bids format
+                        data2bids(motioncfg, motion);
+                        
+                    case 'physio'
+                        %--------------------------------------------------
+                        %         Convert Generic Physio Data to BIDS
+                        %--------------------------------------------------
+                        % check if any motion data was found at all
+                        if isempty(xdfphysio)
+                            continue;
+                        end
+                        
+                        ftphysio = {};
+                        
+                        % construct fieldtrip data
+                        for iP = 1:numel(xdfphysio)
+                            ftphysio{iP} = stream2ft(xdfphysio{iP});
+                        end
+                        
+                        % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
+                        physio = feval(physioCustom, ftphysio, physioStreamNames(bemobil_config.bids_phys_in_sessions(si,:)), participantNr, si, di);
+                        
+                        % save motion start time
+                        physioStartTime              = physio.time{1}(1);
+                        
+                        % construct motion metadata
+                        % copy general fields
+                        physiocfg               = cfg;
+                        physiocfg.datatype      = 'physio';
+                        
+                        %--------------------------------------------------------------
+                        if ~exist('physioInfo', 'var')
+                            
+                            % motion specific fields in json
+                            physioInfo.physio.Manufacturer                     = 'Undefined';
+                            physioInfo.physio.ManufacturersModelName           = 'Undefined';
+                            physioInfo.physio.RecordingType                    = 'continuous';
+                            
+                        end
+                        
+                        % physio specific fields in json
+                        physiocfg.physio                                  = physioInfo.physio;
+                        
+                        % start time
+                        physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
+                      
+                        % write motion files in bids format
+                        data2bids(physiocfg, physio);
+                        
+                    otherwise
+                        warning(['Unknown data type' bemobil_config.other_data_types{Ti}])
                 end
-                
-                motioncfg.channels.component{ci}    = splitlabel{end};                  % REQUIRED. Component of the representational system that the channel contains.
-                motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
-                
             end
-            
-            % write motion files in bids format
-            data2bids(motioncfg, motion);
-            
         end
     end
 end
@@ -505,11 +617,13 @@ if exist('subjectInfo', 'var')
     fwrite(pfid, pString); fclose(pfid);
 end
 
-% events.json
-eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
-efid            = fopen(eJSONName, 'wt');
-eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
-fwrite(efid, eString); fclose(efid);
+if eventsFound
+    % events.json
+    eJSONName       = fullfile(cfg.bidsroot, ['task-' cfg.task '_events.json']);
+    efid            = fopen(eJSONName, 'wt');
+    eString         = savejson('', eventsJSON, 'NaN', '"n/a"', 'ParseLogical', true);
+    fwrite(efid, eString); fclose(efid);
+end
 
 end
 
@@ -585,7 +699,7 @@ for Si = 1:numel(inStreams)
         [eventsInStream.type]       = deal(inStreams{Si}.info.type);
         times                       = num2cell(inStreams{Si}.time_stamps);
         [eventsInStream.timestamp]  = times{:};
-        samples                     = num2cell(cellfun(@(x) find(dataTimes >= x, 1,'first'), times));
+        samples                     = cellfun(@(x) find(dataTimes >= x, 1,'first'), times, 'UniformOutput', false);
         [eventsInStream.sample]     = samples{:};
         [eventsInStream.offset]     = deal([]);
         [eventsInStream.duration]   = deal([]);
