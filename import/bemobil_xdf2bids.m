@@ -462,7 +462,7 @@ for pi = 1:numel(numericalIDs)
             %--------------------------------------------------------------
             % rename and fill out motion-specific fields to be used in channels_tsv
             motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
-            motioncfg.channels.trackingsystem       = cell(motion.hdr.nChans,1);
+            motioncfg.channels.tracking_system      = cell(motion.hdr.nChans,1);
             motioncfg.channels.tracked_point        = cell(motion.hdr.nChans,1);
             motioncfg.channels.component            = cell(motion.hdr.nChans,1);
             motioncfg.channels.placement            = cell(motion.hdr.nChans,1);
@@ -484,11 +484,10 @@ for pi = 1:numel(numericalIDs)
                 splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
                 motioncfg.channels.name{ci}         = motion.hdr.label{ci};
                 
-                display (motion.hdr.label)
                 % assign object names, anatomical positions and tracking system
                 for iRB = 1:numel(bemobil_config.rigidbody_streams)
                     if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
-                        motioncfg.channels.trackingsystem{ci}      = motionInfo.motion.tracksys {iRB};
+                        motioncfg.channels.tracking_system{ci}      = motionInfo.motion.tracksys {iRB};
                         motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
                         if iscell(bemobil_config.rigidbody_anat)
                             motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
@@ -503,6 +502,7 @@ for pi = 1:numel(numericalIDs)
 %                 motioncfg.channels.datafile{ci}      = ['...acq-' motioncfg.acq  '_motion.tsv'];
                 
             end
+            
             
             % write motion files in bids format
             data2bids(motioncfg, motion);
@@ -554,9 +554,9 @@ end
 function [ftdata] = stream2ft(xdfstream)
 
 % construct header
-hdr.Fs   = str2num(xdfstream.info.nominal_srate);
-% hdr.Fs                  = xdfstream.info.effective_srate;
-% hdr.NominalSampleRate   = str2num(xdfstream.info.nominal_srate);
+
+hdr.Fs                  = xdfstream.info.effective_srate;
+hdr.nFs                 = str2num(xdfstream.info.nominal_srate);
 hdr.nSamplesPre         = 0;
 hdr.nSamples            = length(xdfstream.time_stamps);
 hdr.nTrials             = 1;
