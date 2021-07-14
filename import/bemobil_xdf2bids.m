@@ -1,6 +1,6 @@
 function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 
-% Examaple script for converting .xdf recordings to BIDS
+% Example script for converting .xdf recordings to BIDS
 %
 % Inputs :
 %   bemobil_config
@@ -59,7 +59,6 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 
 % input check and default value assignment
 %--------------------------------------------------------------------------
-
 bemobil_config = checkfield(bemobil_config, 'bids_data_folder', '1_BIDS-data\', '1_BIDS-data\');
 bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG');
 bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask');
@@ -80,6 +79,8 @@ else
         bemobil_config.bids_rb_in_sessions = logical(bemobil_config.bids_rb_in_sessions);
     end
 end
+
+
 
 if isfield(bemobil_config, 'bids_motion_position_units')
     if ~iscell(bemobil_config.bids_motion_position_units)
@@ -114,8 +115,9 @@ if isfield(bemobil_config, 'bids_motion_orientation_units')
     end
 else
     bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
-    warning('Config field bids_motion_orientationunits unspecified - assuming radians')
+    warning('Config field bids_motion_orientation_units unspecified - assuming radians')
 end
+
 
 % physio-related fields
 %--------------------------------------------------------------------------
@@ -292,7 +294,7 @@ for pi = 1:numel(numericalIDs)
             cfg.dataset                                 = fullfile(participantDir, sortedFileNames{di}); % tells loadxdf where to find dataset
             cfg.ses                                     = bemobil_config.session_names{si};
             cfg.run                                     = di;
-            cfg.tracksys                               = [];
+            cfg.tracksys                                = [];
 
 
             % remove session label in uni-session case
@@ -457,6 +459,18 @@ for pi = 1:numel(numericalIDs)
                         %--------------------------------------------------
                         %            Convert Motion Data to BIDS
                         %--------------------------------------------------
+                        
+                        % check for missing or wrong trackingsystem information
+                        if ~isfield(motionInfo.motion , 'tracksys')
+                            error ('Trackingsystems must be specified. Please create motionInfo.motion.tracksys containing names of tracking systems.') 
+                        elseif isempty (motionInfo.motion.tracksys)
+                            error ('Trackingsystems must be specified. Please enter name of tracking systems in motionInfo.motion.tracksys .') 
+                        else 
+                            if any(contains(motionInfo.motion.tracksys, '_'))
+                                error ('Name of trackingsystem is must not contain underscores. Please change name of trackingsystem.')
+                            end
+                        end
+                        
                         % check if any motion data was found at all
                         if isempty(xdfmotion)
                             continue;
@@ -471,7 +485,7 @@ for pi = 1:numel(numericalIDs)
 
                         % if needed, execute a custom function for any alteration to the data to address dataset specific issues
                         % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-                        motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
+                        motion = feval(motionCustom, ftmotion{iM}, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
 
                         % save motion start time
                         motionStartTime              = motion.time{1}(1);
@@ -504,9 +518,16 @@ for pi = 1:numel(numericalIDs)
 
                         % motion specific fields in json
                         motioncfg.motion                                  = motionInfo.motion;
+                        
+                        % tracking system
+                        motioncfg.tracksys                                = motionInfo.motion.tracksys {si}; % has to be adjusted for multiple tracking systems in one session
+                        motioncfg.motion.tracksys_all                     = motionInfo.motion.tracksys ; % needed for removing general trackingsys info 
+            
+                        % number of all tracking systems used in session
+                        motioncfg.motion.TrackingSystemCount              = numel(xdfmotion);
 
                         % start time
-                        motioncfg.motion.StartTime                        = motionStartTime - eegStartTime;
+                        motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
 
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
@@ -530,6 +551,36 @@ for pi = 1:numel(numericalIDs)
                                 motion.hdr.chantype{ci} = 'ORNT';
                                 motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
                             end
+                            
+                            if  contains(motion.hdr.chantype{ci},'velocity')
+                                motion.hdr.chantype{ci} = 'VEL';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
+                            
+                            if  contains(motion.hdr.chantype{ci},'angularvelocity')
+                                motion.hdr.chantype{ci} = 'ANGVEL';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
+                            
+                            if  contains(motion.hdr.chantype{ci},'acceleration')
+                                motion.hdr.chantype{ci} = 'ACC';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
+                            
+                            if  contains(motion.hdr.chantype{ci},'angularacceleration')
+                                motion.hdr.chantype{ci} = 'ANGACC';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
+                            
+                            if  contains(motion.hdr.chantype{ci},'magneticfield')
+                                motion.hdr.chantype{ci} = 'MAGN';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
+                            
+                            if  contains(motion.hdr.chantype{ci},'jointangle')
+                                motion.hdr.chantype{ci} = 'JNTANG';
+                                motion.hdr.chanunit{ci} = bemobil_config.bids_motion_orientation_units{si};
+                            end
 
                             splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
                             motioncfg.channels.name{ci}         = motion.hdr.label{ci};
@@ -537,6 +588,7 @@ for pi = 1:numel(numericalIDs)
                             % assign object names and anatomical positions
                             for iRB = 1:numel(bemobil_config.rigidbody_streams)
                                 if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
+                                    motioncfg.channels.tracking_system{ci}      = motionInfo.motion.tracksys {iRB};
                                     motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
                                     if iscell(bemobil_config.rigidbody_anat)
                                         motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};

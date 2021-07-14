@@ -43,6 +43,7 @@ which load_xdf
 bemobil_config.filename_prefix          = 'vp-';
 bemobil_config.source_data_folder       = 'spotrotation\';
 bemobil_config.session_names            = {'body', 'joy'}; 
+bemobil_config.other_data_types         = {'motion'};  
 bemobil_config.resample_freq            = [];
 bemobil_config.channel_locations_filename = [];
 
@@ -53,8 +54,16 @@ bemobil_config.rigidbody_anat           = {'head', 'n/a'};
 
 % motion data 
 bemobil_config.bids_rb_in_sessions                 = [1, 0; 0, 1];
-bemobil_config.bids_motion_position_units       = {'m', 'virtual meters'};                  % if multisession, cell array of size 1 x session number
-bemobil_config.bids_motion_orientation_units    = {'rad', 'radians'};                 % if multisession, cell array of size 1 x session number
+
+bemobil_config.bids_motion_position_units              = {'m', 'virtual meters'};          % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_orientation_units           = {'rad', 'radians'};               % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_velocity_units              = {'m/s', 'm/s'};                   % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_angularvelocity_units       = {'rad/s', 'rad/s'};               % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_acceleration_units          = {'m/s^2', 'm/s^2'};               % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_angularacceleration_units   = {'rad/s^2', 'rad/s^2'};           % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_mangeticfield_units         = {'T', 'T'};                       % if multisession, cell array of size 1 x session number
+bemobil_config.bids_motion_jointangle_units            = {'rad', 'rad'};                   % if multisession, cell array of size 1 x session number
+
 bemobil_config.bids_data_folder         = '1_BIDS-data\';
 bemobil_config.bids_eeg_keyword          = 'BrainVision RDA';                  % marker streams also contain these strings. However, only the continuous stream is imported
 bemobil_config.bids_tasklabel           = 'spotrotation';
@@ -102,7 +111,7 @@ motionInfo.acq                                     = [];
 motionInfo.motion = [];
 motionInfo.motion.RecordingType                       = 'continuous';
 motionInfo.motion.TrackingSystems                     = []; 
-motionInfo.motion.tracksys                            = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
+motionInfo.motion.tracksys                            = {'OPT_pos', 'VIRpos'}; % index corresponds to sessions number 
 
 
 % system 1 information
