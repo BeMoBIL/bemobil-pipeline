@@ -513,6 +513,16 @@ for pi = 1:numel(numericalIDs)
 
                         end
 
+                        % sampling frequency
+%                         motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyEffective = [];            % dependent on session number
+                        motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyEffective = motion.hdr.Fs;
+                        
+                        if strcmpi(motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyNominal, 'n/a')
+                           motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyNominal = motion.hdr.nFs;
+                        end 
+                        
+                        display (motionInfo.motion.TrackingSystems.OPTpos)
+                        
                         % data type and acquisition label
                         motioncfg.acq                                     = motionInfo.acq;
 
@@ -704,8 +714,9 @@ end
 function [ftdata] = stream2ft(xdfstream)
 
 % construct header
-
+hdr.Fs                  = 'n/a';
 hdr.Fs                  = xdfstream.info.effective_srate;
+hdr.nFs                 = 'n/a';
 hdr.nFs                 = str2num(xdfstream.info.nominal_srate);
 hdr.nSamplesPre         = 0;
 hdr.nSamples            = length(xdfstream.time_stamps);

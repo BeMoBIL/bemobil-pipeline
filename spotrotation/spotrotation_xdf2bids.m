@@ -111,17 +111,22 @@ motionInfo.acq                                     = [];
 motionInfo.motion = [];
 motionInfo.motion.RecordingType                       = 'continuous';
 motionInfo.motion.TrackingSystems                     = []; 
-motionInfo.motion.tracksys                            = {'OPT_pos', 'VIRpos'}; % index corresponds to sessions number 
+motionInfo.motion.tracksys                            = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
 
 
 % system 1 information
+
 motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).Manufacturer                     = 'HTC';
 motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).SamplingFrequencyNominal         = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).SamplingFrequencyEffective       = [];
 motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{1}).SoftwareFilters                  = 'n/a';
 
 % system 2 information
 motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).Manufacturer                     = 'Virtual System Manufacturer';
 motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).ManufacturersModelName           = 'Virtual System Manufacturer Model';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).SamplingFrequencyNominal         = 'n/a';
+motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).SamplingFrequencyEffective       = [];
 motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{2}).SoftwareFilters                  = 'n/a';
 
 % coordinate system

@@ -222,3 +222,6 @@ trackedpoints = numel(bemobil_config.rigidbody_anat) - sum(strcmpi(bemobil_confi
 
 
 
+%%
+
+sort({'SamplingFrequencyNominal' 'SoftwareFilters'  'SamplingFrequencyEffective'})
