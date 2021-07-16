@@ -316,6 +316,7 @@ for pi = 1:numel(numericalIDs)
                     end
                 end
             end
+            
 
             % load and assign streams (parts taken from xdf2fieldtrip)
             %--------------------------------------------------------------
@@ -514,14 +515,14 @@ for pi = 1:numel(numericalIDs)
                         end
 
                         % sampling frequency
-%                         motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyEffective = [];            % dependent on session number
                         motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyEffective = motion.hdr.Fs;
                         
                         if strcmpi(motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyNominal, 'n/a')
                            motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyNominal = motion.hdr.nFs;
                         end 
                         
-                        display (motionInfo.motion.TrackingSystems.OPTpos)
+                        
+                          
                         
                         % data type and acquisition label
                         motioncfg.acq                                     = motionInfo.acq;
@@ -541,7 +542,11 @@ for pi = 1:numel(numericalIDs)
 
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
-
+                        
+%                        if motioncfg.tracksys == motioncfg.motion.tracksys_all{si}
+%                            motionInfo.motion.TrackingSystems = rmfield(motionInfo.motion.TrackingSystems,motioncfg.motion.tracksys_all{(setdiff(si))});
+%                        end 
+                        
                         %--------------------------------------------------
                         % rename and fill out motion-specific fields to be used in channels_tsv
                         motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
