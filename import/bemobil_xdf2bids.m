@@ -543,10 +543,7 @@ for pi = 1:numel(numericalIDs)
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
                         
-%                        if motioncfg.tracksys == motioncfg.motion.tracksys_all{si}
-%                            motionInfo.motion.TrackingSystems = rmfield(motionInfo.motion.TrackingSystems,motioncfg.motion.tracksys_all{(setdiff(si))});
-%                        end 
-                        
+
                         %--------------------------------------------------
                         % rename and fill out motion-specific fields to be used in channels_tsv
                         motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
