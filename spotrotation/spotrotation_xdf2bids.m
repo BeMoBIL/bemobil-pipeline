@@ -106,13 +106,11 @@ generalInfo.task                                    = bemobil_config.bids_taskla
 % data type and acquisition label
 motionInfo.acq                                     = [];
 
-
 % motion specific fields in json
 motionInfo.motion = [];
 motionInfo.motion.RecordingType                       = 'continuous';
 motionInfo.motion.TrackingSystems                     = []; 
 motionInfo.motion.tracksys                            = {'OPTpos', 'VIRpos'}; % index corresponds to sessions number 
-
 
 % system 1 information
 
@@ -166,4 +164,4 @@ subjectInfo.data = {6,     20,     'F',    'R' ; ...
 %--------------------------------------------------------------------------
 numericalIDs                            = [6,7]; 
 
-bemobil_xdf2bids(bemobil_config, numericalIDs, 'general_metadata', generalInfo, 'motion_metadata', motionInfo)
+bemobil_xdf2bids(bemobil_config, numericalIDs, 'general_metadata', generalInfo, 'motion_metadata', motionInfo, 'participant_metadata', subjectInfo)
