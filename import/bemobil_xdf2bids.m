@@ -284,6 +284,13 @@ for pi = 1:numel(numericalIDs)
         % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
 
+        % randomize dates
+%         date([1:4]) = num2str(1900);
+%         date = datenum(date);
+%         cfg.scans.acq_time = append(datestr(date + cfg.rday));
+%         
+       
+        
         % loop over files in each session.
         % Here 'di' will index files as runs.
         for di = 1:numel(sortedFileNames)

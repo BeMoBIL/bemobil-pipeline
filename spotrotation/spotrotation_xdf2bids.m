@@ -100,6 +100,25 @@ generalInfo.InstitutionAddress                      = 'Strasse des 17. Juni 135,
 generalInfo.TaskDescription                         = 'Participants equipped with VR HMD rotated either physically or using a joystick.';
 generalInfo.task                                    = bemobil_config.bids_tasklabel;  
 
+% acquisition dates
+                                                         %rows and columns corresponding to dates below
+                                              
+                                                         %             |   eeg   |    motion
+                                                         %-----|-------|---------|-------------
+                                                         %sub6 | body  |         |
+                                                         %sub6 | joy   |         |
+                                                         %sub7 | body  |         |
+                                                         %sub7 | joy   |         |
+                                             
+generalInfo.dateList                                = {'2021-07-09 12:15:00' '2021-07-09 12:15:00' ...
+                                                       '2021-07-10 12:15:00' '2021-07-10 12:15:00' ...
+                                                       '2021-07-11 12:15:00' '2021-07-11 12:15:00' ...
+                                                       '2021-07-12 12:15:00' '2021-07-12 12:15:00'} ;
+                           
+% shifting factor
+generalInfo.shiftFac                                = randi([-1000,1000]);
+
+
 % information about the motion recording system 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -159,6 +178,7 @@ subjectInfo.fields.handedness.Levels.L       = 'left-handed';
 subjectInfo.cols = {'nr',   'age',  'sex', 'handedness'};
 subjectInfo.data = {6,     20,     'F',    'R' ; ...
                     7,     20,     'M',    'R' };
+               
 
 % numerical IDs 
 %--------------------------------------------------------------------------
