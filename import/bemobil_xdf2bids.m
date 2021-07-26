@@ -17,6 +17,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
 %       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0];
 %                                                  logicals : indicate which rbstreams are present in which sessions
+%       bemobil_config.bids_shift_dates         = {1900}
 %       bemobil_config.physio_streams           = {'eyetrack', 'forceplate'};
 %       bemobil_config.bids_phys_in_sessions    = [1,1;1,0];
 %                                                  logicals : indicate which rbstreams are present in which sessions
@@ -25,6 +26,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.bids_task_label          = 'VNE1';
 %       bemobil_config.bids_source_zeropad      = 2;
 %       bemobil_config.bids_motionconvert_custom = 'motion_customfunctionname';
+%       bemobil_config.bids_shift_dates         = 1900;
 
 %
 %   numericalIDs
@@ -252,6 +254,10 @@ end
 cfg = generalInfo;
 
 %--------------------------------------------------------------------------
+% determine number of days for shifting dates
+shift = randi([-1000,1000]);
+
+%--------------------------------------------------------------------------
 % loop over participants
 for pi = 1:numel(numericalIDs)
 
@@ -283,13 +289,7 @@ for pi = 1:numel(numericalIDs)
 
         % sort files by natural order
         sortedFileNames     = natsortfiles({sessionFiles.name});
-
-        % randomize dates
-%         date([1:4]) = num2str(1900);
-%         date = datenum(date);
-%         cfg.scans.acq_time = append(datestr(date + cfg.rday));
-%         
-       
+  
         
         % loop over files in each session.
         % Here 'di' will index files as runs.
@@ -456,6 +456,12 @@ for pi = 1:numel(numericalIDs)
                 eegcfg.elec = fullfile(participantDir, [bemobil_config.filename_prefix, num2str(participantNr) '_' bemobil_config.channel_locations_filename]);
             end
 
+            % shift date
+            date = cfg.dateList{pi,si};
+            date([1:4]) = num2str(bemobil_config.bids_shift_dates);
+            eegcfg.date = datestr(datenum(date) + shift,'yyyy-mm-ddTHH:MM:SS.FFF');
+            
+            
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
 
@@ -493,7 +499,7 @@ for pi = 1:numel(numericalIDs)
 
                         % if needed, execute a custom function for any alteration to the data to address dataset specific issues
                         % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-                        motion = feval(motionCustom, ftmotion{iM}, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
+                        motion = feval(motionCustom, ftmotion, motionStreamNames(bemobil_config.bids_rb_in_sessions(si,:)), participantNr, si, di);
 
                         % save motion start time
                         motionStartTime              = motion.time{1}(1);
@@ -540,16 +546,22 @@ for pi = 1:numel(numericalIDs)
                         % tracking system
                         motioncfg.tracksys                                = motionInfo.motion.tracksys {si}; % has to be adjusted for multiple tracking systems in one session
                         motioncfg.motion.tracksys_all                     = motionInfo.motion.tracksys ; % needed for removing general trackingsys info 
+                        
             
                         % number of all tracking systems used in session
                         motioncfg.motion.TrackingSystemCount              = numel(xdfmotion);
 
                         % start time
                         motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
-
+                        display(motioncfg.motion.start_time)
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
                         
+                        % shift date
+                        date = cfg.dateList{pi,si};
+                        date([1:4]) = num2str(bemobil_config.bids_shift_dates);
+                        date = datenum(date) - (motioncfg.motion.start_time/(24*60*60));
+                        motioncfg.date = datestr(date + shift,'yyyy-mm-ddTHH:MM:SS.FFF');
 
                         %--------------------------------------------------
                         % rename and fill out motion-specific fields to be used in channels_tsv
@@ -602,12 +614,13 @@ for pi = 1:numel(numericalIDs)
                             end
 
                             splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
-                            motioncfg.channels.name{ci}         = motion.hdr.label{ci};
+                            motioncfg.channels.name{ci}         =  motion.hdr.label{ci};
+
 
                             % assign object names and anatomical positions
                             for iRB = 1:numel(bemobil_config.rigidbody_streams)
                                 if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
-                                    motioncfg.channels.tracking_system{ci}      = motionInfo.motion.tracksys {iRB};
+                                    motioncfg.channels.tracking_system{ci}     = motionInfo.motion.tracksys {iRB};
                                     motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
                                     if iscell(bemobil_config.rigidbody_anat)
                                         motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
@@ -616,6 +629,7 @@ for pi = 1:numel(numericalIDs)
                                     end
                                 end
                             end
+                            
 
                             motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.
 
@@ -677,11 +691,6 @@ for pi = 1:numel(numericalIDs)
         end
     end
 end
-
-
-
-
-
 
 
 % add general json files
