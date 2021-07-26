@@ -83,42 +83,7 @@ else
 end
 
 
-
-if isfield(bemobil_config, 'bids_motion_position_units')
-    if ~iscell(bemobil_config.bids_motion_position_units)
-        bemobil_config.bids_motion_position_units = {bemobil_config.bids_motion_position_units};
-    end
-
-    if numel(bemobil_config.bids_motion_position_units) ~= numel(bemobil_config.session_names)
-        if numel(bemobil_config.bids_motion_position_units) == 1
-            bemobil_config.bids_motion_position_units = repmat(bemobil_config.bids_motion_position_units, 1, numel(bemobil_config.session_names));
-            warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
-        else
-            error('Config field bids_motion_position_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
-        end
-    end
-else
-    bemobil_config.bids_motion_position_units       = repmat({'m'},1,numel(bemobil_config.session_names));
-    warning('Config field bids_motion_position_units unspecified - assuming meters')
-end
-
-if isfield(bemobil_config, 'bids_motion_orientation_units')
-    if ~iscell(bemobil_config.bids_motion_orientation_units)
-        bemobil_config.bids_motion_orientation_units = {bemobil_config.bids_motion_orientation_units};
-    end
-
-    if numel(bemobil_config.bids_motion_orientation_units) ~= numel(bemobil_config.session_names)
-        if numel(bemobil_config.bids_motion_orientation_units) == 1
-            bemobil_config.bids_motion_orientation_units = repmat(bemobil_config.bids_motion_orientation_units, 1, numel(bemobil_config.session_names));
-            warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
-        else
-            error('Config field bids_motion_orientation_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
-        end
-    end
-else
-    bemobil_config.bids_motion_orientation_units       = repmat({'rad'},1,numel(bemobil_config.session_names));
-    warning('Config field bids_motion_orientation_units unspecified - assuming radians')
-end
+bemobil_config = unit_check(bemobil_config);
 
 
 % physio-related fields
@@ -553,7 +518,7 @@ for pi = 1:numel(numericalIDs)
 
                         % start time
                         motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
-                        display(motioncfg.motion.start_time)
+
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
                         
@@ -614,13 +579,13 @@ for pi = 1:numel(numericalIDs)
                             end
 
                             splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
-                            motioncfg.channels.name{ci}         =  motion.hdr.label{ci};
+                            motioncfg.channels.name{ci}         = motion.hdr.label{ci};
 
 
                             % assign object names and anatomical positions
                             for iRB = 1:numel(bemobil_config.rigidbody_streams)
                                 if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
-                                    motioncfg.channels.tracking_system{ci}     = motionInfo.motion.tracksys {iRB};
+                                    motioncfg.channels.tracking_system{ci}     = motionInfo.motion.tracksys{iRB};
                                     motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
                                     if iscell(bemobil_config.rigidbody_anat)
                                         motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
@@ -628,13 +593,18 @@ for pi = 1:numel(numericalIDs)
                                         motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
                                     end
                                 end
+                                display(motioncfg.channels.tracked_point)
+
                             end
                             
 
                             motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.
 
                         end
+                        
+%                         motioncfg.motion.(motionInfo.motion.tracksys{si}).tracked_point = numel(unique(string(motioncfg.channels.tracked_point)))
 
+                        
                         % write motion files in bids format
                         data2bids(motioncfg, motion);
 
@@ -804,4 +774,171 @@ outEvents   = outEvents(I);
 % re-order fields to match ft events output
 outEvents   = orderfields(outEvents, [2,1,3,4,5,6]);
 
+end
+
+
+function newconfig = unit_check(oldconfig)
+
+newconfig   = oldconfig;
+
+% position
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_position_units')
+        if ~iscell(oldconfig.bids_motion_position_units)
+            newconfig.bids_motion_position_units = {newconfig.bids_motion_position_units};
+        end
+
+        if numel(oldconfig.bids_motion_position_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_position_units) == 1
+                newconfig.bids_motion_position_units = repmat(newconfig.bids_motion_position_units, 1, numel(oldconfig.session_names));
+                warning('Only one pos unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_position_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_position_units       = repmat({'m'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_position_units unspecified - assuming meters')
+    end
+ 
+% orientation
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_orientation_units')
+        if ~iscell(oldconfig.bids_motion_orientation_units)
+            newconfig.bids_motion_orientation_units = {newconfig.bids_motion_orientation_units};
+        end
+
+        if numel(oldconfig.bids_motion_orientation_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_orientation_units) == 1
+                newconfig.bids_motion_orientation_units = repmat(newconfig.bids_motion_orientation_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_orientation_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_orientation_units       = repmat({'rad'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_orientation_units unspecified - assuming radians')
+    end
+
+% velocity
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_velocity_units')
+        if ~iscell(oldconfig.bids_motion_velocity_units)
+            newconfig.bids_motion_velocity_units = {newconfig.bids_motion_velocity_units};
+        end
+
+        if numel(oldconfig.bids_motion_velocity_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_velocity_units) == 1
+                newconfig.bids_motion_velocity_units = repmat(newconfig.bids_motion_velocity_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_velocity_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_velocity_units       = repmat({'m/s'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_velocity_units unspecified - assuming meters per second')
+    end
+    
+% angularvelocity
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_angularvelocity_units')
+        if ~iscell(oldconfig.bids_motion_angularvelocity_units)
+            newconfig.bids_motion_angularvelocity_units = {newconfig.bids_motion_angularvelocity_units};
+        end
+
+        if numel(oldconfig.bids_motion_angularvelocity_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_angularvelocity_units) == 1
+                newconfig.bids_motion_angularvelocity_units = repmat(newconfig.bids_motion_angularvelocity_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_angularvelocity_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_angularvelocity_units       = repmat({'rad/s'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_angularvelocity_units unspecified - assuming radians per second')
+    end
+    
+% acceleration
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_acceleration_units')
+        if ~iscell(oldconfig.bids_motion_acceleration_units)
+            newconfig.bids_motion_acceleration_units = {newconfig.bids_motion_acceleration_units};
+        end
+
+        if numel(oldconfig.bids_motion_acceleration_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_acceleration_units) == 1
+                newconfig.bids_motion_acceleration_units = repmat(newconfig.bids_motion_acceleration_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_acceleration_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_acceleration_units       = repmat({'m/s^2'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_acceleration_units unspecified - assuming meters per square second')
+    end
+
+% angularacceleration
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_angularacceleration_units')
+        if ~iscell(oldconfig.bids_motion_angularacceleration_units)
+            newconfig.bids_motion_angularacceleration_units = {newconfig.bids_motion_angularacceleration_units};
+        end
+
+        if numel(oldconfig.bids_motion_angularacceleration_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_angularacceleration_units) == 1
+                newconfig.bids_motion_angularacceleration_units = repmat(newconfig.bids_motion_angularacceleration_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_angularacceleration_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_angularacceleration_units       = repmat({'rad/s^2'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_angularacceleration_units unspecified - assuming radians per square second')
+    end
+
+% mangeticfield
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_mangeticfield_units')
+        if ~iscell(oldconfig.bids_motion_mangeticfield_units)
+            newconfig.bids_motion_mangeticfield_units = {newconfig.bids_motion_mangeticfield_units};
+        end
+
+        if numel(oldconfig.bids_motion_mangeticfield_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_mangeticfield_units) == 1
+                newconfig.bids_motion_mangeticfield_units = repmat(newconfig.bids_motion_mangeticfield_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_mangeticfield_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_mangeticfield_units       = repmat({'T'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_mangeticfield_units unspecified - assuming Tesla')
+    end
+    
+% jointangle
+%-----------------------------------------------------------
+    if isfield(oldconfig, 'bids_motion_jointangle_units')
+        if ~iscell(oldconfig.bids_motion_jointangle_units)
+            newconfig.bids_motion_jointangle_units = {newconfig.bids_motion_jointangle_units};
+        end
+
+        if numel(oldconfig.bids_motion_jointangle_units) ~= numel(oldconfig.session_names)
+            if numel(oldconfig.bids_motion_jointangle_units) == 1
+                newconfig.bids_motion_jointangle_units = repmat(newconfig.bids_motion_jointangle_units, 1, numel(oldconfig.session_names));
+                warning('Only one orientation unit specified for multiple sessions - applying same unit to all sessions')
+            else
+                error('Config field bids_motion_jointangle_units must have either one entry or the number of entries (in cell array) have to match number of entries in field session_names')
+            end
+        end
+    else
+        newconfig.bids_motion_jointangle_units       = repmat({'rad'},1,numel(oldconfig.session_names));
+        warning('Config field bids_motion_jointangle_units unspecified - assuming radians')
+    end
+    
 end
