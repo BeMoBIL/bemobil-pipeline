@@ -328,7 +328,7 @@ for pi = 1:numel(numericalIDs)
                 names{i}           = streams{i}.info.name;
                 
                 % if the nominal srate is non-zero, the stream is considered continuous
-                if ~strcmpi(streams{i}.info.nominal_srate, '0')
+                if ~(str2double(streams{i}.info.nominal_srate) == 0)
                     
                     iscontinuous(i) =  true;
                     num_samples  = numel(streams{i}.time_stamps);
