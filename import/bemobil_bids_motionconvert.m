@@ -44,14 +44,14 @@ for iM = 1:numel(motionIn)
         
         % check the lines below for quaternion channel names
         for qi = 1:4
-            quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_quat_' quaternionComponents{qi}]));
+            quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, [objects{ni} '_quat_' quaternionComponents{qi}], 'IgnoreCase', true));
         end
         
         cartIndices = NaN(1,3);
         
         % check the lines below for position channel names
         for ci = 1:3
-            cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_rigid_' cartCoordinates{ci}]));
+            cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, [objects{ni} '_' cartCoordinates{ci}], 'IgnoreCase', true));
         end
         
         % convert from quaternions to euler angles
