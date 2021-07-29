@@ -17,7 +17,6 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
 %       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0];
 %                                                  logicals : indicate which rbstreams are present in which sessions
-%       bemobil_config.bids_shift_dates         = {1900}
 %       bemobil_config.physio_streams           = {'eyetrack', 'forceplate'};
 %       bemobil_config.bids_phys_in_sessions    = [1,1;1,0];
 %                                                  logicals : indicate which rbstreams are present in which sessions
@@ -26,7 +25,7 @@ function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
 %       bemobil_config.bids_task_label          = 'VNE1';
 %       bemobil_config.bids_source_zeropad      = 2;
 %       bemobil_config.bids_motionconvert_custom = 'motion_customfunctionname';
-%       bemobil_config.bids_shift_dates         = 1900;
+%       bemobil_config.bids_shift_acquisition_time  = 1900;
 
 %
 %   numericalIDs
@@ -219,7 +218,7 @@ end
 cfg = generalInfo;
 
 %--------------------------------------------------------------------------
-% determine number of days for shifting dates
+% determine number of days for shifting acq_time
 shift = randi([-1000,1000]);
 
 %--------------------------------------------------------------------------
@@ -420,12 +419,17 @@ for pi = 1:numel(numericalIDs)
             elseif isfield(bemobil_config, 'channel_locations_filename')
                 eegcfg.elec = fullfile(participantDir, [bemobil_config.filename_prefix, num2str(participantNr) '_' bemobil_config.channel_locations_filename]);
             end
-
-            % shift date
-            date = cfg.dateList{pi,si};
-            date([1:4]) = num2str(bemobil_config.bids_shift_dates);
-            eegcfg.date = datestr(datenum(date) + shift,'yyyy-mm-ddTHH:MM:SS.FFF');
-            
+           
+            % shift acq_time and look for missing acquisition time data
+            if ~isfield(cfg, 'acq_times')
+                warning('acquisition times are not defined. Unable to display acq_time for eeg data.')
+            elseif isempty(cfg.acq_times)
+                warning('acquisition times are not specified. Unable to display acq_time for eeg data.')
+            else             
+                acq_time = cfg.acq_times{pi,si};  
+                acq_time([1:4]) = num2str(bemobil_config.bids_shift_acquisition_time);
+                eegcfg.acq_time = datestr(datenum(acq_time) + shift,'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
+            end
             
             % write eeg files in bids format
             data2bids(eegcfg, eeg);
@@ -440,13 +444,13 @@ for pi = 1:numel(numericalIDs)
                         %--------------------------------------------------
                         
                         % check for missing or wrong trackingsystem information
-                        if ~isfield(motionInfo.motion , 'tracksys')
-                            error ('Trackingsystems must be specified. Please create motionInfo.motion.tracksys containing names of tracking systems.') 
-                        elseif isempty (motionInfo.motion.tracksys)
-                            error ('Trackingsystems must be specified. Please enter name of tracking systems in motionInfo.motion.tracksys .') 
+                        if ~isfield(motionInfo.motion , 'trsystems')
+                            error('Trackingsystems must be specified. Please create motionInfo.motion.trsystems containing names of tracking systems.') 
+                        elseif isempty(motionInfo.motion.trsystems)
+                            error('Trackingsystems must be specified. Please enter name of tracking systems in motionInfo.motion.trsystems .') 
                         else 
-                            if any(contains(motionInfo.motion.tracksys, '_'))
-                                error ('Name of trackingsystem is must not contain underscores. Please change name of trackingsystem.')
+                            if any(contains(motionInfo.motion.trsystems, '_'))
+                                error('Name of trackingsystem is MUST NOT contain underscores. Please change name of trackingsystem.')
                             end
                         end
                         
@@ -491,16 +495,20 @@ for pi = 1:numel(numericalIDs)
                             motionInfo.coordsystem.MotionRotationOrder         = 'Undefined';
 
                         end
-
-                        % sampling frequency
-                        motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyEffective = motion.hdr.Fs;
                         
-                        if strcmpi(motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyNominal, 'n/a')
-                           motionInfo.motion.TrackingSystems.(motionInfo.motion.tracksys{si}).SamplingFrequencyNominal = motion.hdr.nFs;
+                        
+                        trsystems                       = motionInfo.motion.trsystems;
+                        tracksys                        = trsystems(find(1 == motionInfo.motion.tracksys_in_session(si,:)));
+                        motioncfg.TrackingSystemCount   = numel(tracksys);
+                        tracksys                        = tracksys{1};
+                                                
+                        % sampling frequency
+                        motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.hdr.Fs;
+                        
+                        if strcmpi(motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal, 'n/a')
+                           motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal = motion.hdr.nFs;
                         end 
                         
-                        
-                          
                         
                         % data type and acquisition label
                         motioncfg.acq                                     = motionInfo.acq;
@@ -509,25 +517,15 @@ for pi = 1:numel(numericalIDs)
                         motioncfg.motion                                  = motionInfo.motion;
                         
                         % tracking system
-                        motioncfg.tracksys                                = motionInfo.motion.tracksys {si}; % has to be adjusted for multiple tracking systems in one session
-                        motioncfg.motion.tracksys_all                     = motionInfo.motion.tracksys ; % needed for removing general trackingsys info 
-                        
-            
-                        % number of all tracking systems used in session
-                        motioncfg.motion.TrackingSystemCount              = numel(xdfmotion);
+                        motioncfg.motion.trsystems                        = trsystems ; % needed for removing general trackingsys info 
+                        motioncfg.tracksys                                = tracksys; % has to be adjusted for multiple tracking systems in one session
 
                         % start time
                         motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
-
+                        
                         % coordinate system
                         motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
                         
-                        % shift date
-                        date = cfg.dateList{pi,si};
-                        date([1:4]) = num2str(bemobil_config.bids_shift_dates);
-                        date = datenum(date) - (motioncfg.motion.start_time/(24*60*60));
-                        motioncfg.date = datestr(date + shift,'yyyy-mm-ddTHH:MM:SS.FFF');
-
                         %--------------------------------------------------
                         % rename and fill out motion-specific fields to be used in channels_tsv
                         motioncfg.channels.name                 = cell(motion.hdr.nChans,1);
@@ -580,12 +578,12 @@ for pi = 1:numel(numericalIDs)
 
                             splitlabel                          = regexp(motion.hdr.label{ci}, '_', 'split');
                             motioncfg.channels.name{ci}         = motion.hdr.label{ci};
+                            motioncfg.channels.tracking_system{ci}     = motioncfg.tracksys; 
 
-
+                            
                             % assign object names and anatomical positions
                             for iRB = 1:numel(bemobil_config.rigidbody_streams)
                                 if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
-                                    motioncfg.channels.tracking_system{ci}     = motionInfo.motion.tracksys{iRB};
                                     motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
                                     if iscell(bemobil_config.rigidbody_anat)
                                         motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
@@ -593,17 +591,40 @@ for pi = 1:numel(numericalIDs)
                                         motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
                                     end
                                 end
-                                display(motioncfg.channels.tracked_point)
-
+               
                             end
-                            
-
                             motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.
-
+                            
                         end
                         
-%                         motioncfg.motion.(motionInfo.motion.tracksys{si}).tracked_point = numel(unique(string(motioncfg.channels.tracked_point)))
-
+                        
+                         % shift acq_time and look for missing acquisition time data
+                         if ~isfield(cfg, 'acq_times')
+                            warning('acquisition times are not defined. Unable to display acq_time for motion data.')
+                         elseif isempty(cfg.acq_times)
+                            warning('acquisition times are not specified. Unable to display acq_time for motion data.')
+                         else
+                            acq_time = cfg.acq_times{pi,si};
+                            acq_time([1:4]) = num2str(bemobil_config.bids_shift_acquisition_time);
+                            acq_time = datenum(acq_time) - (motioncfg.motion.start_time/(24*60*60));
+                            motioncfg.acq_time = datestr(acq_time + shift,'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded 
+                         end 
+                                                
+                        % tracked points per trackingsystem
+                        motioncfg.motion.tracksys = [];
+                        if checkequal(motionStreamNames) % checks if array contains similar entries
+                            warning('rigidbody streams have the same name. Assuming TrackedPointsCount per trackingsystem is 1.')
+                            for ti=1:numel(motioncfg.motion.trsystems)
+                                tracksys = motioncfg.motion.trsystems{ti};
+                                motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = 1; % hard coded TrackedPointsCount
+                            end
+                        else
+                            for ti=1:numel(motioncfg.motion.trsystems)
+                                tracksys = motioncfg.motion.trsystems{ti};
+                                rb_name = motionInfo.motion.tracksys_pairs(tracksys); % select rigid body name corresponding to trackingsystem
+                                motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = sum(contains(motionStreamNames, rb_name)); % add entries which contain rb_name for corresponding tracking system
+                            end 
+                        end 
                         
                         % write motion files in bids format
                         data2bids(motioncfg, motion);
@@ -941,4 +962,30 @@ newconfig   = oldconfig;
         warning('Config field bids_motion_jointangle_units unspecified - assuming radians')
     end
     
+end
+
+function y = checkequal(x)
+% Input 'x' should be cell array
+% Output 'y' logical value true. If any input cell array index is equal to
+% another else false
+% Example1:
+% a{1}=[1 1 0]; a{2}=[0 0 0]; a{3}=[0 0 0];
+% y = checkequal(a);
+% Output is y = logical(1)
+% Example2:
+% a{1}=[1 1 0]; a{2}=[0 1 0]; a{3}=[0 0 0];
+% y = checkequal(a);
+% Output is y = logical(0)
+y = false;
+num = numel(x);
+for i = 1:num
+    for j = 1:num
+        if i~=j
+            if isequal(x{i},x{j})
+                y = true;
+                return;
+            end
+        end
+    end
+end
 end
