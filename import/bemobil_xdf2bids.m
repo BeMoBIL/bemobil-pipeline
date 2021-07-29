@@ -501,7 +501,8 @@ for pi = 1:numel(numericalIDs)
                         tracksys                        = trsystems(find(1 == motionInfo.motion.tracksys_in_session(si,:)));
                         motioncfg.TrackingSystemCount   = numel(tracksys);
                         tracksys                        = tracksys{1};
-                                                
+                        
+                                               
                         % sampling frequency
                         motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.hdr.Fs;
                         
@@ -581,6 +582,8 @@ for pi = 1:numel(numericalIDs)
                             motioncfg.channels.tracking_system{ci}     = motioncfg.tracksys; 
 
                             
+                            
+                           
                             % assign object names and anatomical positions
                             for iRB = 1:numel(bemobil_config.rigidbody_streams)
                                 if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
@@ -593,8 +596,8 @@ for pi = 1:numel(numericalIDs)
                                 end
                
                             end
-                            motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.
                             
+                            motioncfg.channels.component{ci}    = splitlabel{end}; % REQUIRED. Component of the representational system that the channel contains.            
                         end
                         
                         
@@ -625,6 +628,13 @@ for pi = 1:numel(numericalIDs)
                                 motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = sum(contains(motionStreamNames, rb_name)); % add entries which contain rb_name for corresponding tracking system
                             end 
                         end 
+                        
+                        % match channel tokens with trackingsystem
+                        for tri = 1:numel(trsystems)
+                            tokens{tri} = ['t' num2str(tri)];
+                        end 
+
+                        motioncfg.motion.tsPreMap  = containers.Map(trsystems,tokens);
                         
                         % write motion files in bids format
                         data2bids(motioncfg, motion);
