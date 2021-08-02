@@ -393,6 +393,7 @@ for pi = 1:numel(numericalIDs)
                     eegcfg.coordsystem  = eegInfo.coordsystem;
                 end
             end
+            
 
             % read in the event stream (synched to the EEG stream)
             if ~isempty(xdfmarkers)
@@ -422,9 +423,9 @@ for pi = 1:numel(numericalIDs)
            
             % shift acq_time and look for missing acquisition time data
             if ~isfield(cfg, 'acq_times')
-                warning('acquisition times are not defined. Unable to display acq_time for eeg data.')
+                warning(' acquisition times are not defined. Unable to display acq_time for eeg data.')
             elseif isempty(cfg.acq_times)
-                warning('acquisition times are not specified. Unable to display acq_time for eeg data.')
+                warning(' acquisition times are not specified. Unable to display acq_time for eeg data.')
             else             
                 acq_time = cfg.acq_times{pi,si};  
                 acq_time([1:4]) = num2str(bemobil_config.bids_shift_acquisition_time);
@@ -582,16 +583,18 @@ for pi = 1:numel(numericalIDs)
                             motioncfg.channels.tracking_system{ci}     = motioncfg.tracksys; 
 
                             
-                            
-                           
+                            rb_streams = bemobil_config.rigidbody_streams(find(1 == bemobil_config.bids_rb_in_sessions(si,:)));
+                            rb_names = bemobil_config.rigidbody_names(find(1 == bemobil_config.bids_rb_in_sessions(si,:)));
+                            rb_anat = bemobil_config.rigidbody_anat(find(1 == bemobil_config.bids_rb_in_sessions(si,:)));
+
                             % assign object names and anatomical positions
-                            for iRB = 1:numel(bemobil_config.rigidbody_streams)
-                                if contains(motion.hdr.label{ci}, bemobil_config.rigidbody_streams{iRB})
-                                    motioncfg.channels.tracked_point{ci}       = bemobil_config.rigidbody_names{iRB};
+                            for iRB = 1:numel(rb_streams)
+                                if contains(motion.hdr.label{ci}, rb_streams{iRB})
+                                    motioncfg.channels.tracked_point{ci}       = rb_names{iRB};
                                     if iscell(bemobil_config.rigidbody_anat)
-                                        motioncfg.channels.placement{ci}  = bemobil_config.rigidbody_anat{iRB};
+                                        motioncfg.channels.placement{ci}  = rb_anat{iRB};
                                     else
-                                        motioncfg.channels.placement{ci} =  bemobil_config.rigidbody_anat;
+                                        motioncfg.channels.placement{ci} =  rb_anat;
                                     end
                                 end
                
@@ -603,9 +606,9 @@ for pi = 1:numel(numericalIDs)
                         
                          % shift acq_time and look for missing acquisition time data
                          if ~isfield(cfg, 'acq_times')
-                            warning('acquisition times are not defined. Unable to display acq_time for motion data.')
+                            warning(' acquisition times are not defined. Unable to display acq_time for motion data.')
                          elseif isempty(cfg.acq_times)
-                            warning('acquisition times are not specified. Unable to display acq_time for motion data.')
+                            warning(' acquisition times are not specified. Unable to display acq_time for motion data.')
                          else
                             acq_time = cfg.acq_times{pi,si};
                             acq_time([1:4]) = num2str(bemobil_config.bids_shift_acquisition_time);
@@ -616,11 +619,11 @@ for pi = 1:numel(numericalIDs)
                         % tracked points per trackingsystem
                         motioncfg.motion.tracksys = [];
                         if checkequal(motionStreamNames) % checks if array contains similar entries
-                            warning('rigidbody streams have the same name. Assuming TrackedPointsCount per trackingsystem is 1.')
+                            warning(' rigidbody streams have the same name. Assuming TrackedPointsCount per trackingsystem is 1.')
                             for ti=1:numel(motioncfg.motion.trsystems)
-                                tracksys = motioncfg.motion.trsystems{ti};
-                                motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = 1; % hard coded TrackedPointsCount
-                            end
+                                    tracksys = motioncfg.motion.trsystems{ti};
+                                    motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = 1; % hard coded TrackedPointsCount
+                            end 
                         else
                             for ti=1:numel(motioncfg.motion.trsystems)
                                 tracksys = motioncfg.motion.trsystems{ti};
@@ -629,12 +632,12 @@ for pi = 1:numel(numericalIDs)
                             end 
                         end 
                         
-                        % match channel tokens with trackingsystem
-                        for tri = 1:numel(trsystems)
-                            tokens{tri} = ['t' num2str(tri)];
+                        % match channel tokens with tracked points
+                        for tpi = 1:numel(bemobil_config.rigidbody_names)
+                            tokens{tpi} = ['t' num2str(tpi)];
                         end 
 
-                        motioncfg.motion.tsPreMap  = containers.Map(trsystems,tokens);
+                        motioncfg.motion.tpPairs  = containers.Map(bemobil_config.rigidbody_names,tokens);
                         
                         % write motion files in bids format
                         data2bids(motioncfg, motion);
