@@ -81,8 +81,15 @@ else
     end
 end
 
+pat = {' ' '_'};
+if contains(bemobil_config.bids_task_label, pat)
+    error('Task label MUST NOT contain space or underscore. Please change task label.')
+end 
+
 
 bemobil_config = unit_check(bemobil_config);
+
+
 
 
 % physio-related fields
@@ -526,7 +533,9 @@ for pi = 1:numel(numericalIDs)
                         motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
                         
                         % coordinate system
-                        motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem;
+                        motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem.MotionCoordinateSystem;
+                        motioncfg.coordsystem.MotionRotationRule          = motionInfo.coordsystem.MotionRotationRule;
+                        motioncfg.coordsystem.MotionRotationOrder         = motionInfo.coordsystem.MotionRotationOrder;
                         
                         %--------------------------------------------------
                         % rename and fill out motion-specific fields to be used in channels_tsv
@@ -636,7 +645,6 @@ for pi = 1:numel(numericalIDs)
                         for tpi = 1:numel(bemobil_config.rigidbody_names)
                             tokens{tpi} = ['t' num2str(tpi)];
                         end 
-
                         motioncfg.motion.tpPairs  = containers.Map(bemobil_config.rigidbody_names,tokens);
                         
                         % write motion files in bids format
