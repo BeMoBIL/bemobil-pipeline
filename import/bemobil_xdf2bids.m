@@ -138,6 +138,22 @@ for iVI = 1:2:numel(varargin)
     end
 end
 
+% check input from variable arguments
+if ~isfield(motionInfo.motion , 'tracksys_in_session')
+    error('motionInfo.motion.tracksys_in_session.tracksys_in_session not defined.')
+    motionInfo.motion.tracksys_in_session    = true(numel(bemobil_config.session_names),numel(motionInfo.motion.trsystems));
+else
+    if ~islogical(motionInfo.motion.tracksys_in_session)
+        motionInfo.motion.tracksys_in_session = logical(motionInfo.motion.tracksys_in_session);
+    end
+end
+
+for tsi = 1:numel(motionInfo.motion.trsystems)
+    if ~isfield(motionInfo.motion.TrackingSystems.(motionInfo.motion.trsystems{tsi}), 'SamplingFrequencyNominal')
+        warning(['Nominal sampling frequency for ' motionInfo.motion.trsystems{tsi} ' will be defined as n/a'])
+        motionInfo.motion.TrackingSystems.(motionInfo.motion.trsystems{tsi}).SamplingFrequencyNominal = 'n/a';
+    end 
+end 
 
 % check if some participant data is already in BIDS folder
 skipIndices = [];
@@ -458,7 +474,7 @@ for pi = 1:numel(numericalIDs)
                             error('Trackingsystems must be specified. Please enter name of tracking systems in motionInfo.motion.trsystems .') 
                         else 
                             if any(contains(motionInfo.motion.trsystems, '_'))
-                                error('Name of trackingsystem is MUST NOT contain underscores. Please change name of trackingsystem.')
+                                error('Name of trackingsystem MUST NOT contain underscores. Please change name of trackingsystem.')
                             end
                         end
                         
@@ -630,8 +646,8 @@ for pi = 1:numel(numericalIDs)
                         if checkequal(motionStreamNames) % checks if array contains similar entries
                             warning(' rigidbody streams have the same name. Assuming TrackedPointsCount per trackingsystem is 1.')
                             for ti=1:numel(motioncfg.motion.trsystems)
-                                    tracksys = motioncfg.motion.trsystems{ti};
-                                    motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = 1; % hard coded TrackedPointsCount
+                                tracksys = motioncfg.motion.trsystems{ti};
+                                motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = 1; % hard coded TrackedPointsCount
                             end 
                         else
                             for ti=1:numel(motioncfg.motion.trsystems)
