@@ -489,7 +489,7 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
                     eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], eventDescFile);
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
-                    if strcmpi(opt.bidsevent, 'on')                        
+                    if strcmpi(opt.bidsevent, 'on') && ~isempty(eventData)                      
                         events = struct([]);
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
@@ -503,11 +503,6 @@ for iSubject = 2:size(bids.participants,1)
                                     events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                                 end
                             end
-                            %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
-                            %                             events(end+1).type   = 'response';
-                            %                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
-                            %                             events(end).duration = 0;
-                            %                         end
                         end
                         EEG.event = events;
                         
@@ -532,15 +527,7 @@ for iSubject = 2:size(bids.participants,1)
                         EEG = pop_saveset( EEG, eegFileNameOut);
                     end
                 end
-                
-                % building study command
-                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'run' iRun };
-                
-                % custom fields
-                for iCol = 2:size(bids.participants,2)
-                    commands = { commands{:} bids.participants{1,iCol} bids.participants{iSubject,iCol} };
-                end
-                
+       
                 count = count+1;
                 
                 % check dataset consistency
@@ -574,7 +561,7 @@ for iSubject = 2:size(bids.participants,1)
                     end
                 end
             end % end for eegFileRaw
-            
+           
             for iFile = 1:length(allOtherDataFiles)
        
                 otherFileRaw    = allOtherDataFiles{iFile};
@@ -583,24 +570,46 @@ for iSubject = 2:size(bids.participants,1)
                 % extract data type
                 splitName       = regexp(otherFileRaw,'_','split');
                 datatype        = splitName{end}(1:end-4);
+               
+                % json name (assume one json per data file in current version)
+                otherFileJSON   = [otherFileRaw(1:end-3) 'json']; 
                 
-                % check needed files accordign to the data type 
+                % check needed files according to the data type 
                 switch datatype
                     case 'motion'
+                        
                         % JSON information file
-                        infoFileMotion  = searchparent(subjectFolder{iFold}, '*_motion.json');
-                        infoData        = loadfile(infoFileMotion(iFile).name, infoFileMotion);
+                        infoFileMotion  = searchparent(subjectFolder{iFold}, otherFileJSON);
+                        infoData        = loadfile(infoFileMotion.name, infoFileMotion);
                         bids.otherdata  = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], infoData);
                         
-                        % channel file (potentially shared with EEG)
+                        % channel file 
                         importChan          = true;
                         channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
-                        channelData     = loadfile(channelFileMotion(iFile).name, channelFileMotion); % this might have to change along with motion BEP
-                       
+                        channelData         = loadfile(channelFileMotion(1).name, channelFileMotion); % this might have to change along with motion BEP
+                        
                         % coordinate system file (potentially shared with EEG)
-                        importCoord 	= true; 
+                        importCoord 	= true;
                         coordFileMotion = searchparent(subjectFolder{iFold}, '*_coordsystem.json');
                         coordData       = loadfile(coordFileMotion.name, coordFileMotion);
+                        
+                    case 'physio'
+                        
+                        % JSON information file
+                        infoFilePhysio  = searchparent(subjectFolder{iFold}, otherFileJSON);
+                        infoData        = loadfile(infoFilePhysio.name, infoFilePhysio);
+                        bids.otherdata  = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], infoData);
+                        
+                        % channel file (for physio data, hidden in json file)
+                        importChan = true;
+                        channelData = {'name', 'type', 'units'}; 
+                        for Ci = 1:numel(infoData.Columns)
+                            channelData{end + 1,1} = ['test_' char(infoData.Columns{Ci})] ;
+                        end
+                        
+                        % coordinate file (none)
+                        importCoord = false;
+                        
                     otherwise
                         importChan = false;
                         disp(['No channel file for undefined data type ' datatype ])
@@ -610,7 +619,6 @@ for iSubject = 2:size(bids.participants,1)
                 [~,tmpFileName,fileExt] = fileparts(otherFileRaw);
                 otherFileRaw     = fullfile(subjectFolder{   iFold}, otherFileRaw);
                 otherFileNameOut = fullfile(subjectFolderOut{iFold}, [ tmpFileName '.set' ]);
-                
                  
                 % check for existence of the file before proceding
                 if ~exist(otherFileRaw, 'file')
@@ -670,20 +678,25 @@ for iSubject = 2:size(bids.participants,1)
                                     disp('Field Start time in motion json file is non-numeric - assume no offset to eeg data')
                                 end
                             else
-                                startTime = 0; 
+                                startTime = 0;
                                 disp('Field Start time in motion json file is empty - assume no offset to eeg data')
                             end
                             
-                            DATA.etc.starttime = startTime; 
-                            DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
+                            DATA.etc.starttime = startTime;
+                            if isfield(infoData, 'RecordingDuration')
+                                DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
+                            else
+                                DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
+                            end
                             
-                            if infoData.MotionChannelCount ~= size(DATA.data,1)
+                            if strcmp(datatype,'motion') && infoData.MotionChannelCount ~= size(DATA.data,1)
                                 warning('Motion channel count mismatch between the data and motion.json')
                             end
+                            
                             DATA.nbchan = size(DATA.data,1);
                             DATA.pnts   = size(DATA.data,2);
                         otherwise
-                            error('No motion data found for subject/session %s', subjectFolder{iFold});
+                            error(['No ' datatype 'data found for subject/session ' subjectFolder{iFold}]);
                     end
                     
                     bids.otherdata = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], struct(datatype, []));                   
@@ -725,7 +738,6 @@ for iSubject = 2:size(bids.participants,1)
                         DATA = pop_saveset( DATA, otherFileNameOut);
                     end
                 end
-                
             end % end of other file Raw
         end
     end

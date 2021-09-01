@@ -1,9 +1,7 @@
 function bemobil_bids2set(bemobil_config, numericalIDs)
 % This function reads in BIDS datasets using the eeglab plugin 
 % "bids-matlab-tools" and reorganizes the output to be compatible with 
-% BeMoBIL pipeline. For now only EEG data are read and restructured
-% To be added :
-%           support separate output files for multi-run and multi-session
+% BeMoBIL pipeline. 
 %
 % Usage
 %       bemobil_bids2set(bemobil_config)
@@ -78,7 +76,7 @@ end
 numericalIDs = numericalIDs(~skipFlag); 
 
 if isempty(numericalIDs)
-    disp('All participant data had already been converted from .xdf to BIDS');
+    disp('All participant data had already been converted from BIDS to .set');
     return;
 end
 
@@ -163,7 +161,10 @@ for iSub = 1:numel(subDirList)
                 bidsFolderName  = 'eeg'; 
             case 'motion'
                 bemobilModality = 'MOTION';
-                bidsFolderName = 'beh'; 
+                bidsFolderName = 'beh';
+            case 'physio'
+                bemobilModality = 'PHYSIO';
+                bidsFolderName = 'beh';
             otherwise
                 bemobilModality = bidsModality;
                 disp(['Unknown modality' bidsModality ' saved as ' bemobilModality '.set'])
@@ -276,7 +277,7 @@ for iSub = 1:numel(subDirList)
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
-                EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Si});
+                EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
                 eegTimes(:,Ri) = [EEG.times(1); EEG.times(end)];
                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
@@ -307,6 +308,8 @@ for iSub = 1:numel(subDirList)
             switch otherDataTypes{iType}
                 case 'motion'
                     bemobilModality = 'MOTION';
+                case 'physio'
+                    bemobilModality = 'PHYSIO';
                 otherwise
                     bemobilModality = otherDataTypes{iType};
                     disp(['Unknown modality' otherDataTypes{iType} ', looking for ' otherDataTypes{iType} '.set'])
@@ -326,7 +329,7 @@ for iSub = 1:numel(subDirList)
             end
             
             if numel(eegFiles) ~= numel(dataFiles)
-                error('Number of EEG and other data files do not match within a session')
+                warning('Number of EEG and other data files do not match within a session')
             end
             
             if numel(dataFiles) > 1
@@ -339,7 +342,7 @@ for iSub = 1:numel(subDirList)
                 % loop over runs
                 ALLDATA = []; CURRENTSET = [];
                 for Ri = 1:numel(dataFiles)
-                    DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Si});
+                    DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
                     DATA         = unwrapAngles(DATA); % unwrap angles before resampling
                     % start time has to be buffered before data can be synched to EEG 
                     DATA.times   = DATA.times + DATA.etc.starttime*1000;
@@ -360,13 +363,11 @@ for iSub = 1:numel(subDirList)
                 DATA             = wrapAngles(DATA);
             else
                 warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.session_names{iSes}] )
-            end 
+            end
+            % save merged data file for the session
+            DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
+            disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
         end
-       
-        % save merged data file for the session
-        DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
-        disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
-        
     end
     
     % remove unnecessary files prior to merging
@@ -406,11 +407,23 @@ end
 function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
+% check if any row is all zeros - use nearest interp if so
+hasNonZero = any(EEG.data,2);
+if any(hasNonZero == 0)
+    resampleMethod = 'nearest'; 
+else
+    resampleMethod = 'pchip'; 
+end
+
+% save old times
+oldTimes                = EEG.times; 
+
 % Note that in fieldtrip time is in seconds
 newTimes                = (tFirst:1000/newSRate:tLast)/1000;
 
 resamplecfg.time        = {newTimes};
 resamplecfg.detrend     = 'no';
+resamplecfg.method      = resampleMethod; 
 resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
@@ -421,8 +434,14 @@ EEG.srate               = newSRate;
 EEG.times               = newTimes*1000; % convert back to miliseconds
 EEG.pnts                = size(EEG.data,2);
 EEG.urevent             = EEG.event;
+
+% sometimes broken recordings lead to NaN values in the latency fields
 for iE = 1:numel(EEG.event)
-    EEG.event(iE).latency        = find(EEG.times > EEG.urevent(iE).latency,1,'first');
+    if isnan(EEG.urevent(iE).latency)
+        warning(['NaN value detected in event ' num2str(iE)])
+    else
+        EEG.event(iE).latency        = find(EEG.times > oldTimes(round(EEG.urevent(iE).latency)),1,'first');
+    end
 end
 
 EEG.setname = EEG.filename(1:end-8);
@@ -437,8 +456,10 @@ function [DATA] = unwrapAngles(DATA)
 % unwrap any kind of angular data before resampling
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
-    if  contains(DATA.chanlocs(Ci).units, 'rad')
-        angleind =  [angleind Ci];
+    if ischar(DATA.chanlocs(Ci).units)
+        if  contains(DATA.chanlocs(Ci).units, 'rad')
+            angleind =  [angleind Ci];
+        end
     end
 end
 
@@ -452,8 +473,10 @@ function [DATA] = wrapAngles(DATA)
 % wrap any kind of angular data before resampling
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
-    if  contains(DATA.chanlocs(Ci).units, 'rad')
-        angleind =  [angleind Ci];
+    if ~isempty(DATA.chanlocs(Ci).units)
+        if  contains(DATA.chanlocs(Ci).units, 'rad')
+            angleind =  [angleind Ci];
+        end
     end
 end
 
