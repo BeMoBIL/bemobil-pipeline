@@ -177,10 +177,6 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     
     if ~exist('EEG_dipfitted','var')
         
-        % compute iclabel scores
-        disp('ICLabel component classification...');
-        EEG_AMICA = iclabel(EEG_AMICA,bemobil_config.iclabel_classifier);
-        
         % do the warp and dipfit
         disp('Dipole fitting...');
         [ALLEEG, EEG_dipfitted, CURRENTSET] = bemobil_dipfit( EEG_AMICA , ALLEEG, CURRENTSET, bemobil_config.warping_channel_names,...
