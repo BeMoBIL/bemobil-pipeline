@@ -117,6 +117,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax1);
     close(fighandle)
     
@@ -131,6 +132,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax2);
     close(fighandle)
     
@@ -145,6 +147,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax3);
     close(fighandle)
     
@@ -159,6 +162,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax4);
     close(fighandle)
     
@@ -173,6 +177,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax5);
     close(fighandle)
     
@@ -187,6 +192,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax6);
     close(fighandle)
     
@@ -267,6 +273,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax1);
 close(fighandle)
 
@@ -281,6 +288,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax2);
 close(fighandle)
 
@@ -295,6 +303,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax3);
 close(fighandle)
 
@@ -309,6 +318,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax4);
 close(fighandle)
 
@@ -323,6 +333,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax5);
 close(fighandle)
 
@@ -337,6 +348,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax6);
 close(fighandle)
 

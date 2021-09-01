@@ -241,6 +241,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax1);
     close(fighandle)
     
@@ -255,6 +256,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax2);
     close(fighandle)
     
@@ -269,6 +271,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax3);
     close(fighandle)
     
@@ -283,6 +286,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax4);
     close(fighandle)
     
@@ -297,6 +301,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax5);
     close(fighandle)
     
@@ -311,6 +316,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax6);
     close(fighandle)
     
