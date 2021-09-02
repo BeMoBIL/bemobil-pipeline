@@ -1,18 +1,18 @@
 clear bemobil_config
 
 %% General Setup
-bemobil_config.study_folder = 'path_to_study_folder\data\'; %(NEEDS to have a filesep at the end, sorry!) 
+bemobil_config.study_folder = ['path_to_study_folder' filesep 'data' filesep]; %(NEEDS to have a filesep at the end, sorry!) 
 bemobil_config.filename_prefix = 'sub_';
 
 % foldernames (NEED to have a filesep at the end, sorry!) 
-bemobil_config.source_data_folder = '0_source-data\';
-bemobil_config.bids_data_folder = '1_BIDS-data\'; 
-bemobil_config.raw_EEGLAB_data_folder = '2_raw-EEGLAB\';
-bemobil_config.EEG_preprocessing_data_folder = '3_EEG-preprocessing\';
-bemobil_config.spatial_filters_folder = '4_spatial-filters\';
-bemobil_config.spatial_filters_folder_AMICA = '4-1_AMICA\';
-bemobil_config.single_subject_analysis_folder = '5_single-subject-EEG-analysis\';
-bemobil_config.motion_analysis_folder = '6_single-subject-motion-analysis\';
+bemobil_config.source_data_folder = ['0_source-data' filesep];
+bemobil_config.bids_data_folder = ['1_BIDS-data' filesep]; 
+bemobil_config.raw_EEGLAB_data_folder = ['2_raw-EEGLAB' filesep];
+bemobil_config.EEG_preprocessing_data_folder = ['3_EEG-preprocessing' filesep];
+bemobil_config.spatial_filters_folder = ['4_spatial-filters' filesep];
+bemobil_config.spatial_filters_folder_AMICA = ['4-1_AMICA' filesep];
+bemobil_config.single_subject_analysis_folder = ['5_single-subject-EEG-analysis' filesep];
+bemobil_config.motion_analysis_folder = ['6_single-subject-motion-analysis' filesep];
 
 % filenames
 bemobil_config.merged_filename = 'merged_EEG.set';
@@ -133,25 +133,15 @@ bemobil_config.line_noise_crit = 'off';
 % bemobil_config.channel_locations_filename = 'channel_locations.elc';
 bemobil_config.channel_locations_filename = [];
 
-% ZapLine to reduce line noise frequencies. You can enter more than one frequency if you have more noise (like from
-% lights, VR HMDs or TVs) and know the frequency. Leave empty if no noise is present (haha). 
-% Optional Parameters:
-%   adaptiveNremove         - bool. if automatic adaptation of removal should be used. (default = 1)
-%   fixedNremove            - numerical vector. fixed number of removed components. if adaptive removal is used, this 
-%                               will be the minimum. can be either a scalar (then it is used for all line freqs) or a 
-%                               vector of the same length as the linefreqs (then individual fixed n remove will be
-%                               used). (default = 0)
-%   chunkLength             - numerical. length of chunks to be cleaned in seconds. if set to 0, no chunks will be used. 
-%                               (default = 30)
-%   plotResults             - bool. if plot should be created. takes time to compute the spectrum. (default = 1)
-%   figBase                 - integer. figure number to be created and plotted in. each iteration of linefreqs increases 
-%                               this number by 1. (default = 100)
-%   nfft                    - numerical. fft window size for computing the spectrum. (default = 512)
-%   nkeep                   - integer. PCA reduction of components before removal. (default = round(20+size(data,2)/4))
-%   initialSigma            - numerical. initial iterative outlier detection sigma threshold. (default = 3)
-%   sigmaIncrease           - numerical. iterative outlier detection sigma threshold increase per iteration (to ensure 
-%                               convergence). (default = 0.1)
-bemobil_config.zaplineConfig.linefreqs = [50]; 
+% ZapLine-Plus to reduce line noise frequencies. Automatically finds noise frequencies and removes them as good as
+% possible with Zapline. See 'help clean_data_with_zapline_plus' for more info about parameter tweaking.
+
+% If the 'noisefreqs' field is set to empty, searches automatically, but you can also enter predefined noise frequencies
+% here as a vector.
+
+% Set the whole 'bemobil_config.zaplineConfig' field to [] if no noise is present in your data (haha).
+
+bemobil_config.zaplineConfig.noisefreqs = []; 
 
 %% AMICA Parameters
 
@@ -182,7 +172,7 @@ bemobil_config.AMICA_max_iter = 2000; % default 2000
 % best efficiency is using just 1 thread and have as many matlab instances open as possible (limited by the CPU usage).
 % Remember your RAM limit in this case.
 
-bemobil_config.max_threads = 2; % default 4
+bemobil_config.max_threads = 4; % default 4
 
 % for warping the electrode locations to the standard 10-20 locations (leave
 % empty if using standard locations)

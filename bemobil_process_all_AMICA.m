@@ -205,6 +205,12 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     
     disp('Cleaning data with ICLabel')
     
+    % compute iclabel
+    EEG_single_subject_copied = iclabel(EEG_single_subject_copied, bemobil_config.iclabel_classifier);
+    EEG_single_subject_copied = pop_saveset( EEG_single_subject_copied,...
+        'filename',erase([bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.preprocessed_and_ICA_filename],'.set'),...
+        'filepath', output_filepath);
+    
     % clean now, save files and figs
     [ALLEEG, EEG_preprocessed_and_ICA, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG_single_subject_copied ,...
         ALLEEG, CURRENTSET, bemobil_config.iclabel_classifier,...
@@ -212,6 +218,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
         [ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
     
     disp('...done.')
+    
     
     %% plot cleaned with ICA, for analytics
     

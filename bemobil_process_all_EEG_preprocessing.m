@@ -230,6 +230,11 @@ clear EEG_to_process
     bemobil_config.chancorr_crit,bemobil_config.chan_max_broken_time, bemobil_config.chan_detect_num_iter,...
     bemobil_config.chan_detected_fraction_threshold,bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
 
+if length(chans_to_interp) > EEG_basic.nbchan/5
+    warndlg(['In subject ' num2str(subject) ', ' num2str(length(chans_to_interp)) ' of ' num2str(EEG_basic.nbchan)...
+        ' channels were rejected, which is more than 1/5th!'])
+end
+
 %% save fig of bad channels
 
 savefig(rejected_chan_plot_handle,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_bad_channels.fig']))
