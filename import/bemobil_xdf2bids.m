@@ -539,6 +539,7 @@ for pi = 1:numel(numericalIDs)
                                 MotionChannelCount = 0; 
                                 TrackedPointsCountTotal = 0;
                                 
+                                                          
                                 for tsi = 1:numel(trsystems_in_session)
 
                                 % if needed, execute a custom function for any alteration to the data to address dataset specific issues
@@ -577,9 +578,12 @@ for pi = 1:numel(numericalIDs)
                                 motioncfg.TrackingSystemCount   = numel(trsystems_in_session);
 
                                 % sampling frequency
-
-                                 motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.hdr.Fs;
-
+                                 if isfield(motion, 'fsample')
+                                    motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.fsample;
+                                 else 
+                                    motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.hdr.Fs;
+                                 end 
+                                    
                                  if strcmpi(motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal, 'n/a')
                                     motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal = motion.hdr.nFs;
                                  end 
@@ -593,6 +597,7 @@ for pi = 1:numel(numericalIDs)
                                 % tracking system
                                 motioncfg.motion.trsystems                        = trsystems ; % needed for removing general trackingsys info 
                                 motioncfg.tracksys                                = tracksys; 
+                                motioncfg.motion.trsystems_in_session             = trsystems_in_session;
 
                                 % start time
                                 motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
@@ -698,7 +703,12 @@ for pi = 1:numel(numericalIDs)
                                     acq_time = datenum(acq_time) - (motioncfg.motion.start_time/(24*60*60));
                                     motioncfg.acq_time = datestr(acq_time + shift,'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded 
                                  end 
+                                 
 
+                                
+                                % RecordingDuration
+%                                 motioncfg.motion.TrackingSystems.(tracksys).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/motion.hdr.Fs;
+                                 
                                 % tracked points per trackingsystem
                                 motioncfg.motion.tracksys = [];
                                 if checkequal(motionStreamNames) % checks if array contains similar entries
@@ -729,6 +739,7 @@ for pi = 1:numel(numericalIDs)
                                 TrackedPointsCountTotal = TrackedPointsCountTotal + numel(unique(motioncfg.channels.tracked_point));
                                 motioncfg.motion.TrackedPointsCountTotal = TrackedPointsCountTotal;
                                 
+                                     
                                 % write motion files in bids format
                                 data2bids(motioncfg, motion);
 
@@ -738,9 +749,8 @@ for pi = 1:numel(numericalIDs)
                             %--------------------------------------------------    
                             if singlesystem
                                 
-                                tracksys   = trsystems_in_session; 
-                                tracksys   = tracksys{1};
-                                
+                                tracksys   = trsystems_in_session{1};
+                                                              
                                 % if needed, execute a custom function for any alteration to the data to address dataset specific issues
                                 % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
                                 motion = feval(motionCustom, ftmotion, motionStreamNames, participantNr, si, di);
@@ -774,12 +784,16 @@ for pi = 1:numel(numericalIDs)
                                 motioncfg.TrackingSystemCount   = numel(trsystems_in_session);
 
                                 % sampling frequency
+                                if isfield(motion, 'fsample')
+                                   motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.fsample;
+                                else 
+                                   motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.hdr.Fs;
+                                end 
+                                
+                                if strcmpi(motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal, 'n/a')
+                                   motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal = motion.hdr.nFs;
+                                end 
 
-                                    motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective = motion.hdr.Fs;
-
-                                    if strcmpi(motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal, 'n/a')
-                                       motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyNominal = motion.hdr.nFs;
-                                    end 
 
                                 % data type and acquisition label
                                 motioncfg.acq                                     = motionInfo.acq;
@@ -790,7 +804,8 @@ for pi = 1:numel(numericalIDs)
                                 % tracking system
                                 motioncfg.motion.trsystems                        = trsystems ; % needed for removing general trackingsys info 
                                 motioncfg.tracksys                                = tracksys; % has to be adjusted for multiple tracking systems in one session
-
+                                motioncfg.motion.trsystems_in_session             = trsystems_in_session;
+                                
                                 % start time
                                 motioncfg.motion.start_time                       = motionStartTime - eegStartTime;
 
@@ -902,7 +917,7 @@ for pi = 1:numel(numericalIDs)
                                     for ti=1:numel(motioncfg.motion.trsystems)
                                         tracksys = motioncfg.motion.trsystems{ti};
                                         rb_name = motionInfo.motion.tracksys_pairs(tracksys); % select rigid body name corresponding to trackingsystem
-                                        motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = sum(contains(motionStreamNames{tsi}, rb_name)); % add entries which contain rb_name for corresponding tracking system
+                                        motioncfg.motion.tracksys.(tracksys).TrackedPointsCount = sum(contains(motionStreamNames, rb_name)); % add entries which contain rb_name for corresponding tracking system
                                     end 
                                 end 
 
@@ -916,8 +931,9 @@ for pi = 1:numel(numericalIDs)
                                 motion.hdr.nChansTs = motion.hdr.nChans;
                                 
                                 % TrackedPointCountTotal
-                                cfg.motion.TrackedPointsCountTotal =  numel(unique(motioncfg.channels.tracked_point));
+                                motioncfg.motion.TrackedPointsCountTotal =  numel(unique(motioncfg.channels.tracked_point));
                                 
+                               
                                 % write motion files in bids format
                                 data2bids(motioncfg, motion);
                         end
