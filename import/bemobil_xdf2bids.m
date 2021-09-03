@@ -525,16 +525,16 @@ for pi = 1:numel(numericalIDs)
                         trsystems                       = motionInfo.motion.trsystems;
                         trsystems_in_session            = trsystems(find(1 == motionInfo.motion.tracksys_in_session(si,:)));  
                         
-                        multiplesystems = false;
-                        singlesystem = false;
+                        multisys_in_ses = false;
+                        singlesys = false;
                         
                         if numel(trsystems_in_session) > 1
-                            multiplesystems = true;
+                            multisys_in_ses = true;
                         else
-                            singlesystem = true;
+                            singlesys = true;
                         end 
                         %--------------------------------------------------
-                            if multiplesystems
+                            if multisys_in_ses
                                 
                                 MotionChannelCount = 0; 
                                 TrackedPointsCountTotal = 0;
@@ -707,7 +707,8 @@ for pi = 1:numel(numericalIDs)
 
                                 
                                 % RecordingDuration
-%                                 motioncfg.motion.TrackingSystems.(tracksys).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/motion.hdr.Fs;
+                                fs_effective = motionInfo.motion.TrackingSystems.(tracksys).SamplingFrequencyEffective;
+                                motioncfg.motion.TrackingSystems.(tracksys).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/fs_effective;
                                  
                                 % tracked points per trackingsystem
                                 motioncfg.motion.tracksys = [];
@@ -747,7 +748,7 @@ for pi = 1:numel(numericalIDs)
                                 
                             end 
                             %--------------------------------------------------    
-                            if singlesystem
+                            if singlesys
                                 
                                 tracksys   = trsystems_in_session{1};
                                                               
