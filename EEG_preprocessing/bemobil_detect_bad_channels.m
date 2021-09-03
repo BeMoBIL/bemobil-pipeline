@@ -109,6 +109,8 @@ yticks([])
 title('final')
 set(gca,'fontsize',12)
 
+drawnow
+
 %% select the final channels to remove and remove them from a dataset to plot
 
 % give actual channel numbers as output
