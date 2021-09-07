@@ -6,6 +6,8 @@ All parameters are configurable in a central script and everything is stored in 
 
 A comprehensive guide to installing, using, and understanding the pipeline can be found [in our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki)!
 
+***
+
 For a quick start, we recommend you to have a look at the following scripts in the root directory of the pipeline. 
 
     example_bemobil_process_all_EEG_data.m
