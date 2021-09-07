@@ -97,7 +97,7 @@ if exist('zaplineConfig','var') && ~isempty(zaplineConfig)
     if save_file_on_disk 
         disp('Saving ZapLine figures...')
 
-        filenamesplit = strsplit(out_filename,'_preprocessed.set');
+        filenamesplit = strsplit(out_filename,'.set');
 
         for i_fig = 1:length(plothandles)
         
