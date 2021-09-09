@@ -79,7 +79,7 @@ end
 % Resample if frequency is provided
 if ~isempty(resample_freq)
     if resample_freq ~= EEG.srate
-        warndlg(['Resampling in BIDS processing did not work properly. Resampling to ' num2str(resample_freq), 'Hz.'])
+        warning(['Resampling in BIDS processing did not work properly. Resampling to ' num2str(resample_freq), 'Hz.'])
         EEG = pop_resample(EEG, resample_freq);
         EEG = eeg_checkset( EEG );
     end
@@ -101,10 +101,17 @@ if exist('zaplineConfig','var') && ~isempty(zaplineConfig)
 
         for i_fig = 1:length(plothandles)
         
-            savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.fig']))
-            saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.png']))
+            if ~isempty(EEG.etc.zapline.config.noisefreqs(i_fig))
+                savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.fig']))
+                saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.png']))
+            else
+                savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_zapline_nonoise.fig']))
+                saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_zapline_nonoise.png']))
+            end
             close(plothandles(i_fig))
             
         end
