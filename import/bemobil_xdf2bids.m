@@ -1,60 +1,46 @@
-function bemobil_xdf2bids(bemobil_config, numericalIDs, varargin)
-
-% Example script for converting .xdf recordings to BIDS
+function bemobil_xdf2bids(config, varargin)
+% Wrapper for fieldtrip function "data2bids"
+% specifically for converting multimodal .xdf files to BIDS 
 %
 % Inputs :
-%   bemobil_config
-%   example fields
-%       bemobil_config.study_folder             = 'E:\Project_BIDS\example_dataset_MWM\';
-%       bemobil_config.filename_prefix          = 'sub_';
-%       bemobil_config.source_data_folder       = '0_source-data\';
-%       bemobil_config.bids_data_folder         = '1_BIDS-data\';
-%       bemobil_config.channel_locations_filename = 'VN_E1_eloc.elc'; (or bemobil_config.elec_struct = elec)
-%       bemobil_config.session_names            = {'VR' 'desktop'};
-%       bemobil_config.other_data_types         = {'motion', 'physio'};
-%       bemobil_config.rigidbody_streams        = {'rb_1', 'rb_2', 'rb_3', 'rb_4'}; 
-%       bemobil_config.rigidbody_names          = {'playerTransform','rightHand', 'leftHand', 'Torso'};
-%       bemobil_config.rigidbody_anat           = {'head','right hand','left hand','back center'};
-%       bemobil_config.bids_rb_in_sessions      = [1,1,1,1;1,0,0,0];
-%                                                  logicals : indicate which rbstreams are present in which sessions
-%       bemobil_config.physio_streams           = {'eyetrack', 'forceplate'};
-%       bemobil_config.bids_phys_in_sessions    = [1,1;1,0];
-%                                                  logicals : indicate which rbstreams are present in which sessions
-%       bemobil_config.bids_eeg_keyword         = {'EEG'};
-%                                                  a unique keyword used to identify the eeg stream in the .xdf file
-%       bemobil_config.bids_task_label          = 'VNE1';
-%       bemobil_config.bids_source_zeropad      = 2;
-%       bemobil_config.bids_motionconvert_custom = 'motion_customfunctionname';
-%       bemobil_config.bids_shift_acquisition_time  = 1900;
-
+%   config [struct, with required fields filename, bids_target_folder, subject, eeg.stream_keywords
 %
-%   numericalIDs
-%       array of participant numerical IDs in the data set
+%       config.filename               = 'P:\...SPOT_rotation\0_source-data\vp-1'\vp-1_control_body.xdf'; % required
+%       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';                               % required
+%       config.subject                = 1;                                  % required
+%       config.session                = 'VR';                               % optional 
+%       config.run                    = 1;                                  % optional
+%       config.task                   = 'rotation';                         % optional 
+% 
+%       config.eeg.stream_name        = 'BrainVision';                      % required
+%       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
+%       config.eeg.new_chans          = '';                                 % optional
+%         
+%       config.motion.streams{1}.stream_name        = 'rigidbody1'; 
+%       config.motion.streams{1}.tracking_system    = 'HTCVive'; 
+%       config.motion.streams{1}.tracked_points     = 'leftFoot'; 
+%       config.motion.streams{2}.stream_name        = 'rigidbody2'; 
+%       config.motion.streams{2}.tracking_system    = 'HTCVive'; 
+%       config.motion.streams{2}.tracked_points     = 'rightFoot'; 
+%       config.motion.streams{3}.stream_name        = 'rigidbody3'; 
+%       config.motion.streams{3}.tracking_system    = 'phaseSpace'; 
+%       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; 
+% 
+%       config.physio.streams{1}.stream_name        = {'force1'};           % optional
 %
 %--------------------------------------------------------------------------
 % Optional Inputs :
-%
-%   Note on multi-session and multi-run data sets :
-%
-%           Entries in bemobil_config.session_names will search through the
-%           raw data directory of the participant and group together
-%           .xdf files with matching keyword in the name into one session
-%           If there are multiple files in one session, they will be given
-%           separate 'run' numbers in the file name
-%           !! IMPORTANT !!
-%           The order of runs rely on incremental name sorting
-%           using the "Nature Order File Sorting Tool" - Stephen Cobeldick (2021). Natural-Order Filename Sort (https://www.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort), MATLAB Central File Exchange. Retrieved March 1, 2021.
-%
-%           for example,
-%                   sub-1\sub-1_VNE1_VR_rec1.xdf
-%                   sub-1\sub-1_VNE1_VR_rec2.xdf
-%                   sub-1\sub-1_VNE1_desktop.xdf
-%           will be organized into
-%                   sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-1_eeg.bdf
-%                   sub-001\ses-VR\sub-001_ses-VR_task-VNE1_run-2_eeg.bdf
-%                   sub-001\ses-desktop\sub-001_ses-desktop_task-VNE1_eeg.bdf
-%
-% Author : Sein Jeung (seinjeung@gmail.com)
+%       Provide optional inputs as key value pairs. See below for example
+%       bemobil_xdf2bids(config, 'general_metadata', generalInfo); 
+% 
+%       general_metadata
+%       participant_metadata
+%       eeg_metadata
+%       motion_metadata
+%       physio_metadata
+% 
+% Authors : 
+%       Sein Jeung (seinjeung@gmail.com) & Soeren Grothkopp (email)
 %--------------------------------------------------------------------------
 
 
