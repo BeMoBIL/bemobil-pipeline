@@ -25,7 +25,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{3}.stream_name        = 'rigidbody3'; 
 %       config.motion.streams{3}.tracking_system    = 'phaseSpace'; 
 %       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; 
-% 
+%
 %       config.physio.streams{1}.stream_name        = {'force1'};           % optional
 %
 %--------------------------------------------------------------------------
@@ -43,71 +43,90 @@ function bemobil_xdf2bids(config, varargin)
 %       Sein Jeung (seinjeung@gmail.com) & Soeren Grothkopp (email)
 %--------------------------------------------------------------------------
 
+% add load_xdf to path 
+[filepath,~,~] = fileparts(which('ft_defaults'));
+addpath(fullfile(filepath, 'external', 'xdf'))
 
-% input check and default value assignment
+%% 
 %--------------------------------------------------------------------------
-bemobil_config = checkfield(bemobil_config, 'bids_data_folder', '1_BIDS-data\', '1_BIDS-data\');
-bemobil_config = checkfield(bemobil_config, 'bids_eeg_keyword','EEG', 'EEG');
-bemobil_config = checkfield(bemobil_config, 'bids_task_label', 'defaulttask', 'defaulttask');
-bemobil_config = checkfield(bemobil_config, 'bids_source_zeropad', 0, '0');
-bemobil_config = checkfield(bemobil_config, 'other_data_types', {'motion'}, 'motion');
-bemobil_config = checkfield(bemobil_config, 'bids_parsemarkers_custom', [], 'none');
+%                   Check import configuration 
+%--------------------------------------------------------------------------
+
+% check which modalities are included
+%--------------------------------------------------------------------------
+importEEG           = isfield(config, 'eeg');                               % assume EEG is always in 
+importMotion        = isfield(config, 'motion');
+importPhys          = isfield(config, 'phys');
+
+if ~importEEG
+    error('Importing scripts require the EEG stream to be there for event processing')
+end
+
+% check for mandatory fields 
+%--------------------------------------------------------------------------
+config = checkfield(config, 'filename', 'required', ''); 
+config = checkfield(config, 'bids_target_folder', 'required', ''); 
+config = checkfield(config, 'subject', 'required', ''); 
+config.eeg = checkfield(config.eeg, 'stream_name', 'required', '');         % for now, the EEG stream has to be there for smooth processing 
+
+% assign default values to optional fields
+%--------------------------------------------------------------------------
+config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
+
+% validate file name parts 
+%--------------------------------------------------------------------------
+pat = {' ' '_'};
+
+if contains(config.task, pat)
+    error('Task label MUST NOT contain space or underscore. Please change task label.')
+end
+
+if isfield(config, 'session')
+    if contains(config.session, pat)
+        error('Session label MUST NOT contain space or underscore. Please change task label.')
+    end
+end
 
 % motion-related fields
 %--------------------------------------------------------------------------
-bemobil_config = checkfield(bemobil_config, 'rigidbody_streams', {}, 'none');
-bemobil_config = checkfield(bemobil_config, 'rigidbody_names', bemobil_config.rigidbody_streams, 'values from field "rigidbody_streams"');
-bemobil_config = checkfield(bemobil_config, 'rigidbody_anat', 'Undefined', 'Undefined');
-
-% bids_rb_in_session
-if ~isfield(bemobil_config, 'bids_rb_in_sessions')
-    bemobil_config.bids_rb_in_sessions    = true(numel(bemobil_config.session_names),numel(bemobil_config.rigidbody_streams));
-elseif ~islogical(bemobil_config.bids_rb_in_sessions)
-        bemobil_config.bids_rb_in_sessions = logical(bemobil_config.bids_rb_in_sessions);
+if importMotion
+    
+    config.motion = checkfield(config.motion, 'streams', 'required', '');
+    
+    for Si = 1:numel(config.motion.streams)
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'stream_name', 'required', '');
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracking_system', 'required', '');
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracked_points', 'required', '');
+    end
+    
+    if isfield(config, 'bids_motionconvert_custom')
+        if isempty(config.bids_motionconvert_custom)
+            % funcions that resolve dataset-specific problems
+            motionCustom            = 'bemobil_bids_motionconvert';
+        else
+            motionCustom            = config.bids_motionconvert_custom;
+        end
+    else
+        motionCustom = 'bemobil_bids_motionconvert'; 
+    end
+    
 end
-
-% single stream
-if ~isfield(bemobil_config, 'rb_prefix_single_stream')
-    warning('bemobil_config.rb_prefix_single_stream not defined. Assuming no single stream present.')
-    bemobil_config.rb_prefix_single_stream = {};
-end
-
-
-% task_label
-pat = {' ' '_'};
-if contains(bemobil_config.bids_task_label, pat)
-    error('Task label MUST NOT contain space or underscore. Please change task label.')
-end 
-
-% units
-bemobil_config = unit_check(bemobil_config);
-
 
 % physio-related fields
 %--------------------------------------------------------------------------
-bemobil_config = checkfield(bemobil_config, 'physio_streams', {}, 'none');
-
-if ~isfield(bemobil_config, 'bids_phys_in_sessions')
-    bemobil_config.bids_phys_in_sessions    = true(numel(bemobil_config.session_names),numel(bemobil_config.physio_streams));
-elseif ~islogical(bemobil_config.bids_phys_in_sessions)
-        bemobil_config.bids_phys_in_sessions = logical(bemobil_config.bids_phys_in_sessions);
-end
-
-% names of the steams
-
-physioStreamNames                       = bemobil_config.physio_streams;
-eegStreamName                           = {bemobil_config.bids_eeg_keyword};
-
-if contains(bemobil_config.other_data_types, 'motion')
-    if isempty(bemobil_config.bids_motionconvert_custom)
-        % funcions that resolve dataset-specific problems
-        motionCustom            = 'bemobil_bids_motionconvert';
-    else
-        motionCustom            = bemobil_config.bids_motionconvert_custom;
+if importPhys
+    
+    config.phys = checkfield(config.phys, 'streams', 'required', '');
+    
+    for Si = 1:numel(config.phys.streams)
+        config.phys.streams{Si} = checkfield(config.phys.streams{Si}, 'stream_name', 'required', '');
     end
+    
+    % no custom function for physio processing supported yet
+    physioCustom        = 'bemobil_bids_physioconvert';
+
 end
-% no custom function for physio processing supported yet
-physioCustom        = 'bemobil_bids_physioconvert';
+
 
 %--------------------------------------------------------------------------
 % find optional input arguments
