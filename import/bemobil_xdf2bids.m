@@ -278,6 +278,9 @@ if importMotion
         end        
     end
     
+    % create key value maps for tracking systems and stream names
+    kv_trsys_to_st  = containers.Map(trackSysInData, streamsInData);
+    
 end
 
 if ~isempty(skipIndices)
@@ -307,6 +310,7 @@ if exist('subjectInfo','var')
         else
             newPInfo(Pi,:)   = subjectInfo.data(pRowInd,:);
         end
+        newPInfo   = emptyRow;
     end
 
 else
