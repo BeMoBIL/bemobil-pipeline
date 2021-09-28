@@ -427,25 +427,126 @@ if importEEG
     end
 end
 
-%--------------------------------------------------------------------------
-% determine number of days for shifting acq_time
-shift = randi([-1000,1000]);
-
-% create key value maps for tracksys and rb
-kv_trsys_to_rb  = containers.Map(motionInfo.motion.trsystems, motionInfo.motion.rb_prefix);
-
-%--------------------------------------------------------------------------
-% loop over participants
-for pi = 1:numel(numericalIDs)
-
-    participantNr   = numericalIDs(pi);
-    disp(['Importing .xdf for participant ' num2str(participantNr)])
-
-    if bemobil_config.bids_source_zeropad == 0
-        participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr)]);
-    else
-        participantDir  = fullfile(sourceDataPath, [bemobil_config.filename_prefix num2str(participantNr, ['%0' num2str(bemobil_config.bids_source_zeropad) '.f'])]);
+if importMotion
+    for Si = 1:numel(config.motion.streams) 
+        motionStreamNames{Si}   = config.motion.streams{Si}.stream_name;
     end
+    xdfmotion   = streams(contains(lower(names),lower(motionStreamNames)) & iscontinuous);
+    
+    if isempty(xdfmotion)
+        error('Configuration field motion specified but no streams found - check whether stream_name match the names of streams in .xdf')
+    end
+
+end
+
+if importPhys
+    for Si = 1:numel(config.phys.streams)
+        physioStreamNames{Si}   = config.phys.streams{Si}.stream_name;
+    end
+    xdfphysio   = streams(contains(lower(names),lower(physioStreamNames)) & iscontinuous);
+    
+    if isempty(xdfphysio)
+        error('Configuration field physio specified but no streams found - check whether stream_name match the names of streams in .xdf')
+    end
+end
+
+xdfmarkers  = streams(~iscontinuous);
+
+%%
+if importEEG % This loop is always executed in current version
+    
+    %----------------------------------------------------------------------
+    %                   Convert EEG Data to BIDS
+    %----------------------------------------------------------------------
+    % construct fieldtrip data
+    eeg        = stream2ft(xdfeeg{1});
+    
+    % save eeg start time
+    eegStartTime                = eeg.time{1}(1);
+    
+    % eeg metadata construction
+    %----------------------------------------------------------------------
+    eegcfg                              = cfg;
+    eegcfg.datatype                     = 'eeg';
+    eegcfg.method                       = 'convert';
+    
+    if isfield(config.eeg, 'chanloc')
+        if ~isempty(config.eeg.chanloc)
+            eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
+            eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
+        end
+    end
+    
+    % try to extract information from config struct if specified
+    if isfield(config.eeg, 'ref_channel')
+        eegcfg.eeg.EEGReference                 = config.ref_channel;
+    end
+    
+    if isfield(config.eeg, 'linefreqs')
+        if numel(config.linefreqs) == 1
+            eegcfg.eeg.PowerLineFrequency           = config.linefreqs;
+        elseif numel(config.linefreqs) > 1
+            eegcfg.eeg.PowerLineFrequency           = config.linefreqs(1);
+            warning('Only the first value specified in config.eeg.linefreqs entered in eeg.json')
+        end
+    end
+    
+    % overwrite some fields if specified
+    if exist('eegInfo','var')
+        if isfield(eegInfo, 'eeg')
+            eegcfg.eeg          = eegInfo.eeg;
+        end
+        if isfield(eegInfo, 'coordsystem')
+            eegcfg.coordsystem  = eegInfo.coordsystem;
+        end
+    end
+    
+    
+    % read in the event stream (synched to the EEG stream)
+    if ~isempty(xdfmarkers)
+        
+        if any(cellfun(@(x) ~isempty(x.time_series), xdfmarkers))
+            
+            events                  = stream2events(xdfmarkers, xdfeeg{1}.time_stamps);
+            eventsFound             = 1;
+            
+            % event parser script
+            if isfield(config, 'bids_parsemarkers_custom')
+                if isempty(config.bids_parsemarkers_custom)
+                    [events, eventsJSON] = bemobil_bids_parsemarkers(events);
+                else
+                    [events, eventsJSON] = feval(config.bids_parsemarkers_custom, events);
+                end
+            else 
+                [events, eventsJSON] = bemobil_bids_parsemarkers(events);
+            end
+            
+            eegcfg.events = events;
+            
+        end
+    end
+    
+    if isfield(config.eeg, 'elec_struct')
+        eegcfg.elec                         = config.elec_struct;
+    elseif isfield(config.eeg, 'chanloc')
+        eegcfg.elec = config.eeg.chanloc;
+    end
+    
+    % shift acq_time and look for missing acquisition time data
+    if ~isfield(cfg, 'acq_times')
+        warning(' acquisition times are not defined. Unable to display acq_time for eeg data.')
+    elseif isempty(cfg.acq_times)
+        warning(' acquisition times are not specified. Unable to display acq_time for eeg data.')
+    else
+        acq_time = cfg.acq_times{pi,si};
+        acq_time([1:4]) = num2str(config.bids_shift_acquisition_time);
+        eegcfg.acq_time = datestr(datenum(acq_time) + shift,'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
+    end
+    
+    % write eeg files in bids format
+    data2bids(eegcfg, eeg);
+    
+end
 
     % find all .xdf files for the given session in the participant directory
     participantFiles    = dir(participantDir);
