@@ -44,6 +44,7 @@ function bemobil_xdf2bids(config, varargin)
 %--------------------------------------------------------------------------
 
 % add load_xdf to path 
+ft_defaults
 [filepath,~,~] = fileparts(which('ft_defaults'));
 addpath(fullfile(filepath, 'external', 'xdf'))
 
@@ -198,12 +199,19 @@ cfg = generalInfo;
 if importMotion
     
     % check how many different tracking systems are specified
-    for Ti = 1:numel(config.motion.streams)
-        trackSysInData{Ti} = config.motion.streams{Ti}.tracking_system;
+    for Si = 1:numel(config.motion.streams)
+        streamNames{Si}     = config.motion.streams{Si}.stream_name;
+        trackSysNames{Si}  = config.motion.streams{Si}.tracking_system;
     end
     
-    % get the tracking systems included in data
-    trackSysInData   = unique(trackSysInData);
+    % get the (unique) tracking system names included in data
+    trackSysInData   = unique(trackSysNames);
+  
+    % get all stream names corresponding to each tracking system
+    for Si = 1:numel(trackSysInData)
+        trackSysInds = find(strcmp(trackSysNames, trackSysInData{Si})); 
+        streamsInData{Si} = streamNames(trackSysInds);
+    end
     
     % construct default info for tracking systems
     tracking_systems                                    = trackSysInData;
