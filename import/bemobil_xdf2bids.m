@@ -293,26 +293,22 @@ if isempty(numericalIDs)
 end
 
 % check if numerical IDs match subject info, if this was specified
+%--------------------------------------------------------------------------
 if exist('subjectInfo','var')
-
-    numericalIDs            = sort(numericalIDs);
+    
     nrColInd                = find(strcmp(subjectInfo.cols, 'nr'));
-    newPInfo                = {};
-
+    
     % attempt to find matching rows in subject info
-    for Pi = 1:numel(numericalIDs)
-        pRowInd          = find(cell2mat(subjectInfo.data(:,nrColInd)) == numericalIDs(Pi),1);
-        if isempty(pRowInd)
-            warning(['Participant ' num2str(numericalIDs(Pi)) ' info not given : filling with n/a'])
-            emptyRow         = {numericalIDs(Pi)};
-            [emptyRow{2:size(subjectInfo.data,2)}] = deal('n/a');
-            newPInfo(Pi,:)   = emptyRow;
-        else
-            newPInfo(Pi,:)   = subjectInfo.data(pRowInd,:);
-        end
+    pRowInd          = find(cell2mat(subjectInfo.data(:,nrColInd)) == config.subject,1);
+    if isempty(pRowInd)
+        warning(['Participant ' num2str(numericalIDs(Pi)) ' info not given : filling with n/a'])
+        emptyRow         = {config.subject};
+        [emptyRow{2:size(subjectInfo.data,2)}] = deal('n/a');
         newPInfo   = emptyRow;
+    else
+        newPInfo   = subjectInfo.data(pRowInd,:);
     end
-
+    
 else
     warning('Optional input participant_metadata was not entered - participant.tsv will be omitted (NOT recommended for data sharing)')
 end
