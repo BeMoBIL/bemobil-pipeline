@@ -21,10 +21,11 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{1}.tracked_points     = 'leftFoot'; 
 %       config.motion.streams{2}.stream_name        = 'rigidbody2'; 
 %       config.motion.streams{2}.tracking_system    = 'HTCVive'; 
-%       config.motion.streams{2}.tracked_points     = 'rightFoot'; 
+%       config.motion.streams{2}.tracked_points     = 'rightFoot';
 %       config.motion.streams{3}.stream_name        = 'rigidbody3'; 
 %       config.motion.streams{3}.tracking_system    = 'phaseSpace'; 
 %       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; 
+%       config.motion.streams{3}.POS.unit           = 'vm'; % in case you want to use custom unit
 %
 %       config.physio.streams{1}.stream_name        = {'force1'};           % optional
 %
@@ -107,14 +108,12 @@ if importMotion
         config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracked_points', 'required', '');
     end
     
-    if isfield(config, 'bids_motionconvert_custom')
-        if isempty(config.bids_motionconvert_custom)
-            
+    if isfield(config.motion, 'custom_function')
+        if isempty(config.motion.custom_function)
             % functions that resolve dataset-specific problems
             motionCustom            = 'bemobil_bids_motionconvert';
-            
         else
-            motionCustom            = config.bids_motionconvert_custom;
+            motionCustom            = config.motion.custom_function;
         end
     else
         motionCustom = 'bemobil_bids_motionconvert'; 
