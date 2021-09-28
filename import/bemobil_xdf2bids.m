@@ -119,6 +119,16 @@ if importMotion
         motionCustom = 'bemobil_bids_motionconvert'; 
     end
     
+    % default channel types and units
+    motion_type.POS.unit        = 'm'; 
+    motion_type.ORNT.unit       = 'rad';
+    motion_type.VEL.unit        = 'm/s';
+    motion_type.ANGVEL.unit     = 'r/s';
+    motion_type.ACC.unit        = 'm/s^2';
+    motion_type.ANGACC.unit     = 'r/s^2';
+    motion_type.MAGN.unit       = 'fm';
+    motion_type.JNTANG.unit     = 'r';
+
 end
 
 % physio-related fields
@@ -200,7 +210,8 @@ if importMotion
     % check how many different tracking systems are specified
     for Si = 1:numel(config.motion.streams)
         streamNames{Si}     = config.motion.streams{Si}.stream_name;
-        trackSysNames{Si}  = config.motion.streams{Si}.tracking_system;
+        trackSysNames{Si}   = config.motion.streams{Si}.tracking_system;
+        trackedPointNames{Si} = config.motion.streams{Si}.tracked_points; 
     end
     
     % get the (unique) tracking system names included in data
@@ -209,7 +220,8 @@ if importMotion
     % get all stream names corresponding to each tracking system
     for Si = 1:numel(trackSysInData)
         trackSysInds = find(strcmp(trackSysNames, trackSysInData{Si})); 
-        streamsInData{Si} = streamNames(trackSysInds);
+        streamsInData{Si}           = streamNames(trackSysInds);
+        trackedPointsInData{Si}     = trackedPointNames(trackSysInds); 
     end
     
     % construct default info for tracking systems
