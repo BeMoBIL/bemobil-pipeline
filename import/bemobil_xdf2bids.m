@@ -290,7 +290,8 @@ if importMotion
     end
     
     % create key value maps for tracking systems and stream names
-    kv_trsys_to_st  = containers.Map(trackSysInData, streamsInData);
+    kv_trsys_to_st          = containers.Map(trackSysInData, streamsInData);
+    kv_trsys_to_trp         = containers.Map(trackSysInData, trackedPointsInData); 
     
 end
 
