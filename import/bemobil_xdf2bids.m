@@ -331,6 +331,30 @@ if ~exist('generalInfo', 'var')
 
     % root directory (where you want your bids data to be saved)
     generalInfo.bidsroot                                = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder);
+% participant information
+if exist('subjectInfo', 'var')
+    
+    allColumns      = subjectInfo.cols;
+    
+    % find the index of the subject nr column
+    for iCol = 1:numel(allColumns)
+        if strcmp(subjectInfo.cols(iCol), 'nr')
+            nrColInd = iCol; 
+        end
+    end
+    
+    if ~exist('nrColInd','var')
+        error('Participant info was provided without column "nr".')
+    end
+    
+    % find the column that contains information from the given participant
+    Pi = find([subjectInfo.data{:,nrColInd}] == config.subject); % find the matching participant number
+    
+    for iCol = 1:numel(allColumns)
+            cfg.participants.(allColumns{iCol}) = subjectInfo.data{Pi, iCol};
+    end
+    
+end
 
     % required for dataset_description.json
     generalInfo.dataset_description.Name                = 'Default task';
