@@ -337,7 +337,6 @@ shift = randi([-1000,1000]);
 %--------------------------------------------------------------------------
 cfg.sub                                     = num2str(config.subject);
 cfg.dataset                                 = config.filename; 
-%cfg.tracksys                                = config.tracksys;
 cfg.bidsroot                                = config.bids_target_folder; 
 cfg.participants                            = []; 
 
@@ -560,12 +559,51 @@ if importEEG % This loop is always executed in current version
     
 end
 
-            end
+%%
+if importMotion
+    
+    %----------------------------------------------------------------------
+    %                   Convert Motion Data to BIDS
+    %----------------------------------------------------------------------
+    ftmotion = {};
+    
+    % construct fieldtrip data
+    for iM = 1:numel(xdfmotion)
+        ftmotion{iM} = stream2ft(xdfmotion{iM});
+    end
+    
+    MotionChannelCount = 0;
+    TrackedPointsCountTotal = 0;
+    
+    for tsi = 1:numel(trackSysInData)
+        
+        motionStreamNames   = kv_trsys_to_st(trackSysInData{tsi});
+        trackedPointNames   = kv_trsys_to_trp(trackSysInData{tsi}); 
+        
+        if isfield(cfg, 'ses')
+            si = cfg.ses;
+        else
+            si = 1;
         end
-
-        % sort files by natural order
-        sortedFileNames     = natsortfiles({sessionFiles.name});
-  
+        if isfield(cfg, 'run')
+            ri = cfg.run;
+        else
+            ri = 1;
+        end
+        
+        streamInds = [];
+        for Fi = 1:numel(ftmotion)
+           if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames))
+               streamInds(end+1) = Fi; 
+           end
+        end
+        
+        % if needed, execute a custom function for any alteration to the data to address dataset specific issues
+        % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
+        motion = feval(motionCustom, ftmotion(streamInds), trackedPointNames, config.subject, si, ri);
+        
+        % save motion start time
+        motionStartTime              = motion.time{1}(1);
         
         % loop over files in each session.
         % Here 'di' will index files as runs.
