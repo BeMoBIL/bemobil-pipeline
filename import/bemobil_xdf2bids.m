@@ -71,6 +71,9 @@ config = checkfield(config, 'bids_target_folder', 'required', '');
 config = checkfield(config, 'subject', 'required', ''); 
 config.eeg = checkfield(config.eeg, 'stream_name', 'required', '');         % for now, the EEG stream has to be there for smooth processing 
 
+% acquisition time 
+config = checkfield(config, 'acquisition_time', [1800,12,31,5,5,5.000], 'default time');         % for now, the EEG stream has to be there for smooth processing 
+
 % assign default values to optional fields
 %--------------------------------------------------------------------------
 config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
@@ -334,10 +337,6 @@ else
     warning('Optional input participant_metadata was not entered - participant.tsv will be omitted (NOT recommended for data sharing)')
 end
 
-%--------------------------------------------------------------------------
-% determine number of days for shifting acq_time
-shift = randi([-1000,1000]);
-
 % construct file and participant- and file- specific config
 % information needed to construct file paths and names
 %--------------------------------------------------------------------------
@@ -523,7 +522,6 @@ if importEEG % This loop is always executed in current version
         end
     end
     
-    
     % read in the event stream (synched to the EEG stream)
     if ~isempty(xdfmarkers)
         
@@ -554,16 +552,8 @@ if importEEG % This loop is always executed in current version
         eegcfg.elec = config.eeg.chanloc;
     end
     
-    % shift acq_time and look for missing acquisition time data
-    if ~isfield(cfg, 'acq_times')
-        warning(' acquisition times are not defined. Unable to display acq_time for eeg data.')
-    elseif isempty(cfg.acq_times)
-        warning(' acquisition times are not specified. Unable to display acq_time for eeg data.')
-    else
-        acq_time = cfg.acq_times{pi,si};
-        acq_time([1:4]) = num2str(config.bids_shift_acquisition_time);
-        eegcfg.acq_time = datestr(datenum(acq_time) + shift,'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
-    end
+    % acquisition time processing 
+    eegcfg.acq_time = datestr(datenum(config.acquisition_time),'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
     
     % write eeg files in bids format
     data2bids(eegcfg, eeg);
@@ -699,21 +689,17 @@ if importMotion
             effectiveSRate = motion.hdr.Fs;
         end
         
-        % shift acq_time and look for missing acquisition time data
-        if ~isfield(cfg, 'acq_times')
-            warning(' acquisition times are not defined. Unable to display acq_time for motion data.')
-        elseif isempty(cfg.acq_times)
-            warning(' acquisition times are not specified. Unable to display acq_time for motion data.')
-        else
-            acq_time = cfg.acq_times{pi,si};
-            acq_time([1:4]) = num2str(config.bids_shift_acquisition_time);
-            acq_time = datenum(acq_time) - (motioncfg.motion.start_time/(24*60*60));
-            motioncfg.acq_time = datestr(acq_time + shift,'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
-        end
+        % copy motion metadata fields
+        motioncfg.motion = motionInfo.motion;
         
-        % 
-        motioncfg.motion = motionInfo.motion
+        % start time
+        motionStartTime                 = motion.time{1}(1);
+        motionTimeShift                 = motionStartTime - eegStartTime;
         
+        % shift acq_time to store relative offset to eeg data
+        acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
+        motioncfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
+  
         % effective sampling rate 
         motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).SamplingFrequencyEffective = effectiveSRate; 
         
@@ -725,14 +711,6 @@ if importMotion
         
         % add the number of channels to MotionChannelCount
         motioncfg.motion.MotionChannelCount = MotionChannelCount + motion.hdr.nChans;
-        
-%         tokens = {};        
-%         % match channel tokens with tracked points
-%         for tpi = 1:numel(trackedPointNames)
-%             tokens{tpi} = ['t' num2str(tpi)];
-%         end
-%         
-%         motioncfg.motion.tpPairs  = containers.Map(trackedPointNames,tokens);
         
         % write motion files in bids format
         data2bids(motioncfg, motion);
@@ -775,6 +753,15 @@ if importPhys
     
     % physio specific fields in json
     physiocfg.physio                                  = physioInfo.physio;
+    
+    
+    % start time
+    physioStartTime                 = physio.time{1}(1);
+    physioTimeShift                 = physioStartTime - eegStartTime;
+    
+    % shift acq_time to store relative offset to eeg data
+    acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
+    physiocfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
     
     % start time
     physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
