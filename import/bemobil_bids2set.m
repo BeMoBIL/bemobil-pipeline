@@ -76,7 +76,7 @@ end
 numericalIDs = numericalIDs(~skipFlag); 
 
 if isempty(numericalIDs)
-    disp('All participant data had already been converted from .xdf to BIDS');
+    disp('All participant data had already been converted from BIDS to .set');
     return;
 end
 
@@ -127,7 +127,7 @@ for iSub = 1:numel(subDirList)
         % for unisession, simply find all files in EEG folder
         eegDir          = fullfile(tempDir, subjectDir, 'eeg'); 
         behDir          = fullfile(tempDir, subjectDir, 'beh'); 
-        allFiles        = [dir(eegDir) dir(behDir)] ;
+        allFiles        = [dir(eegDir); dir(behDir)] ;
         
     end
     
