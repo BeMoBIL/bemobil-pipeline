@@ -102,7 +102,7 @@ motionStreamNames                       = bemobil_config.rigidbody_streams;
 physioStreamNames                       = bemobil_config.physio_streams;
 eegStreamName                           = {bemobil_config.bids_eeg_keyword};
 
-if contains(bemobil_config.other_data_types, 'motion')
+if contains('motion', bemobil_config.other_data_types)
     if isempty(bemobil_config.bids_motionconvert_custom)
         % funcions that resolve dataset-specific problems
         motionCustom            = 'bemobil_bids_motionconvert';
@@ -304,8 +304,7 @@ for pi = 1:numel(numericalIDs)
                 names{i}           = streams{i}.info.name;
 
                 % if the nominal srate is non-zero, the stream is considered continuous
-                if ~strcmpi(streams{i}.info.nominal_srate, '0')
-
+                if ~(str2double(streams{i}.info.nominal_srate) == 0)
                     iscontinuous(i) =  true;
                     num_samples  = numel(streams{i}.time_stamps);
                     t_begin      = streams{i}.time_stamps(1);
@@ -756,7 +755,13 @@ prefix = xdfstream.info.name;
 for j=1:hdr.nChans
     if isfield(xdfstream.info.desc, 'channels')
         hdr.label{j} = [prefix '_' xdfstream.info.desc.channels.channel{j}.label];
-        hdr.chantype{j} = xdfstream.info.desc.channels.channel{j}.type;
+
+        try 
+            hdr.chantype{j} = xdfstream.info.desc.channels.channel{j}.type;
+        catch
+            disp([hdr.label{j} ' missing type'])
+        end
+        
         try
             hdr.chanunit{j} = xdfstream.info.desc.channels.channel{j}.unit;
         catch

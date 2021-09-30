@@ -127,7 +127,7 @@ for iSub = 1:numel(subDirList)
         % for unisession, simply find all files in EEG folder
         eegDir          = fullfile(tempDir, subjectDir, 'eeg'); 
         behDir          = fullfile(tempDir, subjectDir, 'beh'); 
-        allFiles        = [dir(eegDir) dir(behDir)] ;
+        allFiles        = [dir(eegDir); dir(behDir)] ;
         
     end
     
