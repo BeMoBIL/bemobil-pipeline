@@ -96,6 +96,7 @@ if isfield(config, 'session')
 end
 
 
+
 % EEG-related fields
 %--------------------------------------------------------------------------
 if importEEG
@@ -121,6 +122,7 @@ if importMotion
         else
             motionCustom            = config.motion.custom_function;
         end
+
     else
         motionCustom = 'bemobil_bids_motionconvert'; 
     end
@@ -318,6 +320,7 @@ end
 % end
 
 % wasImported = sum(wasimported);
+
 
 % check if numerical IDs match subject info, if this was specified
 %--------------------------------------------------------------------------
@@ -845,7 +848,13 @@ prefix = xdfstream.info.name;
 for j=1:hdr.nChans
     if isfield(xdfstream.info.desc, 'channels')
         hdr.label{j} = [prefix '_' xdfstream.info.desc.channels.channel{j}.label];
-        hdr.chantype{j} = xdfstream.info.desc.channels.channel{j}.type;
+
+        try 
+            hdr.chantype{j} = xdfstream.info.desc.channels.channel{j}.type;
+        catch
+            disp([hdr.label{j} ' missing type'])
+        end
+        
         try
             hdr.chanunit{j} = xdfstream.info.desc.channels.channel{j}.unit;
         catch
