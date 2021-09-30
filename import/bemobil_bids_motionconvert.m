@@ -13,6 +13,16 @@ cartCoordinates         = {'x','y','z'};
 % missing value (how tracking loss is represented in the stream)
 missingval = 0; 
 
+newCell = {}; 
+% check if object input is a nested cell
+for Oi = 1:numel(objects)
+   if iscell(objects(Oi))
+       newCell = [newCell objects{Oi}];
+   else
+       newCell{end + 1} = objects(Oi); 
+   end
+end
+objects = newCell; 
 
 % iterate over different objects 
 %--------------------------------------------------------------------------
