@@ -28,7 +28,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{3}.stream_name        = 'stream3'; 
 %       config.motion.streams{3}.tracking_system    = 'phaseSpace'; 
 %       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; % Multiple tracked points included in a single stream 
-%       config.motion.streams{3}.POS.unit           = 'vm';                 % in case you want to use custom unit
+%       config.motion.POS.unit                      = 'vm';                 % in case you want to use custom unit
 %
 %       config.physio.streams{1}.stream_name        = {'force1'};           % optional
 %
@@ -629,6 +629,7 @@ if importMotion
                 newCell{end + 1} = anatomicalNames(tpi);
             end
         end
+        
         anatomicalNames = newCell;
         
         if isfield(cfg, 'ses')
@@ -661,7 +662,13 @@ if importMotion
         
         for ci  = 1:motion.hdr.nChans
             motionChanType          = motion.hdr.chantype{ci};
-            motion.hdr.chanunit{ci} = motion_type.(motionChanType).unit;
+            
+            if isfield(config.motion, motionChanType)
+                motion.hdr.chanunit{ci} = config.motion.(motionChanType).unit; 
+                disp(['Using custom unit ' config.motion.(motionChanType).unit ' for type ' motionChanType])
+            else
+                motion.hdr.chanunit{ci} = motion_type.(motionChanType).unit;
+            end
             
             splitlabel                                      = regexp(motion.hdr.label{ci}, '_', 'split');
             motioncfg.channels.name{end+1}                  = motion.hdr.label{ci};
