@@ -12,10 +12,12 @@ function bemobil_xdf2bids(config, varargin)
 %       config.run                    = 1;                                  % optional
 %       config.task                   = 'rotation';                         % optional 
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
+%       config.overwrite              = 'on';                               % optional, default is off (when participant folder is found, data will NOT be overwritten)
 % 
 %       config.eeg.stream_name        = 'BrainVision';                      % required
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
-%       config.eeg.new_chans          = '';                                 % optional
+%       config.eeg.elec_struct        = elecStruct                          % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
+%       config.eeg.chanloc_newname    = {'chan1', 'chan2'}                  % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
 %         
 %       config.motion.streams{1}.stream_name        = 'stream1'; 
 %       config.motion.streams{1}.tracking_system    = 'HTCVive'; 
@@ -30,7 +32,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; % Multiple tracked points included in a single stream 
 %       config.motion.POS.unit                      = 'vm';                 % in case you want to use custom unit
 %
-%       config.physio.streams{1}.stream_name        = {'force1'};           % optional
+%       config.phys.streams{1}.stream_name        = {'force1'};           % optional
 %
 %--------------------------------------------------------------------------
 % Optional Inputs :
@@ -310,17 +312,24 @@ if importMotion
 end
 
 
-%% 
-% check if the output is already in BIDS folder
+%%
+% check if the target folder is already there
 %--------------------------------------------------------------------------
-% if importMotion
-%     if exist(pDir, 'dir')
-%         disp(['BIDS file ' pDir ' exists. Files may be overwritten'])
-%     end
-% end
-
-% wasImported = sum(wasimported);
-
+pDir = fullfile(config.bids_target_folder, ['sub-' num2str(config.subject)]);
+if exist(pDir, 'dir')
+    disp(['Subject folder ' pDir ' already exists.']);
+    if isfield(config, 'overwrite')
+        if strcmpi(config.overwrite, 'on')
+            warning('config.overwrite option is "on", Files will be overwritten')
+        else
+            warning('config.overwrite option is not "on", skipping import.')
+            return; 
+        end
+    else
+        warning('config.overwrite option is not "on", skipping import.')
+        return; 
+    end
+end
 
 % check if numerical IDs match subject info, if this was specified
 %--------------------------------------------------------------------------
@@ -498,7 +507,12 @@ if importEEG % This loop is always executed in current version
     eegcfg.method                       = 'convert';
     
     if isfield(config.eeg, 'chanloc')
-        if ~isempty(config.eeg.chanloc)
+        if ~isempty(config.eeg.chanloc) 
+            eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
+            eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
+        end
+    elseif isfield(config.eeg, 'elec_struct')
+        if ~isempty(config.eeg.elec_struct) 
             eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
             eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
         end
@@ -553,9 +567,15 @@ if importEEG % This loop is always executed in current version
     end
     
     if isfield(config.eeg, 'elec_struct')
-        eegcfg.elec                         = config.elec_struct;
+        eegcfg.elec                         = config.eeg.elec_struct;
     elseif isfield(config.eeg, 'chanloc')
-        eegcfg.elec = config.eeg.chanloc;
+        if isfield(config.eeg, 'chanloc_newname')
+            elec = ft_read_sens(config.eeg.chanloc);
+            elec.label = config.eeg.chanloc_newname; 
+            eegcfg.elec = elec; 
+        else
+            eegcfg.elec                         = config.eeg.chanloc;
+        end
     end
     
     % acquisition time processing 
@@ -745,42 +765,43 @@ if importPhys
         ftphysio{iP} = stream2ft(xdfphysio{iP});
     end
     
-    % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
-    physio = feval(physioCustom, ftphysio, physioStreamNames(config.bids_phys_in_sessions(si,:)), participantNr, si, di);
-    
-    % save physio start time
-    physioStartTime              = physio.time{1}(1);
-    
-    % construct physio metadata
-    physiocfg               = cfg;                                           % copy general fields
-    physiocfg.datatype      = 'physio';
-    
-    %----------------------------------------------------------------------
-    if ~exist('physioInfo', 'var')
+    for Pi = 1:numel(PhyStreamsInData)
         
-        % default values for physio specific fields in json
-        physioInfo.physio.Manufacturer                     = 'Undefined';
-        physioInfo.physio.ManufacturersModelName           = 'Undefined';
-        physioInfo.physio.RecordingType                    = 'continuous';
+        % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
+        physio = feval(physioCustom, ftphysio, physioStreamNames, participantNr, si, di);
+        
+        % construct physio metadata
+        physiocfg               = cfg;                                           % copy general fields
+        physiocfg.datatype      = 'physio';
+        
+        %------------------------------------------------------------------
+        if ~exist('physioInfo', 'var')
+            
+            % default values for physio specific fields in json
+            physioInfo.physio.Manufacturer                     = 'Undefined';
+            physioInfo.physio.ManufacturersModelName           = 'Undefined';
+            physioInfo.physio.RecordingType                    = 'continuous';
+            
+        end
+        
+        % physio specific fields in json
+        physiocfg.physio                                  = physioInfo.physio;
+        
+        % start time
+        physioStartTime                 = physio.time{1}(1);
+        physioTimeShift                 = physioStartTime - eegStartTime;
+        
+        % shift acq_time to store relative offset to eeg data
+        acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
+        physiocfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
+        
+        % start time
+        physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
+        
+        % write motion files in bids format
+        data2bids(physiocfg, physio);
         
     end
-    
-    % physio specific fields in json
-    physiocfg.physio                                  = physioInfo.physio;
-    
-    % start time
-    physioStartTime                 = physio.time{1}(1);
-    physioTimeShift                 = physioStartTime - eegStartTime;
-    
-    % shift acq_time to store relative offset to eeg data
-    acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
-    physiocfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
-    
-    % start time
-    physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
-    
-    % write motion files in bids format
-    data2bids(physiocfg, physio);
     
 end
 
