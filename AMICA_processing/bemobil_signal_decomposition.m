@@ -149,7 +149,7 @@ if amica
         warning(error_message.message)
         
         % potential issue with number of threads
-        error('AMICA crashed with all possible maximum thread options. Is AMICA correctly installed?  Does the filepath contain NO spaces? Are all inputs to the function correct? If yes, please contact the BeMoBIL.');        
+        error('AMICA crashed with all possible threading options. Is AMICA correctly installed? Does the filepath contain NO spaces? Are all inputs to the function correct? If yes, please contact the BeMoBIL.');        
         
 %         disp('Continuing with default EEGLAB runica() ...');
 %         amica_crashed   = true; 

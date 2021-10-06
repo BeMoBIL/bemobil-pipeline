@@ -64,7 +64,7 @@ addpath(fullfile(fileparts(which('iclabel')),'viewprops'))
 % unnecessary to recompute if present already
 if ~isfield(EEG.etc,'ic_classification') || ~strcmp(EEG.etc.ic_classification.ICLabel.version,classifier_version)
     
-    EEG = iclabel(EEG,'lite');
+    EEG = iclabel(EEG,classifier_version);
     
 end
 % ICs x classes

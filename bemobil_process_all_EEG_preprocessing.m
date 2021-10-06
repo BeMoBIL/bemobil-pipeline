@@ -117,6 +117,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax1);
     close(fighandle)
     
@@ -131,6 +132,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax2);
     close(fighandle)
     
@@ -145,6 +147,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax3);
     close(fighandle)
     
@@ -159,6 +162,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax4);
     close(fighandle)
     
@@ -173,6 +177,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax5);
     close(fighandle)
     
@@ -187,6 +192,7 @@ if ~exist('EEG_basic','var')
     axcp.YTick=[];
     axcp.Title.String = ['Raw data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax6);
     close(fighandle)
     
@@ -223,6 +229,11 @@ clear EEG_to_process
 [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG_basic, ALLEEG, CURRENTSET,...
     bemobil_config.chancorr_crit,bemobil_config.chan_max_broken_time, bemobil_config.chan_detect_num_iter,...
     bemobil_config.chan_detected_fraction_threshold,bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
+
+if length(chans_to_interp) > EEG_basic.nbchan/5
+    warndlg(['In subject ' num2str(subject) ', ' num2str(length(chans_to_interp)) ' of ' num2str(EEG_basic.nbchan)...
+        ' channels were rejected, which is more than 1/5th!'])
+end
 
 %% save fig of bad channels
 
@@ -267,6 +278,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax1);
 close(fighandle)
 
@@ -281,6 +293,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax2);
 close(fighandle)
 
@@ -295,6 +308,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax3);
 close(fighandle)
 
@@ -309,6 +323,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax4);
 close(fighandle)
 
@@ -323,6 +338,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax5);
 close(fighandle)
 
@@ -337,6 +353,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Interpolated channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax6);
 close(fighandle)
 

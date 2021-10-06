@@ -135,6 +135,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
         title(['AMICA autorejection, removed ' num2str(round(EEG_AMICA.etc.bad_samples_percent,2)) '% of the samples'])
         xlabel('Samples')
         ylabel('\muV')
+        drawnow
         clear data2plot
         % save figure to disk
         savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject.fig']))
@@ -177,10 +178,6 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     
     if ~exist('EEG_dipfitted','var')
         
-        % compute iclabel scores
-        disp('ICLabel component classification...');
-        EEG_AMICA = iclabel(EEG_AMICA,bemobil_config.iclabel_classifier);
-        
         % do the warp and dipfit
         disp('Dipole fitting...');
         [ALLEEG, EEG_dipfitted, CURRENTSET] = bemobil_dipfit( EEG_AMICA , ALLEEG, CURRENTSET, bemobil_config.warping_channel_names,...
@@ -209,6 +206,12 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     
     disp('Cleaning data with ICLabel')
     
+    % compute iclabel
+    EEG_single_subject_copied = iclabel(EEG_single_subject_copied, bemobil_config.iclabel_classifier);
+    EEG_single_subject_copied = pop_saveset( EEG_single_subject_copied,...
+        'filename',erase([bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.preprocessed_and_ICA_filename],'.set'),...
+        'filepath', output_filepath);
+    
     % clean now, save files and figs
     [ALLEEG, EEG_preprocessed_and_ICA, CURRENTSET, ICs_keep, ICs_throw] = bemobil_clean_with_iclabel( EEG_single_subject_copied ,...
         ALLEEG, CURRENTSET, bemobil_config.iclabel_classifier,...
@@ -216,6 +219,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
         [ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.single_subject_cleaned_ICA_filename],output_filepath);
     
     disp('...done.')
+    
     
     %% plot cleaned with ICA, for analytics
     
@@ -245,6 +249,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax1);
     close(fighandle)
     
@@ -259,6 +264,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax2);
     close(fighandle)
     
@@ -273,6 +279,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax3);
     close(fighandle)
     
@@ -287,6 +294,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax4);
     close(fighandle)
     
@@ -301,6 +309,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax5);
     close(fighandle)
     
@@ -315,6 +324,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     axcp.YTick=[];
     axcp.Title.String = ['Cleaned channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
     axcp.XLabel.String = 'seconds';
+    drawnow
     delete(ax6);
     close(fighandle)
     
