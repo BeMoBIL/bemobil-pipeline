@@ -46,7 +46,7 @@ function bemobil_xdf2bids(config, varargin)
 %       physio_metadata
 % 
 % Authors : 
-%       Sein Jeung (seinjeung@gmail.com) & Soeren Grothkopp (email)
+%       Sein Jeung (seinjeung@gmail.com) & Soeren Grothkopp (s.grothkopp@secure.mailbox.org)
 %--------------------------------------------------------------------------
 
 % add load_xdf to path 
