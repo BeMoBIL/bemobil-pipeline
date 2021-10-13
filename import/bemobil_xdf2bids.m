@@ -506,33 +506,34 @@ if importEEG % This loop is always executed in current version
     eegcfg.datatype                     = 'eeg';
     eegcfg.method                       = 'convert';
     
+    % default coordinate system files 
     if isfield(config.eeg, 'chanloc')
-        if ~isempty(config.eeg.chanloc) 
+        if ~isempty(config.eeg.chanloc)
             eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
             eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
         end
     elseif isfield(config.eeg, 'elec_struct')
-        if ~isempty(config.eeg.elec_struct) 
+        if ~isempty(config.eeg.elec_struct)
             eegcfg.coordsystem.EEGCoordinateSystem      = 'n/a';
             eegcfg.coordsystem.EEGCoordinateUnits       = 'mm';
         end
     end
     
-    % try to extract information from config struct if specified
+    % try to use information from preprocessing config
     if isfield(config.eeg, 'ref_channel')
-        eegcfg.eeg.EEGReference                 = config.ref_channel;
+        eegcfg.eeg.EEGReference                 = config.ref_channel; % field name comes from bemobil preprocessing pipeline
     end
     
     if isfield(config.eeg, 'linefreqs')
         if numel(config.linefreqs) == 1
-            eegcfg.eeg.PowerLineFrequency           = config.linefreqs;
+            eegcfg.eeg.PowerLineFrequency           = config.linefreqs; % field name comes from bemobil preprocessing pipeline
         elseif numel(config.linefreqs) > 1
             eegcfg.eeg.PowerLineFrequency           = config.linefreqs(1);
             warning('Only the first value specified in config.eeg.linefreqs entered in eeg.json')
         end
     end
     
-    % overwrite some fields if specified
+    % try to use metadata provided by the user - if provided, will overwrite values from config. 
     if exist('eegInfo','var')
         if isfield(eegInfo, 'eeg')
             eegcfg.eeg          = eegInfo.eeg;
@@ -542,6 +543,11 @@ if importEEG % This loop is always executed in current version
         end
     end
     
+    % check if mandatory fields are specified and if not, fill with default values 
+    [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'EEGReference', 'REF', 'REF');
+    [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'PowerLineFrequency', 'n/a', 'n/a');
+    [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'SoftwareFilters', 'n/a', 'n/a');
+
     % read in the event stream (synched to the EEG stream)
     if ~isempty(xdfmarkers)
         
