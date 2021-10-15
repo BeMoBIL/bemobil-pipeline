@@ -19,20 +19,25 @@ function bemobil_xdf2bids(config, varargin)
 %       config.eeg.elec_struct        = elecStruct                          % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
 %       config.eeg.chanloc_newname    = {'chan1', 'chan2'}                  % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
 %         
-%       config.motion.streams{1}.stream_name        = 'stream1'; 
-%       config.motion.streams{1}.tracking_system    = 'HTCVive'; 
-%       config.motion.streams{1}.tracked_points     = 'rigid1';
-%       config.motion.streams{1}.tracked_points_anat = 'leftFoot';
+%       config.motion.streams{1}.stream_name        = 'stream1';            % keyword in stream name  
+%                                                                                   % searched for in field "xdfdata{streamIndex}.info.name"
+%       config.motion.streams{1}.tracking_system    = 'HTCVive';            % user-defined name of the tracking system
+%                                                                                   % in case motion metadata are provided, match with fieldname in "motionInfo.motion.TrackingSystems.(fieldname)"
+%                                                                                   % e.g., motionInfo.motion.TrackingSystems.HTCVive.Manufacturer = 'HTC'; 
+%       config.motion.streams{1}.tracked_points     = 'rigid1';             % keyword in channel names, indicating which object (tracked point) is included in the stream 
+%                                                                                   % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
+%                                                                                   % required to be unique in a single tracking system
+%       config.motion.streams{1}.tracked_points_anat = 'leftFoot';          % user-defined anatomical name of the point being tracked 
 %       config.motion.streams{2}.stream_name        = 'stream2'; 
 %       config.motion.streams{2}.tracking_system    = 'HTCVive'; 
 %       config.motion.streams{2}.tracked_points     = 'rigid2';
 %       config.motion.streams{2}.tracked_points_anat = 'rightFoot';
 %       config.motion.streams{3}.stream_name        = 'stream3'; 
 %       config.motion.streams{3}.tracking_system    = 'phaseSpace'; 
-%       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; % Multiple tracked points included in a single stream 
-%       config.motion.POS.unit                      = 'vm';                 % in case you want to use custom unit
+%       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; % keywords in channel names, when multiple tracked points are included in a single stream 
+%       config.motion.POS.unit                      = 'vm';                 % optional, in case you want to use custom unit
 %
-%       config.phys.streams{1}.stream_name        = {'force1'};           % optional
+%       config.phys.streams{1}.stream_name        = {'force1'};             % optional
 %
 %--------------------------------------------------------------------------
 % Optional Inputs :
@@ -543,11 +548,18 @@ if importEEG % This loop is always executed in current version
         end
     end
     
-    % check if mandatory fields are specified and if not, fill with default values 
-    [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'EEGReference', 'REF', 'REF');
-    [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'PowerLineFrequency', 'n/a', 'n/a');
-    [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'SoftwareFilters', 'n/a', 'n/a');
+    % check if mandatory fields are specified and if not, fill with default values
+    if isfield(eegcfg, 'eeg')
+        [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'EEGReference', 'REF', 'REF');
+        [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'PowerLineFrequency', 'n/a', 'n/a');
+        [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'SoftwareFilters', 'n/a', 'n/a');
+    else
+        eegcfg.eeg.EEGReference = 'REF';
+        eegcfg.eeg.PowerLineFrequency = 'n/a';
+        eegcfg.eeg.SoftwareFilters = 'n/a';
 
+    end
+    
     % read in the event stream (synched to the EEG stream)
     if ~isempty(xdfmarkers)
         
@@ -687,6 +699,7 @@ if importMotion
         rb_anat = anatomicalNames;
         
         for ci  = 1:motion.hdr.nChans
+            
             motionChanType          = motion.hdr.chantype{ci};
             
             if isfield(config.motion, motionChanType)
@@ -701,20 +714,15 @@ if importMotion
             motioncfg.channels.tracking_system{end+1}       = trackSysInData{tsi};
             
             % assign object names and anatomical positions
-            for iRB = 1:numel(rb_streams)
-                if contains(lower(motion.hdr.label{ci}),lower(rb_streams{iRB}))
-                    motioncfg.channels.tracked_point{end+1}        = rb_names{iRB};
-                    motioncfg.channels.placement{end+1}            = rb_anat{iRB};
-                elseif contains(lower(motion.hdr.orig.name),lower(rb_streams{iRB}))
-                    for iN = 1:numel(rb_names)
-                        if contains(lower(motion.hdr.label{ci}),lower(rb_names{iN}))
-                            motioncfg.channels.tracked_point{end+1}        = rb_names{iN};
-                            motioncfg.channels.placement{end+1}            = rb_anat{iN};
-                        end
-                    end
+            for iN = 1:numel(rb_names)
+                if contains(lower(motion.hdr.label{ci}),lower(rb_names{iN}))
+                    motioncfg.channels.tracked_point{end+1}        = rb_names{iN};
+                    motioncfg.channels.placement{end+1}            = rb_anat{iN};
                 end
             end
+            
             motioncfg.channels.component{end+1}    = splitlabel{end};
+            
         end
         
         % tracking system-specific information 
