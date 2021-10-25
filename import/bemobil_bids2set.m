@@ -426,18 +426,103 @@ for iSub = 1:numel(subDirList)
         delete(fullfile(targetDir, subDirList(iSub).name, toDelete{iD}));
     end
     
-    % merge EEG sessions
+    % merge sessions
     %----------------------------------------------------------------------
-    if numel(bemobil_config.session_names) > 1
-        ALLEEG = []; CURRENTSET = [];
-        for Si = 1:numel(bemobil_config.session_names)
-            [outPath, outName] = sessionfilename(targetDir,'EEG', bemobil_config, Si, subjectNr);
-            EEG         = pop_loadset('filepath',outPath,'filename',outName);
-            [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+    if isMultiSession
+        if numel(config.session_names) > 1
+            
+            % EEG data
+            %--------------------------------------------------------------
+            ALLEEG = []; CURRENTSET = [];
+            for Si = 1:numel(config.session_names)
+                [outPath, outName] = sessionfilename(targetDir,'EEG', config, Si, subjectNr);
+                EEG         = pop_loadset('filepath',outPath,'filename',outName);
+                [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+            end
+            [~, ~, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [config.filename_prefix, num2str(subjectNr), '_EEG_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+            
+            % MOTION and other data
+            %--------------------------------------------------------------
+            for iType = 1:numel(otherDataTypes)
+                
+                if isempty(trackingSystemsInData)
+                    trackingSystemsInData = {''}; 
+                end
+                
+                for TSi = 1:numel(trackingSystemsInData)
+                    
+                    fillIndices = zeros(1,numel(config.session_names)); 
+                    
+                    for Si = 1:numel(config.session_names)
+                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                            [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
+                        else
+                            [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
+                        end
+                        
+                        % check existence of the session file
+                        if exist(fullfile(outPath, outName), 'file')
+                            DATA         = pop_loadset('filepath',outPath,'filename',outName);
+                        else
+                            fillIndices(Si) = 1; 
+                            disp(['File ' outName ' does not exist - filling with NaNs for merging over sessions']); 
+                        end
+                    end
+                    
+                    % fill with NaNs for merging across sessions, if necessary
+                    fillDataArray = {}; 
+                    if isempty(DATA)
+                        if isempty(trackingSystemsInData{1})
+                            warning(['No ' upper(otherDataTypes{iType}) ' files found for any session, unable to merge over sessions'])
+                        else
+                            warning(['No ' upper(otherDataTypes{iType}) ' files in ' trackingSystemsInData{TSi} 'system found for any session, unable to merge'])
+                        end
+                    else
+                        for Si = 1:numel(config.session_names)
+                            if fillIndices(Si) % if data needs filling 
+                                % load again the EEG data in order to check the length and srate 
+                                [outPath, outName] = sessionfilename(targetDir,'EEG', config, Si, subjectNr);
+                                fillData    = pop_loadset('filepath',outPath,'filename',outName);
+                                
+                                % take any loaded data in order to check the channel information 
+                                fillData.nbchan     = DATA.nbchan;
+                                fillData.data       = NaN(fillData.nbchan, size(fillData.data,2)); 
+                                fillData.chanlocs   = DATA.chanlocs; 
+                                fillData.setname    = []; 
+                                fillData.filename   = [];
+                                fillData            = eeg_checkset(fillData); 
+                                fillDataArray{Si}   = fillData; 
+                            end
+                        end
+                    end
+                    
+                     ALLDATA = []; CURRENTSET = []; DATA = []; 
+                    for Si = 1:numel(config.session_names)
+                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                            [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
+                        else
+                            [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
+                        end
+                        
+                        % check existence of the session file
+                        if exist(fullfile(outPath, outName), 'file')
+                            DATA         = pop_loadset('filepath',outPath,'filename',outName);
+                            [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+                        else
+                            DATA        = fillDataArray{Si};
+                            [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+                        end
+                    end
+                    if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                    else
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                    end
+                end
+            end
         end
-        [~, EEG_merged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.merged_filename], fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
     end
-    
+
 end
 
 disp('BIDS to .set conversion finished')
