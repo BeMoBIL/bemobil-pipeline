@@ -79,7 +79,7 @@ end
 % Resample if frequency is provided
 if ~isempty(resample_freq)
     if resample_freq ~= EEG.srate
-        warndlg(['Resampling in BIDS processing did not work properly. Resampling to ' num2str(resample_freq), 'Hz.'])
+        warning(['Resampling in BIDS processing did not work properly. Resampling to ' num2str(resample_freq), 'Hz.'])
         EEG = pop_resample(EEG, resample_freq);
         EEG = eeg_checkset( EEG );
     end
@@ -87,21 +87,31 @@ end
 
 %% Clean line noise with ZapLine: de Cheveigne, A. (2020) ZapLine: a simple and effective method to remove power line
 % artifacts. Neuroimage, 1, 1-13.
-if exist('zaplineConfig','var')
+if exist('zaplineConfig','var') && ~isempty(zaplineConfig)
     
-    [EEG, plothandles] = bemobil_clean_data_with_zapline(EEG, zaplineConfig);
+    is_zapline_installed = ~isempty(which('clean_data_with_zapline_plus_eeglab_wrapper'));    
+    assert(is_zapline_installed,'Zapline-Plus is missing! Download it from https://github.com/MariusKlug/zapline-plus and add it to your MATLAB path!')
+    
+    [EEG, plothandles] = clean_data_with_zapline_plus_eeglab_wrapper(EEG, zaplineConfig);
         
     if save_file_on_disk 
         disp('Saving ZapLine figures...')
 
-        filenamesplit = strsplit(out_filename,'_preprocessed.set');
+        filenamesplit = strsplit(out_filename,'.set');
 
         for i_fig = 1:length(plothandles)
         
-            savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                '_' matlab.lang.makeValidName(['zapline_' num2str(zaplineConfig.linefreqs(i_fig))]) '.fig']))
-            saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                '_' matlab.lang.makeValidName(['zapline_' num2str(zaplineConfig.linefreqs(i_fig))]) '.png']))
+            if ~isempty(EEG.etc.zapline.config.noisefreqs(i_fig))
+                savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.fig']))
+                saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.png']))
+            else
+                savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_zapline_nonoise.fig']))
+                saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                    '_zapline_nonoise.png']))
+            end
             close(plothandles(i_fig))
             
         end

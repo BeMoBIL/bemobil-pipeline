@@ -109,6 +109,8 @@ yticks([])
 title('final')
 set(gca,'fontsize',12)
 
+drawnow
+
 %% select the final channels to remove and remove them from a dataset to plot
 
 % give actual channel numbers as output
@@ -157,6 +159,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Bad channels data section 1 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax1);
 close(fighandle)
 
@@ -171,6 +174,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Bad channels data section 2 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax2);
 close(fighandle)
 
@@ -185,6 +189,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Bad channels data section 3 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax3);
 close(fighandle)
 
@@ -199,6 +204,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Bad channels data section 4 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax4);
 close(fighandle)
 
@@ -213,6 +219,7 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Bad channels data section 5 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax5);
 close(fighandle)
 
@@ -227,5 +234,10 @@ axcp.XTickLabel = [0:10]+round(starttime/1000);
 axcp.YTick=[];
 axcp.Title.String = ['Bad channels data section 6 of ' num2str(round(EEG.times(end)/1000)) 's'];
 axcp.XLabel.String = 'seconds';
+drawnow
 delete(ax6);
 close(fighandle)
+
+% in case one clicks on the figure while processing the colormap gets lost so here it is again
+figure(detection_plot_handle)
+colormap cool
