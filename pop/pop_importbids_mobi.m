@@ -753,7 +753,7 @@ for iSubject = 2:size(bids.participants,1)
                                     end
                                 end
                                 
-                                startTime = seconds(datetime(otherAcqTime{1}) - datetime(eegAcqTime{1}));
+                                startTime = seconds(datetime(otherAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS') - datetime(eegAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS'));
                                  
                             else
                                 if isfield(infoData, 'StartTime')
