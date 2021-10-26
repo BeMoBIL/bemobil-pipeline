@@ -109,6 +109,8 @@ yticks([])
 title('final')
 set(gca,'fontsize',12)
 
+drawnow
+
 %% select the final channels to remove and remove them from a dataset to plot
 
 % give actual channel numbers as output
@@ -235,3 +237,7 @@ axcp.XLabel.String = 'seconds';
 drawnow
 delete(ax6);
 close(fighandle)
+
+% in case one clicks on the figure while processing the colormap gets lost so here it is again
+figure(detection_plot_handle)
+colormap cool

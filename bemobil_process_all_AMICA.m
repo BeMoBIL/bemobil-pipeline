@@ -135,6 +135,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
         title(['AMICA autorejection, removed ' num2str(round(EEG_AMICA.etc.bad_samples_percent,2)) '% of the samples'])
         xlabel('Samples')
         ylabel('\muV')
+        drawnow
         clear data2plot
         % save figure to disk
         savefig(gcf,fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_AMICA_autoreject.fig']))
