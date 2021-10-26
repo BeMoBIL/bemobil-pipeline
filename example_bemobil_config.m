@@ -154,12 +154,13 @@ bemobil_config.filter_AMICA_highPassOrder = 1650; % was used by Klug & Gramann (
 bemobil_config.filter_highCutoffFreqAMICA = []; % not used
 bemobil_config.filter_AMICA_lowPassOrder = []; 
 
-% additional AMICA settings
-bemobil_config.num_models = 1; % default 1
+% additional AMICA settings, this includes AMICA time-domain cleaning which replaces other time-domain cleaning in our
+% pipeline
+bemobil_config.num_models = 1; % default 1, the number of models the AMICA will create. Currently only 1 model is supported
 bemobil_config.AMICA_autoreject = 1; % uses automatic rejection method of AMICA. no time-cleaning (manual or automatic) is needed then!
-bemobil_config.AMICA_n_rej = 10; % default 10
-bemobil_config.AMICA_reject_sigma_threshold = 3; % default 3
-bemobil_config.AMICA_max_iter = 2000; % default 2000
+bemobil_config.AMICA_n_rej = 10; % default 10, the number of times the rejection is performed. higher values mean stricter cleaning
+bemobil_config.AMICA_reject_sigma_threshold = 3; % default 3, the sigma threshold in log likelihood to detect outlier samples that will be removed. lower values mean stricter cleaning (e.g. 2.8 or 2.5)
+bemobil_config.AMICA_max_iter = 2000; % default 2000, the maximum number of iterations AMICA will run.
 
 % on some PCs AMICA may crash before the first iteration if the number of threads and the amount the data does not suit
 % the algorithm. Jason Palmer has been informed, but no fix so far. just roll with it. if you see the first iteration

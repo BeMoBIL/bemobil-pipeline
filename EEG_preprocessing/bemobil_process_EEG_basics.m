@@ -6,7 +6,7 @@
 %   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET,...
 %    channel_locations_filepath, channels_to_remove, eog_channels, resample_freq,...
 %    out_filename, out_filepath, rename_channels, ref_channel, zaplineConfig)
-% 
+%
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
 %   EEG                     - current EEGLAB EEG structure
@@ -22,7 +22,7 @@
 %   out_filepath            - output filepath OR [] - File will only be saved on disk
 %       if both a name and a path are provided
 %   rename_channels         - cell array of chars, either just one entry, then this entry will be removed from all
-%                               channels (e.g. when they all have a prefix of their xdf stream), or a n x 2 matrix of  
+%                               channels (e.g. when they all have a prefix of their xdf stream), or a n x 2 matrix of
 %                               channel names (from->to)
 %   ref_channel             - label of the reference channel OR [] - if provided a new channel will be created with this
 %                               label and zero values. This means that during resampling the original reference can be
@@ -89,37 +89,37 @@ end
 % artifacts. Neuroimage, 1, 1-13.
 if exist('zaplineConfig','var') && ~isempty(zaplineConfig)
     
-    is_zapline_installed = ~isempty(which('clean_data_with_zapline_plus_eeglab_wrapper'));    
+    is_zapline_installed = ~isempty(which('clean_data_with_zapline_plus_eeglab_wrapper'));
     assert(is_zapline_installed,'Zapline-Plus is missing! Download it from https://github.com/MariusKlug/zapline-plus and add it to your MATLAB path!')
     
     [EEG, plothandles] = clean_data_with_zapline_plus_eeglab_wrapper(EEG, zaplineConfig);
-        
-    if save_file_on_disk 
+    
+    if save_file_on_disk
         disp('Saving ZapLine figures...')
-
-        filenamesplit = strsplit(out_filename,'.set');
-
-        for i_fig = 1:length(plothandles)
         
-            if ~isempty(EEG.etc.zapline.config.noisefreqs(i_fig))
+        filenamesplit = strsplit(out_filename,'.set');
+        
+        if ~isempty(EEG.etc.zapline.config.noisefreqs)
+            for i_fig = 1:length(plothandles)
                 savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
                     '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.fig']))
                 saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
                     '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.png']))
-            else
-                savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                    '_zapline_nonoise.fig']))
-                saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                    '_zapline_nonoise.png']))
+                close(plothandles(i_fig))
             end
-            close(plothandles(i_fig))
-            
+        else
+            savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                '_zapline_nonoise.fig']))
+            saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+                '_zapline_nonoise.png']))
+            close(plothandles(1))
         end
-
-        disp('...done')
+        
     end
     
+    disp('...done')
 end
+
 
 %%
 
@@ -136,15 +136,15 @@ if exist('rename_channels','var') && ~isempty(rename_channels)
     else
         
         for i_pair = 1:size(rename_channels,1)
-
+            
             old_chanidx = find(strcmp({EEG.chanlocs.labels},rename_channels{i_pair,1}));
-
+            
             if ~isempty(old_chanidx)
                 EEG=pop_chanedit(EEG, 'changefield',{old_chanidx 'labels' rename_channels{i_pair,2}});
             else
                 warning(['Did not find channel ' rename_channels{i_pair,1} '. Skipping...'])
             end
-
+            
         end
     end
 end
