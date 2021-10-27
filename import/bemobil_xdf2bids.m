@@ -443,7 +443,7 @@ for i=1:numel(streams)
             
             % if sampling rate is higher than 20 Hz,
             % the stream is considered continuous
-            if (num_samples - 1) / duration >= 20
+            if (num_samples - 1) / duration >= 20 && duration > 1
                 iscontinuous(i) =  true;
                 if ~isfield(streams{i}.info, 'effective_srate')
                     % in case effective srate field is missing, add one
