@@ -420,18 +420,23 @@ for i=1:numel(streams)
     % if the nominal srate is non-zero, the stream is considered continuous
     if ~strcmpi(streams{i}.info.nominal_srate, '0')
         
-        iscontinuous(i) =  true;
         num_samples  = numel(streams{i}.time_stamps);
-        t_begin      = streams{i}.time_stamps(1);
-        t_end        = streams{i}.time_stamps(end);
-        duration     = t_end - t_begin;
         
-        if ~isfield(streams{i}.info, 'effective_srate')
-            % in case effective srate field is missing, add one
-            streams{i}.info.effective_srate = (num_samples - 1) / duration;
-        elseif isempty(streams{i}.info.effective_srate)
-            % in case effective srate field value is missing, add one
-            streams{i}.info.effective_srate = (num_samples - 1) / duration;
+        if num_samples > 20 % assume at least 20 samples in a continuous data stream
+
+            iscontinuous(i) =  true;
+            t_begin      = streams{i}.time_stamps(1);
+            t_end        = streams{i}.time_stamps(end);
+            duration     = t_end - t_begin;
+            
+            if ~isfield(streams{i}.info, 'effective_srate')
+                % in case effective srate field is missing, add one
+                streams{i}.info.effective_srate = (num_samples - 1) / duration;
+            elseif isempty(streams{i}.info.effective_srate)
+                % in case effective srate field value is missing, add one
+                streams{i}.info.effective_srate = (num_samples - 1) / duration;
+            end
+            
         end
         
     else
