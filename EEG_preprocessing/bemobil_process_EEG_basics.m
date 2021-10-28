@@ -157,25 +157,46 @@ if exist('ref_channel','var') && ~isempty(ref_channel)
     EEG.data(end+1,:) = zeros(1, EEG.pnts);
     EEG.chanlocs(end+1).labels = ref_channel;
     
-    EEG = eeg_checkset(EEG);
+    % see if the imported data has extra chanlocs stored and assign it to ref
+    if isfield(EEG.etc, 'extralocs')
+        if ~isempty(EEG.etc.extralocs)
+            for Ri = 1:size(EEG.etc.extralocs,1)
+                if strcmpi('ref', EEG.etc.extralocs{Ri,1})
+                    EEG.chanlocs(end).type  =  EEG.chanlocs(end-1).type;
+                    EEG.chanlocs(end).unit  = EEG.chanlocs(end-1).unit;
+                    EEG.chanlocs(end).status =  EEG.chanlocs(end-1).status;
+                    
+                    EEG.chanlocs(end).X =  EEG.etc.extralocs{Ri,2};
+                    EEG.chanlocs(end).Y =  EEG.etc.extralocs{Ri,3};
+                    EEG.chanlocs(end).Z =  EEG.etc.extralocs{Ri,4};
+                    
+                    EEG.chanlocs = convertlocs(EEG.chanlocs, 'cart2all');
+                    EEG.urchanlocs = EEG.chanlocs; 
+                end
+            end
+        end
+    end
     
+    EEG = eeg_checkset(EEG);
     disp('...done.')
     
 end
 
 % 1c) import chanlocs and copy to urchanlocs
-% TODO: check behavior with BIDS loaded datasets that do contain chanlocs
-if ~isempty(channel_locations_filepath)
+if ~isempty(channel_locations_filepath) % chanlocs are read in here
     EEG = pop_chanedit(EEG, 'load',...
         {channel_locations_filepath 'filetype' 'autodetect'});
     disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
-else
+elseif ~any(isempty({EEG.chanlocs.X}))
+    disp('All chanlocs have X coordinates - assume channel location has been imported'); 
+else % no chanlocs present, use default chanlocs
     standard_channel_locations_path =...
         fullfile(fileparts(which('dipfitdefs')),'standard_BESA','standard-10-5-cap385.elp');
     
     EEG = pop_chanedit(EEG,'lookup',standard_channel_locations_path);
 end
+
 
 % this has to happen after loading chanlocs because chanlocs are being completely overwritten in the process
 if exist('ref_channel','var')
