@@ -108,11 +108,11 @@ if exist('zaplineConfig','var') && ~isempty(zaplineConfig)
                 close(plothandles(i_fig))
             end
         else
-            savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+            savefig(plothandles,fullfile(out_filepath,[filenamesplit{1}...
                 '_zapline_nonoise.fig']))
-            saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
+            saveas(plothandles,fullfile(out_filepath,[filenamesplit{1}...
                 '_zapline_nonoise.png']))
-            close(plothandles(1))
+            close(plothandles)
         end
         
     end
