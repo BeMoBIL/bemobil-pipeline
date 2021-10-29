@@ -13,6 +13,16 @@ cartCoordinates         = {'x','y','z'};
 % missing value (how tracking loss is represented in the stream)
 missingval = 0; 
 
+newCell = {}; 
+% check if object input is a nested cell
+for Oi = 1:numel(objects)
+   if iscell(objects(Oi))
+       newCell = [newCell objects{Oi}];
+   else
+       newCell{end + 1} = objects(Oi); 
+   end
+end
+objects = newCell; 
 
 % iterate over different objects 
 %--------------------------------------------------------------------------
@@ -44,14 +54,14 @@ for iM = 1:numel(motionIn)
         
         % check the lines below for quaternion channel names
         for qi = 1:4
-            quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_quat_' quaternionComponents{qi}]));
+            quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, [objects{ni} '_quat_' quaternionComponents{qi}], 'IgnoreCase', true));
         end
         
         cartIndices = NaN(1,3);
         
         % check the lines below for position channel names
         for ci = 1:3
-            cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_rigid_' cartCoordinates{ci}]));
+            cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, [objects{ni} '_' cartCoordinates{ci}], 'IgnoreCase', true));
         end
         
         % convert from quaternions to euler angles
@@ -77,14 +87,14 @@ for iM = 1:numel(motionIn)
         for ei = 1:3
             motionStream.label{6*(oi-1) + ei}                 = [objects{ni} '_eul_' eulerComponents{ei}];
             motionStream.hdr.label{6*(oi-1) + ei}             = [objects{ni} '_eul_' eulerComponents{ei}];
-            motionStream.hdr.chantype{6*(oi-1) + ei}          = 'orientation';
+            motionStream.hdr.chantype{6*(oi-1) + ei}          = 'ORNT';
             motionStream.hdr.chanunit{6*(oi-1) + ei}          = 'rad';
         end
         
         for ci = 1:3
             motionStream.label{6*(oi-1) + 3 + ci}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
             motionStream.hdr.label{6*(oi-1) + 3 + ci}             = [objects{ni} '_cart_' cartCoordinates{ci}];
-            motionStream.hdr.chantype{6*(oi-1) + 3 + ci}          = 'position';
+            motionStream.hdr.chantype{6*(oi-1) + 3 + ci}          = 'POS';
             motionStream.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'm';
         end
         

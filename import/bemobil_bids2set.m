@@ -1,14 +1,19 @@
-function bemobil_bids2set(bemobil_config, numericalIDs)
+function bemobil_bids2set(config)
 % This function reads in BIDS datasets using the eeglab plugin 
 % "bids-matlab-tools" and reorganizes the output to be compatible with 
 % BeMoBIL pipeline. 
 %
 % Usage
-%       bemobil_bids2set(bemobil_config)
+%       bemobil_bids2set(config); 
 %
 % In
-%       config
-%       see help bemobil_config documentation
+%       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';  % required
+%       config.study_folder           = 'P:\...SPOT_rotation\2_EEGlab-basic';  % required
+%       config.subject                = 1;                                  % required, can also be an array in case importing a whole data set (e.g., config.subject = [1:10]; )
+%       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set  
+%       config.overwrite              = 'on';                               % optional, default value 'off' 
+%       config.filename_prefix        = 'sub-';                             % optional, default value 'sub-' 
+
 %
 % Out
 %       none
@@ -25,59 +30,64 @@ function bemobil_bids2set(bemobil_config, numericalIDs)
 
 % input check and default value assignment 
 %--------------------------------------------------------------------------
+% required fields
+config = checkfield(config, 'bids_target_folder', 'required', '');          
+config = checkfield(config, 'study_folder', 'required', ''); 
+config = checkfield(config, 'subject', 'required', ''); 
+config = checkfield(config, 'session_names', 'required', ''); 
 
-if ~isfield(bemobil_config, 'bids_data_folder')
-    bemobil_config.bids_data_folder = '1_BIDS-data\';
-    warning(['Config field "bids_data_folder" has not been specified- using default folder name ' bemobil_config.bids_data_folder])
+% default values  
+config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]); 
+config = checkfield(config, 'filename_prefix', 'sub-', 'sub-'); 
+config = checkfield(config, 'merged_filename', 'merged.set', 'merged.set'); 
+config = checkfield(config, 'other_data_types', {'motion'}, 'motion'); 
+config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
+config = checkfield(config, 'overwrite', 'off', 'off'); 
+
+% check session input
+if ~iscell(config.session_names)
+    config.session_names = {config.session_names}; % convert string to cell in unisession case
 end
 
-if ~isfield(bemobil_config, 'other_data_types')
-    bemobil_config.other_data_types = {'motion'};
-    warning(['Config field "other_data_types" has not been specified- using default value ' bemobil_config.other_data_types{1}])
-end
-
-if ~isfield(bemobil_config, 'resample_freq')
-    bemobil_config.resample_freq = 250;
-    warning('Config field "resample_freq" has not been specified- using default value 250')
-end
-
-if ~isfield(bemobil_config, 'merged_filename')
-    bemobil_config.merged_filename = 'merged_EEG.set';
-    warning('Config field "merged_filename" has not been specified- using default value merged.set')
-end
-
-
-% write down the names of other data types then eeg (use BIDS suffix)
-otherDataTypes  = bemobil_config.other_data_types; 
+% other data types than eeg (use BIDS suffix)
+otherDataTypes  = config.other_data_types; 
 
 % construct the bids data directory 
-bidsDir         = fullfile(bemobil_config.study_folder, bemobil_config.bids_data_folder);
+bidsDir         = fullfile(config.bids_target_folder);
 
-% all runs and sessions are merged by default - can be optional e.g., bemobil_config.bids_mergeruns = 1; bemobil_config.bids_mergeses  = 1;
-targetDir       = fullfile(bemobil_config.study_folder, bemobil_config.raw_EEGLAB_data_folder);                    % construct using existing config fields
+% all runs and sessions are merged by default 
+targetDir       = fullfile(config.study_folder, config.raw_EEGLAB_data_folder); 
 tempDir         = fullfile(targetDir, 'temp_bids'); 
 
-if isdir(tempDir)
+if isfolder(tempDir)
     warning('Previous import seems to have been interrupted - removing temp_bids folder')
     rmdir(tempDir, 's')
 end
 
-skipFlag = false(size(numericalIDs)); 
+numericalIDs        = config.subject; 
 
-% check if final session file names are there - if so, skip
-for IDi = 1:numel(numericalIDs)
-    [sesfilePath, sesfileName] = sessionfilename(targetDir, 'EEG', bemobil_config, 1, numericalIDs(IDi)); 
-    if isfile(fullfile(sesfilePath, sesfileName))
-        disp(['File ' sesfileName ' found - skipping import for this participant'])
-        skipFlag(IDi) = true;
-    end 
-end
+if strcmp(config.overwrite, 'off')
+    
+    skipFlag            = false(size(numericalIDs));
+    
+    % check if final session file names are there - if so, skip
+    for IDi = 1:numel(numericalIDs)
+        [sesfilePath, sesfileName] = sessionfilename(targetDir, 'EEG', config, 1, numericalIDs(IDi));
+        if isfile(fullfile(sesfilePath, sesfileName))
+            disp(['File ' sesfileName ' found - skipping import for this participant'])
+            skipFlag(IDi) = true;
+        end
+    end
+    
+    numericalIDs = numericalIDs(~skipFlag);
+    
+    if isempty(numericalIDs)
+        disp('All participant data had already been converted from BIDS to .set');
+        return;
+    end
 
-numericalIDs = numericalIDs(~skipFlag); 
-
-if isempty(numericalIDs)
-    disp('All participant data had already been converted from BIDS to .set');
-    return;
+elseif ~strcmp(config.overwrite, 'on')
+    warning('Undefined option for field config.overwrite - assume overwriting is on');  
 end
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
@@ -117,17 +127,20 @@ for iSub = 1:numel(subDirList)
             sesDir          = sesDirList(iSes);
             sesEEGDir       = fullfile(tempDir, subjectDir, sesDir.name, 'eeg'); 
             sesBEHDir       = fullfile(tempDir, subjectDir, sesDir.name, 'beh'); 
+            sesMOTIONDir       = fullfile(tempDir, subjectDir, sesDir.name, 'motion'); 
             sesFilesEEG     = dir(sesEEGDir)';
             sesFilesBEH     = dir(sesBEHDir)';
-            allFiles        = [allFiles sesFilesEEG sesFilesBEH];
+            sesFilesMOTION  = dir(sesMOTIONDir)';
+            allFiles        = [allFiles sesFilesEEG sesFilesBEH sesFilesMOTION];
         end
         
     else
         
         % for unisession, simply find all files in EEG folder
         eegDir          = fullfile(tempDir, subjectDir, 'eeg'); 
-        behDir          = fullfile(tempDir, subjectDir, 'beh'); 
-        allFiles        = [dir(eegDir) dir(behDir)] ;
+        behDir          = fullfile(tempDir, subjectDir, 'beh');
+        motionDir       = fullfile(tempDir, subjectDir, 'motion');
+        allFiles        = [dir(eegDir); dir(behDir); dir(motionDir)] ;
         
     end
     
@@ -143,9 +156,15 @@ for iSub = 1:numel(subDirList)
         bidsModality    = bidsNameSplit{end}(1:end-4);                      % this string includes modality and extension
         extension       = bidsNameSplit{end}(end-3:end);
         
-        if find(strncmp(bidsNameSplit,'ses',3))
-            isMultiSession      = 1; 
+        if isMultiSession
             sessionName         = bidsNameSplit{strncmp(bidsNameSplit,'ses',3)}(5:end);
+        end
+        
+        if find(strncmp(bidsNameSplit,'tracksys',8))
+           isMultiTrackSys     = true;
+           tracksysName        = bidsNameSplit{strncmp(bidsNameSplit,'tracksys',8)}(10:end);
+        else
+           isMultiTrackSys     = false; 
         end
         
         if find(strncmp(bidsNameSplit, 'run',3))
@@ -161,7 +180,7 @@ for iSub = 1:numel(subDirList)
                 bidsFolderName  = 'eeg'; 
             case 'motion'
                 bemobilModality = 'MOTION';
-                bidsFolderName = 'beh';
+                bidsFolderName = 'motion';
             case 'physio'
                 bemobilModality = 'PHYSIO';
                 bidsFolderName = 'beh';
@@ -175,16 +194,24 @@ for iSub = 1:numel(subDirList)
             dataDir         = fullfile(tempDir, subjectDir, ['ses-' sessionName] , bidsFolderName);
             
             % move files and then remove the empty eeg folder
-            newDir          = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]);
+            newDir          = fullfile(targetDir, [config.filename_prefix num2str(subjectNr)]);
             
-            if ~isdir(newDir)
+            if ~isfolder(newDir)
                 mkdir(newDir)
             end
             
-            if isMultiRun
-                bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_rec', runIndex, '_old', extension];
+            if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                if isMultiRun
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_' tracksysName '_rec', runIndex, '_old', extension];
+                else
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_' tracksysName '_old', extension];
+                end
             else
-                bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_old', extension];
+                if isMultiRun
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_rec', runIndex, '_old', extension];
+                else
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' sessionName '_' bemobilModality, '_old', extension];
+                end
             end
             
             data    = pop_loadset('filepath', dataDir, 'filename', bidsName);
@@ -195,20 +222,28 @@ for iSub = 1:numel(subDirList)
             dataDir         = fullfile(tempDir, subjectDir, bidsFolderName);
             
             % move files and then remove the empty eeg folder
-            newDir          = fullfile(targetDir, [bemobil_config.filename_prefix num2str(subjectNr)]);
+            newDir          = fullfile(targetDir, [config.filename_prefix num2str(subjectNr)]);
             
             if ~isfolder(newDir)
                 mkdir(newDir)
             end
             
-            % construct the new file name 
-            if isMultiRun
-                bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.session_names{1} '_' bemobilModality, '_rec', runIndex '_old', extension];
+            % construct the new file name
+            if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                if isMultiRun
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' config.session_names{1} '_' bemobilModality '_' tracksysName  '_rec', runIndex '_old', extension];
+                else
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' config.session_names{1} '_' bemobilModality '_' tracksysName '_old', extension];
+                end
             else
-                bemobilName     = [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.session_names{1} '_' bemobilModality '_old', extension];
+                if isMultiRun
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' config.session_names{1} '_' bemobilModality, '_rec', runIndex '_old', extension];
+                else
+                    bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' config.session_names{1} '_' bemobilModality '_old', extension];
+                end
             end
            
-            data    = pop_loadset('filepath', dataDir, 'filename', bidsName); 
+            data    = pop_loadset('filepath', dataDir, 'filename', bidsName);
             pop_saveset(data, 'filepath', newDir, 'filename', bemobilName); 
             
         end
@@ -232,7 +267,7 @@ subDirList      = subDirList(nameFlagArray);
 subFlagArray    = true(size(nameArray)); 
 if ~isempty(numericalIDs)
     for iN = 1:numel(nameArray)
-        subjectNr = str2double(nameArray{iN}(numel(bemobil_config.filename_prefix) + 1:end));
+        subjectNr = str2double(nameArray{iN}(numel(config.filename_prefix) + 1:end));
         if ~ismember(subjectNr,numericalIDs)
             subFlagArray(iN) = false; 
         end
@@ -245,22 +280,25 @@ for iSub = 1:numel(subDirList)
     
     % list all files in the subject folder
     subjectFiles = dir(fullfile(targetDir, subDirList(iSub).name));
-    subjectNr = str2double(subDirList(iSub).name(numel(bemobil_config.filename_prefix) + 1:end));
+    subjectNr = str2double(subDirList(iSub).name(numel(config.filename_prefix) + 1:end));
+    
+    % initialize a list of all tracking systems detected in data set
+    trackingSystemsInData = {};
     
     % iterate over sessions
-    for iSes = 1:numel(bemobil_config.session_names)
+    for iSes = 1:numel(config.session_names)
          
         % find all EEG data
-        eegFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.session_names{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
+        eegFiles = {subjectFiles(contains({subjectFiles.name}, [config.session_names{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
         eegFiles = natsortfiles(eegFiles); 
         
         % resample and merge EEG
         %------------------------------------------------------------------
-        if isempty(bemobil_config.resample_freq)
+        if isempty(config.resample_freq)
             newSRate        = 250;
             warning('No resample frequency specified - data is still resampled to the default 250 Hz')
         else
-            newSRate        = bemobil_config.resample_freq;
+            newSRate        = config.resample_freq;
         end
         
         % initializa a matrix storing EEG first and last time stamps (this is used to synch other streams)
@@ -282,7 +320,7 @@ for iSub = 1:numel(subDirList)
                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
-            [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
+            [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
             EEG                = EEGMerged;
 
         elseif numel(eegFiles) == 1
@@ -291,7 +329,7 @@ for iSub = 1:numel(subDirList)
             eegTimes(:,1)       = [EEG.times(1); EEG.times(end)]; 
             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample 
         else
-            warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.session_names{iSes}] )
+            warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
         end
         
         EEG = eeg_checkset(EEG); 
@@ -300,73 +338,83 @@ for iSub = 1:numel(subDirList)
         EEG = pop_saveset(EEG, 'filename',[EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
         disp(['Saved session file ' EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)])
         
-
         
         % now iterate over other data types
         for iType = 1:numel(otherDataTypes)
             
-            switch otherDataTypes{iType}
-                case 'motion'
-                    bemobilModality = 'MOTION';
-                case 'physio'
-                    bemobilModality = 'PHYSIO';
-                otherwise
-                    bemobilModality = otherDataTypes{iType};
-                    disp(['Unknown modality' otherDataTypes{iType} ', looking for ' otherDataTypes{iType} '.set'])
-            end
-            
-            % find all data of the type
-            dataFiles = {subjectFiles(contains({subjectFiles.name}, [bemobil_config.session_names{iSes} '_' bemobilModality]) & contains({subjectFiles.name}, '_old.set')).name};
-            
-         
+            bemobilModality =  upper(otherDataTypes{iType});
+       
             % resample and merge DATA
             %--------------------------------------------------------------
-            if isempty(bemobil_config.resample_freq)
+            if isempty(config.resample_freq)
                 newSRate        = EEG.srate;
                 warning(['No resample frequency specified -' bemobilModality 'data is still resampled to match EEG srate, ' num2str(newSRate) 'Hz'])
             else
-                newSRate        = bemobil_config.resample_freq;
+                newSRate        = config.resample_freq;
             end
             
-            if numel(eegFiles) ~= numel(dataFiles)
-                warning('Number of EEG and other data files do not match within a session')
-            end
+            % find all data of the type
+            modalityFiles = {subjectFiles(contains({subjectFiles.name}, [config.session_names{iSes} '_' bemobilModality]) & contains({subjectFiles.name}, '_old.set')).name};
             
-            if numel(dataFiles) > 1
-                
-                DATAFileNameWithRun     = dataFiles{1};
-                nameSplit               = regexp(DATAFileNameWithRun,'_', 'split'); % remove _run entity
-                nameJoined              = join(nameSplit(1:end-2),'_');
-                DATASessionFileName      = [nameJoined{1} '_old.set'];
-                
-                % loop over runs
-                ALLDATA = []; CURRENTSET = [];
-                for Ri = 1:numel(dataFiles)
-                    DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
-                    DATA         = unwrapAngles(DATA); % unwrap angles before resampling
-                    % start time has to be buffered before data can be synched to EEG 
-                    DATA.times   = DATA.times + DATA.etc.starttime*1000;
-                    [DATA]       = resampleToTime(DATA, newSRate, eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime);
-                    DATA         = wrapAngles(DATA);
-                    [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+            trackingSystemsInSession = {};
+            if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                for MFi = 1:numel(modalityFiles)
+                    % identify all tracking systems included in the session
+                    modalityNamesSplit              = regexp(modalityFiles{MFi}, '_', 'split');
+                    trackingSystemsInSession{MFi}         = modalityNamesSplit{:,end-1};  
                 end
-                [~, DATAMerged, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), DATASessionFileName, fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
-                DATA             = DATAMerged;
-                
-            elseif numel(dataFiles) == 1
-                DATASessionFileName  = dataFiles{1};
-                DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
-                DATA             = unwrapAngles(DATA);
-                % start time has to be buffered before data can be synched to EEG
-                DATA.times   = DATA.times;
-                [DATA]           = resampleToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);
-                DATA             = wrapAngles(DATA);
-            else
-                warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' bemobil_config.session_names{iSes}] )
+                trackingSystemsInSession = unique(trackingSystemsInSession);
+                trackingSystemsInData   = [trackingSystemsInData trackingSystemsInSession];
+            else 
+                trackingSystemsInSession = {''}; 
             end
-            % save merged data file for the session
-            DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
-            disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
+            
+            for TSi = 1:numel(trackingSystemsInSession)
+                
+                dataFiles = modalityFiles(contains(modalityFiles, trackingSystemsInSession{TSi})); 
+                
+                if numel(eegFiles) ~= numel(dataFiles)
+                    warning('Number of EEG and other data files do not match within a session')
+                end
+                
+                if numel(dataFiles) > 1
+                    
+                    DATAFileNameWithRun     = dataFiles{1};
+                    nameSplit               = regexp(DATAFileNameWithRun,'_', 'split'); % remove _run entity
+                    nameJoined              = join(nameSplit(1:end-2),'_');
+                    DATASessionFileName      = [nameJoined{1} '_old.set'];
+                    
+                    % loop over runs
+                    ALLDATA = []; CURRENTSET = [];
+                    for Ri = 1:numel(dataFiles)
+                        DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
+                        DATA         = unwrapAngles(DATA); % unwrap angles before resampling
+                        % start time has to be buffered before data can be synched to EEG
+                        DATA.times   = DATA.times + DATA.etc.starttime*1000;
+                        [DATA]       = resampleToTime(DATA, newSRate, eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime);
+                        DATA         = wrapAngles(DATA);
+                        [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+                    end
+                    [~, DATAMerged, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), DATASessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                    DATA             = DATAMerged;
+                    
+                elseif numel(dataFiles) == 1
+                    DATASessionFileName  = dataFiles{1};
+                    DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
+                    DATA             = unwrapAngles(DATA);
+                    % start time has to be buffered before data can be synched to EEG
+                    DATA.times   = DATA.times;
+                    [DATA]           = resampleToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);
+                    DATA             = wrapAngles(DATA);
+                else
+                    warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
+                end
+                
+                % save merged data file for the session
+                DATA = pop_saveset(DATA, 'filename', [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
+                disp(['Saved session file ' [DATASessionFileName(1:end-8) DATASessionFileName(end-3:end)]])
+                
+            end
         end
     end
     
@@ -378,24 +426,108 @@ for iSub = 1:numel(subDirList)
         delete(fullfile(targetDir, subDirList(iSub).name, toDelete{iD}));
     end
     
-    % merge EEG sessions
+    % merge sessions
     %----------------------------------------------------------------------
-    if numel(bemobil_config.session_names) > 1
-        ALLEEG = []; CURRENTSET = [];
-        for Si = 1:numel(bemobil_config.session_names)
-            [outPath, outName] = sessionfilename(targetDir,'EEG', bemobil_config, Si, subjectNr);
-            EEG         = pop_loadset('filepath',outPath,'filename',outName);
-            [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+    if isMultiSession
+        if numel(config.session_names) > 1
+            
+            % EEG data
+            %--------------------------------------------------------------
+            ALLEEG = []; CURRENTSET = [];
+            for Si = 1:numel(config.session_names)
+                [outPath, outName] = sessionfilename(targetDir,'EEG', config, Si, subjectNr);
+                EEG         = pop_loadset('filepath',outPath,'filename',outName);
+                [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+            end
+            [~, ~, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [config.filename_prefix, num2str(subjectNr), '_EEG_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+            
+            % MOTION and other data
+            %--------------------------------------------------------------
+            for iType = 1:numel(otherDataTypes)
+                
+                if isempty(trackingSystemsInData)
+                    trackingSystemsInData = {''}; 
+                end
+                
+                for TSi = 1:numel(trackingSystemsInData)
+                    
+                    fillIndices = zeros(1,numel(config.session_names)); 
+                    
+                    for Si = 1:numel(config.session_names)
+                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                            [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
+                        else
+                            [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
+                        end
+                        
+                        % check existence of the session file
+                        if exist(fullfile(outPath, outName), 'file')
+                            DATA         = pop_loadset('filepath',outPath,'filename',outName);
+                        else
+                            fillIndices(Si) = 1; 
+                            disp(['File ' outName ' does not exist - filling with NaNs for merging over sessions']); 
+                        end
+                    end
+                    
+                    % fill with NaNs for merging across sessions, if necessary
+                    fillDataArray = {}; 
+                    if isempty(DATA)
+                        if isempty(trackingSystemsInData{1})
+                            warning(['No ' upper(otherDataTypes{iType}) ' files found for any session, unable to merge over sessions'])
+                        else
+                            warning(['No ' upper(otherDataTypes{iType}) ' files in ' trackingSystemsInData{TSi} 'system found for any session, unable to merge'])
+                        end
+                    else
+                        for Si = 1:numel(config.session_names)
+                            if fillIndices(Si) % if data needs filling 
+                                % load again the EEG data in order to check the length and srate 
+                                [outPath, outName] = sessionfilename(targetDir,'EEG', config, Si, subjectNr);
+                                fillData    = pop_loadset('filepath',outPath,'filename',outName);
+                                
+                                % take any loaded data in order to check the channel information 
+                                fillData.nbchan     = DATA.nbchan;
+                                fillData.data       = NaN(fillData.nbchan, size(fillData.data,2)); 
+                                fillData.chanlocs   = DATA.chanlocs; 
+                                fillData.setname    = []; 
+                                fillData.filename   = [];
+                                fillData            = eeg_checkset(fillData); 
+                                fillDataArray{Si}   = fillData; 
+                            end
+                        end
+                    end
+                    
+                     ALLDATA = []; CURRENTSET = []; DATA = []; 
+                    for Si = 1:numel(config.session_names)
+                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                            [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
+                        else
+                            [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
+                        end
+                        
+                        % check existence of the session file
+                        if exist(fullfile(outPath, outName), 'file')
+                            DATA         = pop_loadset('filepath',outPath,'filename',outName);
+                            [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+                        else
+                            DATA        = fillDataArray{Si};
+                            [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+                        end
+                    end
+                    if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                    else
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                    end
+                end
+            end
         end
-        [~, EEG_merged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [bemobil_config.filename_prefix, num2str(subjectNr), '_' bemobil_config.merged_filename], fullfile(targetDir, [bemobil_config.filename_prefix, num2str(subjectNr)]));
     end
-    
+
 end
 
 disp('BIDS to .set conversion finished')
 
 end
-
 
 function [outPath, outName] = sessionfilename(targetDir, modality, bemobil_config, sesnr, subnr)
 
@@ -481,5 +613,29 @@ for Ci = 1:numel(DATA.chanlocs)
 end
 
 DATA.data(angleind,:)   = wrapToPi(DATA.data(angleind,:));
+
+end
+
+
+%--------------------------------------------------------------------------
+function [newconfig] =  checkfield(oldconfig, fieldName, defaultValue, defaultValueText)
+% This function checks for existence of required fields 
+% for optional fields that have default values, assign them 
+
+% throw an error if a required field has not been specified
+if strcmp(defaultValue, 'required')
+    if ~isfield(oldconfig, fieldName)
+        error(['Required config field ' fieldName ' not specified'])
+    end
+end
+
+% assign default value to an optional field 
+newconfig   = oldconfig;
+
+if ~isfield(oldconfig, fieldName)
+    newconfig.(fieldName) = defaultValue;
+    warning(['Config field ' fieldName ' not specified- using default value: ' defaultValueText])
+end
+
 
 end
