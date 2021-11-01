@@ -603,6 +603,7 @@ for iSubject = 2:size(bids.participants,1)
                 splitName       = regexp(otherFileRaw,'_','split');
                 datatype        = splitName{end}(1:end-4);
                
+                tracksys = []; 
                 % json name (for motion data, remove tracksys key-value pair)
                 for SNi = 1:numel(splitName)
                    if contains(splitName{SNi}, 'tracksys-')
@@ -612,6 +613,7 @@ for iSubject = 2:size(bids.participants,1)
                         break; 
                    end
                 end
+                
                 joinedName = join(splitName, '_'); 
                 otherFileJSON   = [joinedName{1}(1:end-3) 'json']; 
                 
@@ -628,6 +630,13 @@ for iSubject = 2:size(bids.participants,1)
                         importChan          = true;
                         channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
                         channelData         = loadfile(channelFileMotion(1).name, channelFileMotion); % this might have to change along with motion BEP
+                        
+                        % in case of motion data, guarantee that the number of channels for the particular tracking system matches the data 
+                        if ~isempty(tracksys)
+                            colNames = channelData(1,:);
+                            trackSysCol = find(strcmp(colNames, 'tracking_system')); 
+                            channelData = channelData([1; find(strcmp(channelData(:,trackSysCol), tracksys))],:); 
+                        end
                         
                         % coordinate system file (potentially shared with EEG)
                         importCoord 	= true;
@@ -778,10 +787,6 @@ for iSubject = 2:size(bids.participants,1)
                             else
                                 DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
                             end
-
-%                             if strcmp(datatype,'motion') && infoData.MotionChannelCount ~= size(DATA.data,1)
-%                                 warning('Motion channel count mismatch between the data and motion.json')
-%                             end
                             
                             DATA.nbchan = size(DATA.data,1);
                             DATA.pnts   = size(DATA.data,2);
