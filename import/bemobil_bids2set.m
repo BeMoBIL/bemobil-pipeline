@@ -304,6 +304,9 @@ for iSub = 1:numel(subDirList)
         % initializa a matrix storing EEG first and last time stamps (this is used to synch other streams)
         eegTimes = NaN(2,numel(eegFiles)); 
         
+        % initialize an empty cell array to store EEG events 
+        eegEvents = {}; 
+        
         if numel(eegFiles) > 1
 
             % multi-run case 
@@ -317,6 +320,7 @@ for iSub = 1:numel(subDirList)
             for Ri = 1:numel(eegFiles)
                 EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
                 eegTimes(:,Ri) = [EEG.times(1); EEG.times(end)];
+                eegEvents{end +1} = EEG.event; 
                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
@@ -327,6 +331,7 @@ for iSub = 1:numel(subDirList)
             EEGSessionFileName  = eegFiles{1};
             EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
             eegTimes(:,1)       = [EEG.times(1); EEG.times(end)]; 
+            eegEvents{end +1} = EEG.event; 
             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample 
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
@@ -393,6 +398,7 @@ for iSub = 1:numel(subDirList)
                         DATA.times   = DATA.times + DATA.etc.starttime*1000;
                         [DATA]       = resampleToTime(DATA, newSRate, eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime);
                         DATA         = wrapAngles(DATA);
+                        DATA.event   = eegEvents{Ri}; 
                         [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
                     end
                     [~, DATAMerged, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), DATASessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
@@ -406,6 +412,7 @@ for iSub = 1:numel(subDirList)
                     DATA.times   = DATA.times;
                     [DATA]           = resampleToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);
                     DATA             = wrapAngles(DATA);
+                    DATA.event       = eegEvents{1}; 
                 else
                     warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
                 end
