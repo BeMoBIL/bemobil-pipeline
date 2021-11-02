@@ -508,7 +508,7 @@ if importEEG % This loop is always executed in current version
     %----------------------------------------------------------------------
     
     % construct fieldtrip data
-    eeg        = stream2ft(xdfeeg{1}, 'EEG');
+    eeg        = stream2ft(xdfeeg{1});
     
     % save eeg start time
     eegStartTime                = eeg.time{1}(1);
