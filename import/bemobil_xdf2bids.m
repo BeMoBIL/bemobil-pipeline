@@ -12,7 +12,6 @@ function bemobil_xdf2bids(config, varargin)
 %       config.run                    = 1;                                  % optional
 %       config.task                   = 'rotation';                         % optional 
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
-%       config.overwrite              = 'on';                               % optional, default is off (when participant folder is found, data will NOT be overwritten)
 % 
 %       config.eeg.stream_name        = 'BrainVision';                      % required
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
@@ -318,24 +317,6 @@ end
 
 
 %%
-% check if the target folder is already there
-%--------------------------------------------------------------------------
-pDir = fullfile(config.bids_target_folder, ['sub-' num2str(config.subject)]);
-if exist(pDir, 'dir')
-    disp(['Subject folder ' pDir ' already exists.']);
-    if isfield(config, 'overwrite')
-        if strcmpi(config.overwrite, 'on')
-            warning('config.overwrite option is "on", Files will be overwritten')
-        else
-            warning('config.overwrite option is not "on", skipping import.')
-            return; 
-        end
-    else
-        warning('config.overwrite option is not "on", skipping import.')
-        return; 
-    end
-end
-
 % check if numerical IDs match subject info, if this was specified
 %--------------------------------------------------------------------------
 if exist('subjectInfo','var')
