@@ -636,7 +636,7 @@ if importMotion
     % construct fieldtrip data
     ftmotion = {};
     for iM = 1:numel(xdfmotion)
-        ftmotion{iM} = stream2ft(xdfmotion{iM}, 'motion');
+        ftmotion{iM} = stream2ft(xdfmotion{iM});
     end
     
     % iterate over tracking systems
