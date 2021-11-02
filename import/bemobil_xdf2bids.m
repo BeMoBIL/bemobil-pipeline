@@ -470,6 +470,8 @@ if importEEG
     
     if isempty(xdfeeg)
         error('No eeg streams found - check whether stream_name match the names of streams in .xdf')
+    elseif numel(xdfeeg) > 1
+        error('Multiple eeg streams found - usage not supported')
     end
 end
 
@@ -504,8 +506,9 @@ if importEEG % This loop is always executed in current version
     %----------------------------------------------------------------------
     %                   Convert EEG Data to BIDS
     %----------------------------------------------------------------------
+    
     % construct fieldtrip data
-    eeg        = stream2ft(xdfeeg{1});
+    eeg        = stream2ft(xdfeeg{1}, 'EEG');
     
     % save eeg start time
     eegStartTime                = eeg.time{1}(1);
@@ -633,7 +636,7 @@ if importMotion
     % construct fieldtrip data
     ftmotion = {};
     for iM = 1:numel(xdfmotion)
-        ftmotion{iM} = stream2ft(xdfmotion{iM});
+        ftmotion{iM} = stream2ft(xdfmotion{iM}, 'motion');
     end
     
     % iterate over tracking systems
@@ -750,7 +753,7 @@ if importMotion
         
         % shift acq_time to store relative offset to eeg data
         acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
-        motioncfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
+        motioncfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
   
         % effective sampling rate 
         motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).SamplingFrequencyEffective = effectiveSRate; 
@@ -812,7 +815,7 @@ if importPhys
         
         % shift acq_time to store relative offset to eeg data
         acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
-        physiocfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
+        physiocfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
         
         % start time
         physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
