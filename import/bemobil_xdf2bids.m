@@ -386,6 +386,7 @@ end
 %% 
 % load and assign streams (parts taken from xdf2fieldtrip)
 %--------------------------------------------------------------------------
+disp('Loading .xdf streams ...')
 streams                  = load_xdf(cfg.dataset);
 
 % initialize an array of booleans indicating whether the streams are continuous
