@@ -13,7 +13,13 @@ function bemobil_bids2set(config)
 %       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set  
 %       config.overwrite              = 'on';                               % optional, default value 'off' 
 %       config.filename_prefix        = 'sub-';                             % optional, default value 'sub-' 
-
+%       config.match_electrodes_channels = {'g1', 'G01'; 'g2', 'G02';...};  % optional, 2x NChan (number of channels in EEG data) array of strings, in case electrode names 
+%                                                                             in electrodes.tsv and channels.tsv do not match with
+%                                                                             each other. First column contains labels in electrodes.tsv
+%                                                                             and the second column contains lables in channels.tsv. 
+%                                                                             Resulting chanloc will take labels from eloc file. 
+%                                                                             Use empty string for a missing chanloc 
+%                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
 %
 % Out
 %       none
@@ -43,6 +49,7 @@ config = checkfield(config, 'merged_filename', 'merged.set', 'merged.set');
 config = checkfield(config, 'other_data_types', {'motion'}, 'motion'); 
 config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
 config = checkfield(config, 'overwrite', 'off', 'off'); 
+config = checkfield(config, 'match_electrodes_channels', [], 'none');
 
 % check session input
 if ~iscell(config.session_names)
@@ -92,7 +99,7 @@ end
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
-pop_importbids_mobi(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs);
+pop_importbids_mobi(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs, 'matchchanlocs', config.match_electrodes_channels);
 
 % Restructure and rename the output of the import function
 %--------------------------------------------------------------------------

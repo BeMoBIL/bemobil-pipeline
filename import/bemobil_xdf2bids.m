@@ -12,7 +12,6 @@ function bemobil_xdf2bids(config, varargin)
 %       config.run                    = 1;                                  % optional
 %       config.task                   = 'rotation';                         % optional 
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
-%       config.overwrite              = 'on';                               % optional, default is off (when participant folder is found, data will NOT be overwritten)
 % 
 %       config.eeg.stream_name        = 'BrainVision';                      % required
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
@@ -318,24 +317,6 @@ end
 
 
 %%
-% check if the target folder is already there
-%--------------------------------------------------------------------------
-pDir = fullfile(config.bids_target_folder, ['sub-' num2str(config.subject)]);
-if exist(pDir, 'dir')
-    disp(['Subject folder ' pDir ' already exists.']);
-    if isfield(config, 'overwrite')
-        if strcmpi(config.overwrite, 'on')
-            warning('config.overwrite option is "on", Files will be overwritten')
-        else
-            warning('config.overwrite option is not "on", skipping import.')
-            return; 
-        end
-    else
-        warning('config.overwrite option is not "on", skipping import.')
-        return; 
-    end
-end
-
 % check if numerical IDs match subject info, if this was specified
 %--------------------------------------------------------------------------
 if exist('subjectInfo','var')
@@ -405,6 +386,7 @@ end
 %% 
 % load and assign streams (parts taken from xdf2fieldtrip)
 %--------------------------------------------------------------------------
+disp('Loading .xdf streams ...')
 streams                  = load_xdf(cfg.dataset);
 
 % initialize an array of booleans indicating whether the streams are continuous
@@ -470,6 +452,8 @@ if importEEG
     
     if isempty(xdfeeg)
         error('No eeg streams found - check whether stream_name match the names of streams in .xdf')
+    elseif numel(xdfeeg) > 1
+        error('Multiple eeg streams found - usage not supported')
     end
 end
 
@@ -504,6 +488,7 @@ if importEEG % This loop is always executed in current version
     %----------------------------------------------------------------------
     %                   Convert EEG Data to BIDS
     %----------------------------------------------------------------------
+    
     % construct fieldtrip data
     eeg        = stream2ft(xdfeeg{1});
     
@@ -750,7 +735,7 @@ if importMotion
         
         % shift acq_time to store relative offset to eeg data
         acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
-        motioncfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
+        motioncfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
   
         % effective sampling rate 
         motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).SamplingFrequencyEffective = effectiveSRate; 
@@ -812,7 +797,7 @@ if importPhys
         
         % shift acq_time to store relative offset to eeg data
         acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
-        physiocfg.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
+        physiocfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
         
         % start time
         physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
