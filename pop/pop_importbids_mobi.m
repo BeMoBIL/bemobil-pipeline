@@ -21,9 +21,16 @@
 %  'eventtype'   - [string] BIDS event column to use for EEGLAB event types.
 %                  common choices are usually 'trial_type' or 'value'.
 %                  Default is 'value'.
-%  'datatypes'   - [] types of other data modalities than EEG
-%                   current implementation only for motion
-%                   according to BEP 029
+%  'datatypes'   - [cell array of strings] types of other data modalities than EEG
+%                  current implementation only for motion according to BEP 029
+%  'matchchanlocs' - [2x NChan array of strings] in case electrode names 
+%                  in electrodes.tsv and channels.tsv do not match with
+%                  each other. First column contains labels in electrodes.tsv
+%                  and the second column contains lables in channels.tsv. 
+%                  Resulting chanloc will take labels from eloc file. 
+%                      example : {'g1', 'G01'; 'g2', 'G02'; ...}
+%                  Use empty string for a missing chanloc 
+%                      example : {'', 'N01'; 'n2', 'N02'; ...}
 %  
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
@@ -106,6 +113,7 @@ opt = finputcheck(options, { ...
     'outputdir'      'string'    { }               fullfile(bidsFolder,'derivatives'); ...
     'studyName'      'string'    { }               defaultStudyName; ...
     'datatypes'      'cell'      { }               {}; ...
+    'matchchanlocs'  'cell'      { }               {}; ...
     'participants'   'integer'   []                [] ...  
     }, 'pop_importbids');
 if isstr(opt), error(opt); end
@@ -446,7 +454,8 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
                         
-                        % scan elecData and set aside other elocs
+                        % scan elecData and set aside other elocs that are
+                        % not present in EEG data 
                         if ~isempty(elecData)
                             nameCol         = strcmp(elecData(1,:), 'name');
                             otherLocInd      = [];
@@ -466,24 +475,54 @@ for iSubject = 2:size(bids.participants,1)
                             elecData(otherLocInd, :)  = [];
                         end
                         
-                        chanlocs = [];
-                        for iChan = 2:size(channelData,1)
-                            % the fields below are all required
-                            chanlocs(iChan-1).labels = channelData{iChan,1};
-                            chanlocs(iChan-1).type   = channelData{iChan,2};
-                            chanlocs(iChan-1).unit   = channelData{iChan,3};
-                            if size(channelData,2) > 3
-                                chanlocs(iChan-1).status = channelData{iChan,4};
+                        if ~isempty(opt.matchchanlocs)
+                            for iChan = 2:size(channelData,1)
+                                % the fields below are all required
+                                chanlocs(iChan-1).labels = channelData{iChan,1};
+                                chanlocs(iChan-1).type   = channelData{iChan,2};
+                                chanlocs(iChan-1).unit   = channelData{iChan,3};
+                                if size(channelData,2) > 3
+                                    chanlocs(iChan-1).status = channelData{iChan,4};
+                                end
+                                
+                                if ~isempty(elecData) 
+                                    elecNameCol         = find(strcmp(elecData(1,:),'name')); 
+                                    matchRow            = find(strcmpi(opt.matchchanlocs(:,2), chanlocs(iChan-1).labels));
+                                    
+                                    if isempty(opt.matchchanlocs{matchRow,1})
+                                        chanlocs(iChan-1).labels    = ['E' num2str(iChan-1)];
+                                        chanlocs(iChan-1).X         = [];
+                                        chanlocs(iChan-1).Y         = [];
+                                        chanlocs(iChan-1).Z         = [];
+                                    else
+                                        iElec               = find(strcmpi(elecData(:,elecNameCol), opt.matchchanlocs{matchRow,1}));
+                                        chanlocs(iChan-1).labels    = elecData{iElec,1};
+                                        chanlocs(iChan-1).X         = elecData{iElec,2};
+                                        chanlocs(iChan-1).Y         = elecData{iElec,3};
+                                        chanlocs(iChan-1).Z         = elecData{iElec,4};
+                                    end
+                                    
+                                end
                             end
-                            
-                            if ~isempty(elecData) && iChan <= size(elecData,1)
-                                chanlocs(iChan-1).labels    = elecData{iChan,1};
-                                chanlocs(iChan-1).X         = elecData{iChan,2};
-                                chanlocs(iChan-1).Y         = elecData{iChan,3};
-                                chanlocs(iChan-1).Z         = elecData{iChan,4};
+                        else
+                            chanlocs = [];
+                            for iChan = 2:size(channelData,1)
+                                % the fields below are all required
+                                chanlocs(iChan-1).labels = channelData{iChan,1};
+                                chanlocs(iChan-1).type   = channelData{iChan,2};
+                                chanlocs(iChan-1).unit   = channelData{iChan,3};
+                                if size(channelData,2) > 3
+                                    chanlocs(iChan-1).status = channelData{iChan,4};
+                                end
+                                
+                                if ~isempty(elecData) && iChan <= size(elecData,1)
+                                    chanlocs(iChan-1).labels    = elecData{iChan,1};
+                                    chanlocs(iChan-1).X         = elecData{iChan,2};
+                                    chanlocs(iChan-1).Y         = elecData{iChan,3};
+                                    chanlocs(iChan-1).Z         = elecData{iChan,4};
+                                end
                             end
                         end
-                        
                         if length(chanlocs) ~= EEG.nbchan
                             warning('Different number of channels in channel location file and EEG file');
                             % check if the difference is due to non EEG channels
@@ -603,6 +642,7 @@ for iSubject = 2:size(bids.participants,1)
                 splitName       = regexp(otherFileRaw,'_','split');
                 datatype        = splitName{end}(1:end-4);
                
+                tracksys = []; 
                 % json name (for motion data, remove tracksys key-value pair)
                 for SNi = 1:numel(splitName)
                    if contains(splitName{SNi}, 'tracksys-')
@@ -612,6 +652,7 @@ for iSubject = 2:size(bids.participants,1)
                         break; 
                    end
                 end
+                
                 joinedName = join(splitName, '_'); 
                 otherFileJSON   = [joinedName{1}(1:end-3) 'json']; 
                 
@@ -628,6 +669,13 @@ for iSubject = 2:size(bids.participants,1)
                         importChan          = true;
                         channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
                         channelData         = loadfile(channelFileMotion(1).name, channelFileMotion); % this might have to change along with motion BEP
+                        
+                        % in case of motion data, guarantee that the number of channels for the particular tracking system matches the data 
+                        if ~isempty(tracksys)
+                            colNames = channelData(1,:);
+                            trackSysCol = find(strcmp(colNames, 'tracking_system')); 
+                            channelData = channelData([1; find(strcmp(channelData(:,trackSysCol), tracksys))],:); 
+                        end
                         
                         % coordinate system file (potentially shared with EEG)
                         importCoord 	= true;
@@ -778,10 +826,6 @@ for iSubject = 2:size(bids.participants,1)
                             else
                                 DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
                             end
-
-%                             if strcmp(datatype,'motion') && infoData.MotionChannelCount ~= size(DATA.data,1)
-%                                 warning('Motion channel count mismatch between the data and motion.json')
-%                             end
                             
                             DATA.nbchan = size(DATA.data,1);
                             DATA.pnts   = size(DATA.data,2);
