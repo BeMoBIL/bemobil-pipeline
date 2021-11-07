@@ -21,9 +21,16 @@
 %  'eventtype'   - [string] BIDS event column to use for EEGLAB event types.
 %                  common choices are usually 'trial_type' or 'value'.
 %                  Default is 'value'.
-%  'datatypes'   - [] types of other data modalities than EEG
-%                   current implementation only for motion
-%                   according to BEP 029
+%  'datatypes'   - [cell array of strings] types of other data modalities than EEG
+%                  current implementation only for motion according to BEP 029
+%  'matchchanlocs' - [2x NChan array of strings] in case electrode names 
+%                  in electrodes.tsv and channels.tsv do not match with
+%                  each other. First column contains labels in electrodes.tsv
+%                  and the second column contains lables in channels.tsv. 
+%                  Resulting chanloc will take labels from eloc file. 
+%                      example : {'g1', 'G01'; 'g2', 'G02'; ...}
+%                  Use empty string for a missing chanloc 
+%                      example : {'', 'N01'; 'n2', 'N02'; ...}
 %  
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
@@ -106,6 +113,7 @@ opt = finputcheck(options, { ...
     'outputdir'      'string'    { }               fullfile(bidsFolder,'derivatives'); ...
     'studyName'      'string'    { }               defaultStudyName; ...
     'datatypes'      'cell'      { }               {}; ...
+    'matchchanlocs'  'cell'      { }               {}; ...
     'participants'   'integer'   []                [] ...  
     }, 'pop_importbids');
 if isstr(opt), error(opt); end
@@ -185,11 +193,13 @@ for iSubject = 2:size(bids.participants,1)
     
     nSessions = 1; 
    
-    % find folder containing eeg
+    % find folder containing eeg & load scans.tsv 
     if exist(fullfile(parentSubjectFolder, 'eeg'),'dir')
+        isMultiSession = false; 
         subjectFolder = { fullfile(parentSubjectFolder, 'eeg') };
         subjectFolderOut = { fullfile(outputSubjectFolder, 'eeg') };
     else
+        isMultiSession = true; 
         subFolders = dir(fullfile(parentSubjectFolder, 'ses*'));
         nSessions = length(subFolders);
         subjectFolder    = {};
@@ -209,10 +219,16 @@ for iSubject = 2:size(bids.participants,1)
     % find folders containing data of other modalities than EEG
     for iType = 1:numel(datatypes)
         dataType            = datatypes{iType};
-        modalityFolders     = [{'eeg'}, {'beh'}]; % this may be dependent on the modality. For now we assume that the data is either in beh or EEG     
+        
+        if strcmpi(dataType, 'motion')
+            modalityFolders     = [{'eeg'}, {'beh'}, {'motion'}]; % this may be dependent on the modality. For now we assume that the data is either in beh, motion or EEG     
+        else 
+            modalityFolders     = [{'eeg'}, {'beh'}]; 
+        end 
+        
         % iterate over modality specific folders to find the data files
         for iMod     =  1:numel(modalityFolders)
-            if nSessions ==1
+            if ~isMultiSession
                 modFolderFullfile = fullfile(parentSubjectFolder, modalityFolders{iMod}); 
                 if exist(modFolderFullfile,'dir')
                     filesInFolder       = dir(modFolderFullfile);
@@ -254,6 +270,27 @@ for iSubject = 2:size(bids.participants,1)
         if ~exist(subjectFolder{iFold},'dir')
             fprintf(2, 'No data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders(iFold).name);
         else
+            
+            % scans.tsv for time synch information
+            %-------------------------------------
+            try
+                try
+                    scansFile     = searchparent(fileparts(subjectFolder{iFold}), '*_scans.tsv');
+                catch
+                    % for some reason parent search not working - a quick workaround
+                    scansFile       = searchparent(fileparts(fileparts(subjectFolder{iFold})), '*_scans.tsv');
+                end
+            catch
+            end
+            
+            if exist('scansFile', 'var')
+                useScans = true;
+                scans = loadfile( scansFile.name, scansFile);
+                bids.data = setallfields(bids.data, [iSubject-1,iFold,1], struct('scans', {scans}));
+            else
+                useScans = false;
+            end
+            
             if contains(subjectFolder{iFold}, 'eeg') || contains(subjectFolder{iFold}, 'meg')
                 
                 % which raw data - with folder inheritance
@@ -266,7 +303,7 @@ for iSubject = 2:size(bids.participants,1)
                 channelFile   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
                 elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
                 eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
-               
+                
                 try
                     eventDescFile = searchparent(subjectFolder{iFold}, '*_events.json');
                 catch
@@ -313,6 +350,9 @@ for iSubject = 2:size(bids.participants,1)
                 try
                     otherDataFile       = searchparent(subjectFolder{iFold}, ['*_' datatypes{iType} '.tsv']);
                     allOtherDataFiles   = [allOtherDataFiles { otherDataFile.name }];
+                    if isempty(allOtherDataFiles)
+                        disp(['No data of type ' datatypes{iType} ' found in ' subjectFolder{iFold}])
+                    end
                 catch
                     disp(['No data of type ' datatypes{iType} ' found in ' subjectFolder{iFold}])
                 end
@@ -405,7 +445,7 @@ for iSubject = 2:size(bids.participants,1)
                     EEGnodata = EEG;
                     EEGnodata.data = [];
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('EEG', EEGnodata));
-                    
+               
                     % channel location data
                     % ---------------------
                     channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
@@ -414,7 +454,8 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
                         
-                        % scan elecData and set aside other elocs
+                        % scan elecData and set aside other elocs that are
+                        % not present in EEG data 
                         if ~isempty(elecData)
                             nameCol         = strcmp(elecData(1,:), 'name');
                             otherLocInd      = [];
@@ -434,24 +475,54 @@ for iSubject = 2:size(bids.participants,1)
                             elecData(otherLocInd, :)  = [];
                         end
                         
-                        chanlocs = [];
-                        for iChan = 2:size(channelData,1)
-                            % the fields below are all required
-                            chanlocs(iChan-1).labels = channelData{iChan,1};
-                            chanlocs(iChan-1).type   = channelData{iChan,2};
-                            chanlocs(iChan-1).unit   = channelData{iChan,3};
-                            if size(channelData,2) > 3
-                                chanlocs(iChan-1).status = channelData{iChan,4};
+                        if ~isempty(opt.matchchanlocs)
+                            for iChan = 2:size(channelData,1)
+                                % the fields below are all required
+                                chanlocs(iChan-1).labels = channelData{iChan,1};
+                                chanlocs(iChan-1).type   = channelData{iChan,2};
+                                chanlocs(iChan-1).unit   = channelData{iChan,3};
+                                if size(channelData,2) > 3
+                                    chanlocs(iChan-1).status = channelData{iChan,4};
+                                end
+                                
+                                if ~isempty(elecData) 
+                                    elecNameCol         = find(strcmp(elecData(1,:),'name')); 
+                                    matchRow            = find(strcmpi(opt.matchchanlocs(:,2), chanlocs(iChan-1).labels));
+                                    
+                                    if isempty(opt.matchchanlocs{matchRow,1})
+                                        chanlocs(iChan-1).labels    = ['E' num2str(iChan-1)];
+                                        chanlocs(iChan-1).X         = [];
+                                        chanlocs(iChan-1).Y         = [];
+                                        chanlocs(iChan-1).Z         = [];
+                                    else
+                                        iElec               = find(strcmpi(elecData(:,elecNameCol), opt.matchchanlocs{matchRow,1}));
+                                        chanlocs(iChan-1).labels    = elecData{iElec,1};
+                                        chanlocs(iChan-1).X         = elecData{iElec,2};
+                                        chanlocs(iChan-1).Y         = elecData{iElec,3};
+                                        chanlocs(iChan-1).Z         = elecData{iElec,4};
+                                    end
+                                    
+                                end
                             end
-                            
-                            if ~isempty(elecData) && iChan <= size(elecData,1)
-                                chanlocs(iChan-1).labels    = elecData{iChan,1};
-                                chanlocs(iChan-1).X         = elecData{iChan,2};
-                                chanlocs(iChan-1).Y         = elecData{iChan,3};
-                                chanlocs(iChan-1).Z         = elecData{iChan,4};
+                        else
+                            chanlocs = [];
+                            for iChan = 2:size(channelData,1)
+                                % the fields below are all required
+                                chanlocs(iChan-1).labels = channelData{iChan,1};
+                                chanlocs(iChan-1).type   = channelData{iChan,2};
+                                chanlocs(iChan-1).unit   = channelData{iChan,3};
+                                if size(channelData,2) > 3
+                                    chanlocs(iChan-1).status = channelData{iChan,4};
+                                end
+                                
+                                if ~isempty(elecData) && iChan <= size(elecData,1)
+                                    chanlocs(iChan-1).labels    = elecData{iChan,1};
+                                    chanlocs(iChan-1).X         = elecData{iChan,2};
+                                    chanlocs(iChan-1).Y         = elecData{iChan,3};
+                                    chanlocs(iChan-1).Z         = elecData{iChan,4};
+                                end
                             end
                         end
-                        
                         if length(chanlocs) ~= EEG.nbchan
                             warning('Different number of channels in channel location file and EEG file');
                             % check if the difference is due to non EEG channels
@@ -489,7 +560,7 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
                     eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], eventDescFile);
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
-                    if strcmpi(opt.bidsevent, 'on')                        
+                    if strcmpi(opt.bidsevent, 'on') && ~isempty(eventData)                      
                         events = struct([]);
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
@@ -503,11 +574,6 @@ for iSubject = 2:size(bids.participants,1)
                                     events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                                 end
                             end
-                            %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
-                            %                             events(end+1).type   = 'response';
-                            %                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
-                            %                             events(end).duration = 0;
-                            %                         end
                         end
                         EEG.event = events;
                         
@@ -532,15 +598,7 @@ for iSubject = 2:size(bids.participants,1)
                         EEG = pop_saveset( EEG, eegFileNameOut);
                     end
                 end
-                
-                % building study command
-                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'run' iRun };
-                
-                % custom fields
-                for iCol = 2:size(bids.participants,2)
-                    commands = { commands{:} bids.participants{1,iCol} bids.participants{iSubject,iCol} };
-                end
-                
+       
                 count = count+1;
                 
                 % check dataset consistency
@@ -574,7 +632,7 @@ for iSubject = 2:size(bids.participants,1)
                     end
                 end
             end % end for eegFileRaw
-            
+           
             for iFile = 1:length(allOtherDataFiles)
        
                 otherFileRaw    = allOtherDataFiles{iFile};
@@ -583,24 +641,64 @@ for iSubject = 2:size(bids.participants,1)
                 % extract data type
                 splitName       = regexp(otherFileRaw,'_','split');
                 datatype        = splitName{end}(1:end-4);
+               
+                tracksys = []; 
+                % json name (for motion data, remove tracksys key-value pair)
+                for SNi = 1:numel(splitName)
+                   if contains(splitName{SNi}, 'tracksys-')
+                        tracksysKeyVal  = splitName{SNi}; 
+                        tracksys        = tracksysKeyVal(10:end); 
+                        splitName(SNi)  = []; 
+                        break; 
+                   end
+                end
                 
-                % check needed files accordign to the data type 
+                joinedName = join(splitName, '_'); 
+                otherFileJSON   = [joinedName{1}(1:end-3) 'json']; 
+                
+                % check needed files according to the data type 
                 switch datatype
                     case 'motion'
+                        
                         % JSON information file
-                        infoFileMotion  = searchparent(subjectFolder{iFold}, '*_motion.json');
-                        infoData        = loadfile(infoFileMotion(iFile).name, infoFileMotion);
+                        infoFileMotion  = searchparent(subjectFolder{iFold}, otherFileJSON);
+                        infoData        = loadfile(infoFileMotion.name, infoFileMotion);
                         bids.otherdata  = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], infoData);
                         
-                        % channel file (potentially shared with EEG)
+                        % channel file 
                         importChan          = true;
                         channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
-                        channelData     = loadfile(channelFileMotion(iFile).name, channelFileMotion); % this might have to change along with motion BEP
-                       
+                        channelData         = loadfile(channelFileMotion(1).name, channelFileMotion); % this might have to change along with motion BEP
+                        
+                        % in case of motion data, guarantee that the number of channels for the particular tracking system matches the data 
+                        if ~isempty(tracksys)
+                            colNames = channelData(1,:);
+                            trackSysCol = find(strcmp(colNames, 'tracking_system')); 
+                            channelData = channelData([1; find(strcmp(channelData(:,trackSysCol), tracksys))],:); 
+                        end
+                        
                         % coordinate system file (potentially shared with EEG)
-                        importCoord 	= true; 
+                        importCoord 	= true;
                         coordFileMotion = searchparent(subjectFolder{iFold}, '*_coordsystem.json');
                         coordData       = loadfile(coordFileMotion.name, coordFileMotion);
+                        
+                    case 'physio'
+                        
+                        % JSON information file
+                        infoFilePhysio  = searchparent(subjectFolder{iFold}, otherFileJSON);
+                        infoData        = loadfile(infoFilePhysio.name, infoFilePhysio);
+                        bids.otherdata  = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], infoData);
+                        
+                        % channel file (for physio data, hidden in json file)
+                        importChan = true;
+                        channelData = {'name', 'type', 'units'}; 
+                        for Ci = 1:numel(infoData.Columns)
+                            channelData{end + 1,1} = ['test_' char(infoData.Columns{Ci})] ;
+                        end
+                        
+                        % coordinate file (none)
+                        importCoord = false;
+                        
                     otherwise
                         importChan = false;
                         disp(['No channel file for undefined data type ' datatype ])
@@ -610,7 +708,6 @@ for iSubject = 2:size(bids.participants,1)
                 [~,tmpFileName,fileExt] = fileparts(otherFileRaw);
                 otherFileRaw     = fullfile(subjectFolder{   iFold}, otherFileRaw);
                 otherFileNameOut = fullfile(subjectFolderOut{iFold}, [ tmpFileName '.set' ]);
-                
                  
                 % check for existence of the file before proceding
                 if ~exist(otherFileRaw, 'file')
@@ -632,11 +729,6 @@ for iSubject = 2:size(bids.participants,1)
                     end
                 end
                 
-                % extract task name
-                underScores = find(tmpFileName == '_');
-                if isempty(findstr('ses', tmpFileName(underScores(end-1)+1:underScores(end)-1)))
-                    task = tmpFileName(underScores(end-1)+1:underScores(end)-1);
-                end
                 
                 if ~strcmpi(fileExt, '.set') || strcmpi(opt.bidsevent, 'on') || strcmpi(opt.bidschanloc, 'on') || ~strcmpi(opt.outputdir, bidsFolder)
                     fprintf('Importing file: %s\n', otherFileRaw);
@@ -659,31 +751,88 @@ for iSubject = 2:size(bids.participants,1)
                             else
                                 DATA.data   = dlmread(otherFileRaw,'\t',1,0)';
                             end
-                            DATA.srate  = infoData.SamplingFrequency; % Actual sampling rate. Note that the unit of the time must be in second.
                             
-                            % reconstruct time : StartTime is a required field in the .json file
-                            if isfield(infoData, 'StartTime')
-                                if isnumeric(infoData.StartTime)
-                                    startTime  = infoData.StartTime;
+                            if strcmp(datatype,'motion') && isfield(infoData, 'TrackingSystems')
+                                DATA.srate  = infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective; 
+                            else
+                                DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate. Note that the unit of the time must be in second.
+                            end 
+                            
+                            % reconstruct time : use scans.tsv for synching
+                            % it computes offset between motion and eeg data
+                            if useScans
+                                
+                                scansData   = bids.data(iSubject-1,iFold,1).scans; 
+                                for Coli = 1:size(scansData, 2)
+                                    if strcmp(scansData{1,Coli}, 'acq_time') 
+                                        acqTimeColi = Coli;  
+                                    elseif strcmp(scansData{1,Coli}, 'filename')
+                                        fNameColi = Coli; 
+                                    end
+                                end 
+                                
+                                for Rowi = 1:size(scansData, 1)
+                                    
+                                    sesString = ''; 
+                                    taskString = ''; 
+                                    runString = ''; 
+                                    trackSysString = ''; 
+                                    
+                                    if exist(tracksys, 'var')
+                                        trackSysString = tracksys; 
+                                    end
+                                        
+                                    for SNi = 1:numel(splitName) 
+                                        if contains(splitName{SNi}, 'ses-')
+                                            sesString = splitName{SNi}(5:end);
+                                        elseif contains(splitName{SNi}, 'task-')
+                                            taskString = splitName{SNi}(6:end);
+                                        elseif contains(splitName{SNi}, 'run-')
+                                            runString = splitName{SNi}(5:end);
+                                        end
+                                    end
+                                    
+                                    [~,rawName] = fileparts(otherFileRaw);  
+                                    % find files that matches in session, task, tracking system (in case it is motion data), and run
+                                    if contains(scansData{Rowi,fNameColi}, 'eeg.') && contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString)&& contains(scansData(Rowi,fNameColi), runString) contains(scansData(Rowi,fNameColi), trackSysString)
+                                        eegAcqTime      = scansData(Rowi,acqTimeColi); 
+                                    elseif contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString)&& contains(scansData(Rowi,fNameColi), runString)
+                                        otherAcqTime    = scansData(Rowi,acqTimeColi); 
+                                    end
+                                end
+                                
+                                startTime = seconds(datetime(otherAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS') - datetime(eegAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS'));
+                                 
+                            else
+                                if isfield(infoData, 'StartTime')
+                                    if isnumeric(infoData.StartTime)
+                                        startTime  = infoData.StartTime;
+                                    else
+                                        startTime = 0;
+                                        disp('Field Start time in motion json file is non-numeric - assume no offset to eeg data')
+                                    end
                                 else
                                     startTime = 0;
-                                    disp('Field Start time in motion json file is non-numeric - assume no offset to eeg data')
+                                    disp('Field Start time in motion json file is empty - assume no offset to eeg data')
                                 end
+                            end
+                            
+                            DATA.etc.starttime = startTime;
+                            
+                            if isfield(infoData, 'TrackingSystems')
+                                DATA.times  = (0:1000/infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective:infoData.TrackingSystems.(tracksys).RecordingDuration*1000); % time is in ms
+                            elseif isfield(infoData, 'RecordingDuration')
+                                DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
                             else
-                                startTime = 0; 
-                                disp('Field Start time in motion json file is empty - assume no offset to eeg data')
+                                DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
                             end
                             
-                            DATA.etc.starttime = startTime; 
-                            DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
-                            
-                            if infoData.MotionChannelCount ~= size(DATA.data,1)
-                                warning('Motion channel count mismatch between the data and motion.json')
-                            end
                             DATA.nbchan = size(DATA.data,1);
                             DATA.pnts   = size(DATA.data,2);
+                            
                         otherwise
-                            error('No motion data found for subject/session %s', subjectFolder{iFold});
+                            error(['No ' datatype 'data found for subject/session ' subjectFolder{iFold}]);
+                            
                     end
                     
                     bids.otherdata = setallfields(bids.otherdata, [iSubject-1,iFold,iFile], struct(datatype, []));                   
@@ -725,7 +874,6 @@ for iSubject = 2:size(bids.participants,1)
                         DATA = pop_saveset( DATA, otherFileNameOut);
                     end
                 end
-                
             end % end of other file Raw
         end
     end
