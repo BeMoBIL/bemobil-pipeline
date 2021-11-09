@@ -769,43 +769,39 @@ if importPhys
         ftphysio{iP} = stream2ft(xdfphysio{iP});
     end
     
-    for Pi = 1:numel(PhyStreamsInData)
+    % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
+    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri);
+    
+    % construct physio metadata
+    physiocfg               = cfg;                                           % copy general fields
+    physiocfg.datatype      = 'physio';
+    
+    %----------------------------------------------------------------------
+    if ~exist('physioInfo', 'var')
         
-        % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
-        physio = feval(physioCustom, ftphysio, physioStreamNames, participantNr, si, di);
-        
-        % construct physio metadata
-        physiocfg               = cfg;                                           % copy general fields
-        physiocfg.datatype      = 'physio';
-        
-        %------------------------------------------------------------------
-        if ~exist('physioInfo', 'var')
-            
-            % default values for physio specific fields in json
-            physioInfo.physio.Manufacturer                     = 'Undefined';
-            physioInfo.physio.ManufacturersModelName           = 'Undefined';
-            physioInfo.physio.RecordingType                    = 'continuous';
-            
-        end
-        
-        % physio specific fields in json
-        physiocfg.physio                                  = physioInfo.physio;
-        
-        % start time
-        physioStartTime                 = physio.time{1}(1);
-        physioTimeShift                 = physioStartTime - eegStartTime;
-        
-        % shift acq_time to store relative offset to eeg data
-        acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
-        physiocfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
-        
-        % start time
-        physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
-        
-        % write motion files in bids format
-        data2bids(physiocfg, physio);
+        % default values for physio specific fields in json
+        physioInfo.physio.Manufacturer                     = 'Undefined';
+        physioInfo.physio.ManufacturersModelName           = 'Undefined';
+        physioInfo.physio.RecordingType                    = 'continuous';
         
     end
+    
+    % physio specific fields in json
+    physiocfg.physio                                  = physioInfo.physio;
+    
+    % start time
+    physioStartTime                 = physio.time{1}(1);
+    physioTimeShift                 = physioStartTime - eegStartTime;
+    
+    % shift acq_time to store relative offset to eeg data
+    acq_time = datenum(config.acquisition_time) + (physioTimeShift/(24*60*60));
+    physiocfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF');
+    
+    % start time
+    physiocfg.physio.StartTime                        = physioStartTime - eegStartTime;
+    
+    % write motion files in bids format
+    data2bids(physiocfg, physio);
     
 end
 
