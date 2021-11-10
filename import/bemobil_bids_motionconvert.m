@@ -1,5 +1,5 @@
 
-function motionOut = bemobil_bids_motionconvert(motionIn, objects, pi, si, di)
+function motionOut = bemobil_bids_motionconvert(motionIn, objects, pi, si, ri)
 
 % your quaternion [w,x,y,z] components, in this order
 quaternionComponents    = {'w','x','y','z'};

@@ -1,5 +1,5 @@
 
-function physioOut = bemobil_bids_physioconvert(physioIn, objects, pi, si, di)
+function physioOut = bemobil_bids_physioconvert(physioIn, objects, pi, si, ri)
 % Process generic physiological data 
 % (resampling to the highest sampling rate among all streams of the type)
 
