@@ -755,8 +755,12 @@ for iSubject = 2:size(bids.participants,1)
                             if strcmp(datatype,'motion') && isfield(infoData, 'TrackingSystems')
                                 DATA.srate  = infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective; 
                             else
-                                DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate. Note that the unit of the time must be in second.
-                            end 
+                                try
+                                    DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate used in motion data. Note that the unit of the time must be in second.
+                                catch
+                                    DATA.srate  = infoData.SamplingFrequency; % Generic physio data 
+                                end
+                            end
                             
                             % reconstruct time : use scans.tsv for synching
                             % it computes offset between motion and eeg data
