@@ -467,7 +467,7 @@ for iSub = 1:numel(subDirList)
                     fillIndices = zeros(1,numel(config.session_names)); 
                     
                     for Si = 1:numel(config.session_names)
-                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                        if strcmpi(otherDataTypes{iType}, 'MOTION')
                             [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
                         else
                             [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
@@ -511,7 +511,7 @@ for iSub = 1:numel(subDirList)
                     
                      ALLDATA = []; CURRENTSET = []; DATA = []; 
                     for Si = 1:numel(config.session_names)
-                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                        if strcmpi(otherDataTypes{iType}, 'MOTION')
                             [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
                         else
                             [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
@@ -526,7 +526,7 @@ for iSub = 1:numel(subDirList)
                             [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
                         end
                     end
-                    if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                    if strcmpi(otherDataTypes{iType}, 'MOTION')
                         [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     else
                         [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' upper(otherDataTypes{iType}) '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
