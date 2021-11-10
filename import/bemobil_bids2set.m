@@ -326,10 +326,17 @@ for iSub = 1:numel(subDirList)
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
-                EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
-                eegTimes(:,Ri) = [EEG.times(1); EEG.times(end)];
-                [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
-                eegEvents{end +1} = EEG.event;
+                EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
+                eegTimes(:,Ri)      = [EEG.times(1); EEG.times(end)];
+                
+                % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
+                % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
+                % parts at end/beginning
+                EEG                 = interpToTime(EEG, round(EEG.srate), EEG.times(1), EEG.times(end), 0); 
+                EEG                 = pop_resample(EEG, newSRate); % resample
+            
+                % store events to be added in DATA later
+                eegEvents{end +1} = EEG.event; 
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
             [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
@@ -338,9 +345,16 @@ for iSub = 1:numel(subDirList)
         elseif numel(eegFiles) == 1
             EEGSessionFileName  = eegFiles{1};
             EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
-            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)];
-            [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
-            eegEvents{end +1}   = EEG.event;
+            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)]; 
+            
+            % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
+            % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
+            % parts at end/beginning
+            EEG                 = interpToTime(EEG, round(EEG.srate), EEG.times(1), EEG.times(end), 0); 
+            EEG                 = pop_resample(EEG, newSRate); % resample
+            
+            % store events to be added in DATA later
+            eegEvents{end +1} = EEG.event; 
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
         end
@@ -402,7 +416,37 @@ for iSub = 1:numel(subDirList)
                     for Ri = 1:numel(dataFiles)
                         DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
                         DATA         = unwrapAngles(DATA); % unwrap angles before resampling
-                        [DATA]       = resampleToTime(DATA, newSRate, eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime);
+                        
+                        % start time has to be buffered before data can be synched to EEG
+                        DATA.times   = DATA.times + DATA.etc.starttime*1000;
+                        
+                        if DATA.srate > newSRate
+                            % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
+                            % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
+                            % parts at end/beginning
+                            DATA                = interpToTime(DATA, round(DATA.srate), eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime); 
+                            DATA                = pop_resample(DATA, newSRate); % downsample
+                            
+                        else
+                            % this has to happen even if srate is equal for trimming and adding NaNs
+                            DATA                = interpToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);                         
+                        end
+                        
+                        % just in case the resampling leads to a few shifted samples
+                        if DATA.pnts > EEG.pnts
+                            warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and will be trimmed!'])
+                            DATA = eeg_eegrej( DATA, [DATA.pnts+1 EEG.pnts] );
+                        elseif EEG.pnts > DATA.pnts
+                            warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and NaN values will be added!'])
+                            DATA.data(:,end:EEG.pnts) = deal(NaN);
+                        end
+                        assert(DATA.pnts==EEG.pnts,'EEG and DATA number of samples are incorrect after adjustment!')
+                        
+                        % make sure the full timings are identical
+                        DATA.pnts = EEG.pnts;
+                        DATA.xmin = EEG.xmin;
+                        DATA.xmax = EEG.xmax;
+                        DATA.times = EEG.times;
                         DATA         = wrapAngles(DATA);
                         DATA.event   = eegEvents{Ri}; 
                         [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
@@ -413,7 +457,37 @@ for iSub = 1:numel(subDirList)
                     DATASessionFileName  = dataFiles{1};
                     DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
                     DATA             = unwrapAngles(DATA);
-                    [DATA]           = resampleToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);
+                    
+                    % start time has to be buffered before data can be synched to EEG
+                    DATA.times   = DATA.times;
+                    
+                    if DATA.srate > newSRate
+                        % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
+                        % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
+                        % parts at end/beginning
+                        DATA                = interpToTime(DATA, round(DATA.srate), eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime); 
+                        DATA                = pop_resample(DATA, newSRate); % downsample
+                    else
+                        % this has to happen even if srate is equal for trimming and adding NaNs
+                        DATA                = interpToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);                         
+                    end
+                    assert(DATA.pnts==EEG.pnts,'EEG and DATA number of samples are incorrect after adjustment!')
+                    
+                    % just in case the resampling leads to a few shifted samples
+                    if DATA.pnts > EEG.pnts
+                        warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and will be trimmed!'])
+                        DATA = eeg_eegrej( DATA, [DATA.pnts+1 EEG.pnts] );
+                    elseif EEG.pnts > DATA.pnts
+                        warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and NaN values will be added!'])
+                        DATA.data(:,end:EEG.pnts) = deal(NaN);
+                    end
+
+                    % make sure the full timings are identical
+                    DATA.pnts = EEG.pnts;
+                    DATA.xmin = EEG.xmin;
+                    DATA.xmax = EEG.xmax;
+                    DATA.times = EEG.times;
+                        
                     DATA             = wrapAngles(DATA);
                     DATA.event       = eegEvents{1}; 
                 else
@@ -549,7 +623,7 @@ outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)
 
 end
 
-function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
+function [outEEG] = interpToTime(EEG, newSRate, tFirst, tLast, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
 % check if any row is all zeros - use nearest interp if so
