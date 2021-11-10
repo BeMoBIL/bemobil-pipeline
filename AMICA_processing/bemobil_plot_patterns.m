@@ -13,7 +13,6 @@
 %                  max of all patterns (1|0, default 1)
 %       colorbar - whether or not to add a colorbar to the figure (0|1,
 %                  default 1 for fixscale or a given scale, 0 otherwise)
-%       colormap - sets colormap, default is 'jet' 
 %       weights - vector of weights. patterns will be zoomed in/out
 %                 relative to the absolute value of these weights. 
 %                 (default: all ones)
@@ -63,7 +62,6 @@ addRequired(ip, 'chanlocs', @isstruct);
 addParamValue(ip, 'scale', [], @isnumeric);
 addParamValue(ip, 'fixscale', 1, @isnumeric);
 addParamValue(ip, 'colorbar', [], @isnumeric);
-addParamValue(ip, 'colormap', [], @isnumeric);
 addParamValue(ip, 'weights', ones(1, size(patterns, 2)), @isnumeric);
 addParamValue(ip, 'titles', num2cell(1:size(patterns, 2)), @iscell);
 addParamValue(ip, 'camzoom', 1.15, @isnumeric);
@@ -76,7 +74,6 @@ chanlocs = ip.Results.chanlocs;
 scale = ip.Results.scale;
 fixscale = ip.Results.fixscale;
 plotcolorbar = ip.Results.colorbar;
-cmap = ip.Results.colormap;
 % weights = abs(ip.Results.weights) ./ max(abs(ip.Results.weights)) .* ip.Results.camzoom;
 weights = abs(ip.Results.weights);
 this_camzoom = ip.Results.camzoom;
@@ -112,10 +109,6 @@ else
     plotcolorbar = 0;
 end
 
-if isempty(cmap)
-    cmap = jet;
-end
-
 % opening figure
 h = figure;
 
@@ -132,8 +125,8 @@ for p = 1:size(patterns, 2)
     title(titles{patternNumbersToPlot(p)});
     
     % calling topoplot
-    if samescale, evalc('topoplot(patterns(:,p), chanlocs, ''electrodes'', ''off'', ''maplimits'', [scalemin, scalemax], ''colormap'', cmap)');
-    else,         evalc('topoplot(patterns(:,p), chanlocs,''electrodes'', ''off'', ''colormap'', cmap)'); end
+    if samescale, evalc('topoplot(patterns(:,p), chanlocs, ''electrodes'', ''off'', ''maplimits'', [scalemin, scalemax])');
+    else,         evalc('topoplot(patterns(:,p), chanlocs,''electrodes'', ''off'')'); end
     
     % adjusting zoom
     camzoom(weights(p));
