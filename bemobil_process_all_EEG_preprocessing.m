@@ -225,15 +225,17 @@ end
 clear EEG_to_process
 
 %% detect bad channels
-
-[chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG_basic, ALLEEG, CURRENTSET,...
+[chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG_basic, ALLEEG, CURRENTSET,...
     bemobil_config.chancorr_crit,bemobil_config.chan_max_broken_time, bemobil_config.chan_detect_num_iter,...
-    bemobil_config.chan_detected_fraction_threshold,bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
+    bemobil_config.chan_detected_fraction_threshold,bemobil_config.num_chan_rej_target, bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
 
 if length(chans_to_interp) > EEG_basic.nbchan/5
     warndlg(['In subject ' num2str(subject) ', ' num2str(length(chans_to_interp)) ' of ' num2str(EEG_basic.nbchan)...
         ' channels were rejected, which is more than 1/5th!'])
 end
+
+EEG_basic.etc.channel_rejection.detection_threshold = chan_detected_fraction_threshold;
+EEG_basic.etc.channel_rejection.bad_channel_detection = detected_bad_channels;
 
 %% save fig of bad channels
 

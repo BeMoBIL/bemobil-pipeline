@@ -4,8 +4,8 @@
 % data to check the rejected channels.
 %
 % Usage:
-%   >>  [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-%     chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold,flatline_crit,line_noise_crit)
+%   >>  [chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
+%     chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, num_chan_rej_target, flatline_crit,line_noise_crit)
 % 
 % Inputs:
 %   EEG                                 - current EEGLAB EEG structure
@@ -20,6 +20,9 @@
 %   chan_detect_num_iter                - Number of iterations the bad channel detection should run (default = 10)
 %   chan_detected_fraction_threshold	- Fraction how often a channel has to be detected to be rejected in the final
 %                                           rejection (default 0.5)
+%   num_chan_rej_target                 - Target amount of channel rejection. Actual num of rejections might be higher if 
+%                                           there are a lot of bad channels. Target precision can be increased with higher chan_detect_num_iter
+%                                           If empty, use only chan_detected_fraction_threshold.                 
 %   flatline_crit                       - Maximum duration a channel can be flat in seconds (default 'off')
 %   line_noise_crit                     - If a channel has more line noise relative to its signal than this value, in
 %                                           standard deviations based on the total channel population, it is considered
@@ -27,18 +30,23 @@
 %
 % Outputs:
 %   chans_to_interp                     - vector with channel indices to remove
+%   chan_detected_fraction_threshold    - 'badness' threshold used for bad channel selection. Might deviate from 
+%                                           chan_detected_fraction_threshold when there are a lot of bad channels.
+%   detected_bad_channels               - n*m matrix of boolean indicating what channel was marked for rejection in which iteration
+%                                           n is number of channels and m number of iterations
 %   rejected_chan_plot_handle           - handle to the plot of the data segments to check cleaning
 %   detection_plot_handle               - handle to the plot of the rejection iterations
+%   
 %
 %   .set data file of current EEGLAB EEG structure stored on disk (OPTIONALLY)
 %
 % See also:
 %   EEGLAB, bemobil_avref, clean_artifacts
 %
-% Authors: Lukas Gehrke, 2017, Marius Klug, 2021
+% Authors: Lukas Gehrke, 2017, Marius Klug, 2021, Timotheus Berg, 2021
 
-function [chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, flatline_crit, line_noise_crit)
+function [chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
+    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, num_chan_rej_target, flatline_crit, line_noise_crit)
 
 if ~exist('chancorr_crit','var') || isempty(chancorr_crit)
 	chancorr_crit = 0.8;
@@ -57,6 +65,9 @@ if ~exist('flatline_crit','var') || isempty(flatline_crit)
 end
 if ~exist('line_noise_crit','var') || isempty(line_noise_crit)
 	line_noise_crit = 'off';
+end
+if ~exist('num_chan_rej_target','var') || isempty(num_chan_rej_target)
+	num_chan_rej_target = [];
 end
 
 %%
@@ -79,7 +90,18 @@ for i = 1:chan_detect_num_iter
 
 end
 disp('...iterative bad channel detection done!')
+
 badness_percent = sum(detected_bad_channels,2) / size(detected_bad_channels,2);
+
+% If there are a lot of bad channels, raise the threshold to the badness value at num_chan_rej_target
+if ~isempty(num_chan_rej_target)
+    [sort_val, ~ ] = sort(badness_percent, 'descend');
+
+    if sort_val(num_chan_rej_target) > chan_detected_fraction_threshold
+        chan_detected_fraction_threshold = sort_val(num_chan_rej_target);
+    end
+end
+
 chans_to_interp = badness_percent > chan_detected_fraction_threshold;
 
 %% plot
