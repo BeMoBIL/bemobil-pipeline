@@ -529,7 +529,7 @@ for iSub = 1:numel(subDirList)
                     if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
                         [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     else
-                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' upper(otherDataTypes{iType}) '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     end
                 end
             end
