@@ -102,7 +102,7 @@ if ~isempty(num_chan_rej_target)
     end
 end
 
-chans_to_interp = badness_percent > chan_detected_fraction_threshold;
+chans_to_interp = badness_percent >= chan_detected_fraction_threshold;
 
 %% plot
 detection_plot_handle = figure; 
