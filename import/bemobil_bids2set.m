@@ -388,7 +388,11 @@ for iSub = 1:numel(subDirList)
                 for MFi = 1:numel(modalityFiles)
                     % identify all tracking systems included in the session
                     modalityNamesSplit              = regexp(modalityFiles{MFi}, '_', 'split');
-                    trackingSystemsInSession{MFi}         = modalityNamesSplit{:,end-1};  
+                    if contains(modalityNamesSplit{:,end-1}, 'rec')
+                        trackingSystemsInSession{MFi}         = modalityNamesSplit{:,end-2};
+                    else
+                        trackingSystemsInSession{MFi}         = modalityNamesSplit{:,end-1};
+                    end
                 end
                 trackingSystemsInSession = unique(trackingSystemsInSession);
                 trackingSystemsInData   = [trackingSystemsInData trackingSystemsInSession];
