@@ -15,18 +15,18 @@ function bemobil_xdf2bids(config, varargin)
 % 
 %       config.eeg.stream_name        = 'BrainVision';                      % required
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
-%       config.eeg.elec_struct        = elecStruct                          % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
-%       config.eeg.chanloc_newname    = {'chan1', 'chan2'}                  % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
+%       config.eeg.elec_struct        = elecStruct;                         % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
+%       config.eeg.chanloc_newname    = {'chan1', 'chan2'};                 % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
 %         
-%       config.motion.streams{1}.stream_name        = 'stream1';            % keyword in stream name  
+%       config.motion.streams{1}.stream_name        = 'stream1';            % required, keyword in stream name  
 %                                                                                   % searched for in field "xdfdata{streamIndex}.info.name"
-%       config.motion.streams{1}.tracking_system    = 'HTCVive';            % user-defined name of the tracking system
+%       config.motion.streams{1}.tracking_system    = 'HTCVive';            % required, user-defined name of the tracking system
 %                                                                                   % in case motion metadata are provided, match with fieldname in "motionInfo.motion.TrackingSystems.(fieldname)"
 %                                                                                   % e.g., motionInfo.motion.TrackingSystems.HTCVive.Manufacturer = 'HTC'; 
-%       config.motion.streams{1}.tracked_points     = 'rigid1';             % keyword in channel names, indicating which object (tracked point) is included in the stream 
+%       config.motion.streams{1}.tracked_points     = 'rigid1';             % required, keyword in channel names, indicating which object (tracked point) is included in the stream 
 %                                                                                   % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
 %                                                                                   % required to be unique in a single tracking system
-%       config.motion.streams{1}.tracked_points_anat = 'leftFoot';          % user-defined anatomical name of the point being tracked 
+%       config.motion.streams{1}.tracked_points_anat = 'leftFoot';          % optional, user-defined anatomical name of the point being tracked 
 %       config.motion.streams{2}.stream_name        = 'stream2'; 
 %       config.motion.streams{2}.tracking_system    = 'HTCVive'; 
 %       config.motion.streams{2}.tracked_points     = 'rigid2';
@@ -36,7 +36,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; % keywords in channel names, when multiple tracked points are included in a single stream 
 %       config.motion.POS.unit                      = 'vm';                 % optional, in case you want to use custom unit
 %
-%       config.phys.streams{1}.stream_name        = {'force1'};             % optional
+%       config.phys.streams{1}.stream_name          = {'force1'};           % optional
 %
 %--------------------------------------------------------------------------
 % Optional Inputs :
