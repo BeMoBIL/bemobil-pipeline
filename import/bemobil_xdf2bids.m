@@ -399,12 +399,13 @@ for i=1:numel(streams)
     
     names{i}           = streams{i}.info.name;
     
-    % if the nominal srate is non-zero, the stream is considered continuous
+    % if the nominal srate is non-zero, the stream may be considered continuous
     if ~strcmpi(streams{i}.info.nominal_srate, '0')
         
         num_samples  = numel(streams{i}.time_stamps);
+        nominalSRate = str2double(streams{i}.info.nominal_srate); 
         
-        if num_samples > 20 % assume at least 20 samples in a continuous data stream
+        if num_samples > 20 && nominalSRate > 0 % assume at least 20 samples in a continuous data stream
 
             iscontinuous(i) =  true;
             t_begin      = streams{i}.time_stamps(1);
