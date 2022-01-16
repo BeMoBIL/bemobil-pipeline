@@ -21,6 +21,7 @@ function bemobil_bids2set(config)
 %                                                                             Resulting chanloc will take labels from eloc file. 
 %                                                                             Use empty string for a missing chanloc 
 %                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
+%       config.other_data_types        = {};                                % optional, default value {'motion'}   
 %
 % Out
 %       none
@@ -556,8 +557,14 @@ end
 function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
+
 % check if any row is all zeros - use nearest interp if so
-hasNonZero = any(EEG.data,2);
+hasNonZero = zeros(size(EEG.data,1));
+
+for iRow = 1:size(EEG.data,1)
+   hasNonZero(iRow) = any(EEG.data(iRow,:));
+end
+
 if any(hasNonZero == 0)
     resampleMethod = 'nearest'; 
 else
