@@ -115,6 +115,41 @@ if ~exist('EEG_preprocessed_and_ICA','var')
         %         [rank_reduction_of_bridges,EEG_filtered_for_AMICA] = bemobil_find_gel_bridges(EEG_filtered_for_AMICA,0.98);
         %         data_rank = data_rank - rank_reduction_of_bridges;
         
+        % automatic time-domain cleaning if selected
+        if bemobil_config.use_reject_continuous
+            
+            if ~isfield(bemobil_config,'reject_continuous_fixed_threshold') || isempty(bemobil_config.reject_continuous_fixed_threshold)
+                bemobil_config.reject_continuous_fixed_threshold = 0.07; % default 7% threshold leads to roughly 10% rejection
+            end
+            
+            % probably best not to change these but hey you do you, these are all derived from just testing here and
+            % there... 
+            bemobil_config.reject_continuous_epochs_length = 0.5;
+            bemobil_config.reject_continuous_epochs_overlap = 0.125;
+            bemobil_config.reject_continuous_epoch_buffer = 0.0625;
+            bemobil_config.reject_continuous_weights = [1 1 1 1];
+            bemobil_config.reject_continuous_use_kneepoint = 0;
+            bemobil_config.reject_continuous_kneepoint_offset = 0;
+            bemobil_config.reject_continuous_highpass_cutoff = 10;
+            bemobil_config.reject_continuous_do_plot = 1;
+            bemobil_config.reject_continuous_do_plot_continuous = 0;
+            
+            [ALLEEG, EEG_filtered_for_AMICA, CURRENTSET, plot_handles] = bemobil_reject_continuous(ALLEEG, EEG_filtered_for_AMICA, CURRENTSET,...
+                bemobil_config.reject_continuous_epochs_length, bemobil_config.reject_continuous_epochs_overlap, bemobil_config.reject_continuous_epoch_buffer,...
+                bemobil_config.reject_continuous_fixed_threshold, bemobil_config.reject_continuous_weights,...
+                bemobil_config.reject_continuous_use_kneepoint, bemobil_config.reject_continuous_kneepoint_offset, ...
+                bemobil_config.reject_continuous_highpass_cutoff, bemobil_config.reject_continuous_do_plot, bemobil_config.reject_continuous_do_plot_continuous);
+            
+            if bemobil_config.reject_continuous_do_plot
+                print(plot_handles(1),fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_time_domain-autoclean.png']),'-dpng')
+
+                for i_plot = 1:length(plot_handles)
+                    close(plot_handles(i_plot))
+                end
+            end
+            
+        end
+        
         [ALLEEG, EEG_AMICA, CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG_filtered_for_AMICA, ...
             CURRENTSET, true, bemobil_config.num_models, bemobil_config.max_threads, EEG_filtered_for_AMICA.etc.rank, [], ...
             [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.amica_filename_output], output_filepath,...
