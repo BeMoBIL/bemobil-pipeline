@@ -32,13 +32,12 @@ function [ALLEEG, EEG_motion_out, CURRENTSET] = bemobil_process_all_motion(ALLEE
 % check config
 bemobil_config = bemobil_check_config(bemobil_config);
 
-% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
-% larger than 2gb)
-% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
-try
-    pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+% make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
+% used but data is processed locally, and two files are used for storing sets (.set and .fdt)
+try 
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1);
 catch
-    warning('Could NOT edit EEGLAB memory options!!');
+    warning('Could NOT edit EEGLAB memory options!!'); 
 end
 
 if ~exist('force_recompute','var')

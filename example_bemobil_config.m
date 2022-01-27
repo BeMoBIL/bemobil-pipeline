@@ -118,6 +118,10 @@ bemobil_config.resample_freq = 250;
 %   line_noise_crit                     - If a channel has more line noise relative to its signal than this value, in
 %                                           standard deviations based on the total channel population, it is considered
 %                                           abnormal. (default: 'off')
+%   num_chan_rej_max_target             - Target max amount of channel rejection. Actual num of rejections might be higher if 
+%                                           there are a lot of bad channels. Target precision can be increased with higher chan_detect_num_iter
+%                                           If empty, use only chan_detected_fraction_threshold. Can be either a fraction 
+%                                           of all channels (will be rounded, e.g. 1/5 of chans) or a specific integer number
 
 bemobil_config.chancorr_crit = 0.8;
 bemobil_config.chan_max_broken_time = 0.3;
@@ -125,6 +129,7 @@ bemobil_config.chan_detect_num_iter = 10;
 bemobil_config.chan_detected_fraction_threshold = 0.5;
 bemobil_config.flatline_crit = 'off';
 bemobil_config.line_noise_crit = 'off';
+bemobil_config.num_chan_rej_max_target = 1/5; 
 
 % channel locations: leave this empty if you have standard channel names that should use standard 10-20 locations,
 % otherwise every dataset needs to have a channel locations file in the raw_data folder, and the chanloc file needs to
@@ -204,3 +209,12 @@ bemobil_config.lowpass_motion = 6;
 bemobil_config.lowpass_motion_after_derivative = 18;
 % bemobil_config.lowpass_motion = [];
 % bemobil_config.lowpass_motion_after_derivative = [];
+
+%%
+% make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
+% used but data is processed locally, and two files are used for storing sets (.set and .fdt)
+try 
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1);
+catch
+    warning('Could NOT edit EEGLAB memory options!!'); 
+end
