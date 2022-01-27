@@ -188,7 +188,7 @@ if ~isempty(channel_locations_filepath) % chanlocs are read in here
         {channel_locations_filepath 'filetype' 'autodetect'});
     disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
-elseif ~any(isempty({EEG.chanlocs.X}))
+elseif all(~cellfun(@isempty,{EEG.chanlocs.X}))
     disp('All chanlocs have X coordinates - assume channel location has been imported'); 
 else % no chanlocs present, use default chanlocs
     standard_channel_locations_path =...
