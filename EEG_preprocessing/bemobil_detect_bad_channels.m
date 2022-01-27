@@ -20,9 +20,11 @@
 %   chan_detect_num_iter                - Number of iterations the bad channel detection should run (default = 10)
 %   chan_detected_fraction_threshold	- Fraction how often a channel has to be detected to be rejected in the final
 %                                           rejection (default 0.5)
-%   num_chan_rej_target                 - Target amount of channel rejection. Actual num of rejections might be higher if 
+%   num_chan_rej_max_target             - Target max amount of channel rejection. Actual num of rejections might be higher if 
 %                                           there are a lot of bad channels. Target precision can be increased with higher chan_detect_num_iter
-%                                           If empty, use only chan_detected_fraction_threshold.                 
+%                                           If empty, use only chan_detected_fraction_threshold. Can be either a fraction 
+%                                           of all channels (will be rounded, e.g. 1/5 of chans) or a specific integer
+%                                           number. (default = 1/5)
 %   flatline_crit                       - Maximum duration a channel can be flat in seconds (default 'off')
 %   line_noise_crit                     - If a channel has more line noise relative to its signal than this value, in
 %                                           standard deviations based on the total channel population, it is considered
@@ -46,7 +48,7 @@
 % Authors: Lukas Gehrke, 2017, Marius Klug, 2021, Timotheus Berg, 2021
 
 function [chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, num_chan_rej_target, flatline_crit, line_noise_crit)
+    chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, num_chan_rej_max_target, flatline_crit, line_noise_crit)
 
 if ~exist('chancorr_crit','var') || isempty(chancorr_crit)
 	chancorr_crit = 0.8;
@@ -66,8 +68,8 @@ end
 if ~exist('line_noise_crit','var') || isempty(line_noise_crit)
 	line_noise_crit = 'off';
 end
-if ~exist('num_chan_rej_target','var') || isempty(num_chan_rej_target)
-	num_chan_rej_target = [];
+if ~exist('num_chan_rej_target','var') || isempty(num_chan_rej_max_target)
+	num_chan_rej_max_target = 1/5;
 end
 
 %%
@@ -94,11 +96,14 @@ disp('...iterative bad channel detection done!')
 badness_percent = sum(detected_bad_channels,2) / size(detected_bad_channels,2);
 
 % If there are a lot of bad channels, raise the threshold to the badness value at num_chan_rej_target
-if ~isempty(num_chan_rej_target)
+if ~isempty(num_chan_rej_max_target)
+    if num_chan_rej_max_target<1 && num_chan_rej_max_target>0
+        num_chan_rej_max_target = round(EEG.nbchan * num_chan_rej_max_target);
+    end
     [sort_val, ~ ] = sort(badness_percent, 'descend');
 
-    if sort_val(num_chan_rej_target) > chan_detected_fraction_threshold
-        chan_detected_fraction_threshold = sort_val(num_chan_rej_target);
+    if sort_val(num_chan_rej_max_target) > chan_detected_fraction_threshold
+        chan_detected_fraction_threshold = sort_val(num_chan_rej_max_target);
     end
 end
 
