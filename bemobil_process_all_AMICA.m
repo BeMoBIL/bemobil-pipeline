@@ -116,7 +116,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
         %         data_rank = data_rank - rank_reduction_of_bridges;
         
         % automatic time-domain cleaning if selected
-        if bemobil_config.use_reject_continuous
+        if isfield(bemobil_config,'use_reject_continuous') && bemobil_config.use_reject_continuous
             
             if ~isfield(bemobil_config,'reject_continuous_fixed_threshold') || isempty(bemobil_config.reject_continuous_fixed_threshold)
                 bemobil_config.reject_continuous_fixed_threshold = 0.07; % default 7% threshold leads to roughly 10% rejection
@@ -141,12 +141,26 @@ if ~exist('EEG_preprocessed_and_ICA','var')
                 bemobil_config.reject_continuous_highpass_cutoff, bemobil_config.reject_continuous_do_plot, bemobil_config.reject_continuous_do_plot_continuous);
             
             if bemobil_config.reject_continuous_do_plot
+                mkdir(output_filepath);
                 print(plot_handles(1),fullfile(output_filepath,[bemobil_config.filename_prefix num2str(subject) '_time_domain-autoclean.png']),'-dpng')
 
                 for i_plot = 1:length(plot_handles)
                     close(plot_handles(i_plot))
                 end
             end
+            
+        end
+        
+        % allow for random subsampling to a given amount of samples
+        if isfield(bemobil_config,'random_sumsampling_AMICA') && bemobil_config.random_sumsampling_AMICA
+            
+            retain_idx = [ones(1,bemobil_config.random_sumsampling_AMICA) zeros(1,EEG_filtered_for_AMICA.pnts-bemobil_config.random_sumsampling_AMICA)];
+            retain_idx = logical(retain_idx(randperm(length(retain_idx))));
+            
+            EEG_filtered_for_AMICA.pnts = bemobil_config.random_sumsampling_AMICA;
+            EEG_filtered_for_AMICA.times = EEG_filtered_for_AMICA.times(retain_idx);
+            EEG_filtered_for_AMICA.data = EEG_filtered_for_AMICA.data(:,retain_idx);
+            
             
         end
         
