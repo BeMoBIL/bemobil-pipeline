@@ -1,17 +1,43 @@
 
-function motionOut = bemobil_bids_motionconvert(motionIn, objects, pi, si, ri)
+function motionOut = bemobil_bids_motionconvert(motionIn, objects, trackSysConfig)
 
-% your quaternion [w,x,y,z] components, in this order
-quaternionComponents    = {'w','x','y','z'};
+% quaternion [w,x,y,z] components, in this order
+if isfield(trackSysConfig, 'quaternions')
+    quaternionComponents    = trackSysConfig.quaternions;    
+else
+    quaternionComponents    = {'w','x','y','z'};
+end
 
-% your euler components - the rotation order of the output of quat2eul will be reversed 
-eulerComponents         = {'x','y','z'}; 
+% euler angle components - the rotation order of the output of quat2eul will be reversed 
+if isfield(trackSysConfig, 'euler_components')
+    eulerComponents         = trackSysConfig.euler_components;    
+else
+    eulerComponents         = {'x','y','z'}; 
+end
 
-% yourcartesian coordinates 
-cartCoordinates         = {'x','y','z'};
+% cartesian coordinates 
+if isfield(trackSysConfig, 'euler_components')
+    cartCoordinates         = trackSysConfig.cartCoordinates;    
+else
+    cartCoordinates         = {'x','y','z'};
+end
+
 
 % missing value (how tracking loss is represented in the stream)
-missingval = 0; 
+if isfield(trackSysConfig, 'missing_values')
+    switch trackSysConfig.missing_values
+        case '0'
+            missingval = 0;
+        case 'NaN'
+            missingval = NaN;
+        otherwise
+            warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.name ': it should be "0" or "NaN" formatted as string.'])
+            warning('Taking default value NaN for missing samples.')
+            missingval = NaN;
+    end
+else
+    missingval = NaN;
+end
 
 newCell = {}; 
 % check if object input is a nested cell

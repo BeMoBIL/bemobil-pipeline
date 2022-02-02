@@ -487,9 +487,11 @@ if importEEG
 end
 
 if importMotion
+    
     for Si = 1:numel(config.motion.streams) 
-        motionStreamNames{Si}   = config.motion.streams{Si}.stream_name;
+        motionStreamNames{Si}   = config.motion.streams{Si}.name;
     end
+    
     xdfmotion   = streams(contains(lower(names),lower(motionStreamNames)) & iscontinuous);
     
     if isempty(xdfmotion)
@@ -617,7 +619,7 @@ if importEEG % This loop is always executed in current version
     
     % acquisition time processing 
     eegcfg.acq_time = datestr(datenum(config.acquisition_time),'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
-    
+
     % write eeg files in bids format
     data2bids(eegcfg, eeg);
     
@@ -642,7 +644,6 @@ if importMotion
     motioncfg.coordsystem.MotionRotationRule          = motionInfo.coordsystem.MotionRotationRule;
     motioncfg.coordsystem.MotionRotationOrder         = motionInfo.coordsystem.MotionRotationOrder;
     motioncfg.TrackingSystemCount                     = numel(trackSysInData);
-
 
     % construct fieldtrip data
     ftmotion = {};
@@ -707,8 +708,11 @@ if importMotion
            end
         end
         
+        % select tracking system configuration 
+        trackSysConfig = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
+        
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, config.subject, si, ri, interpMotion);
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig);
         
         % channel metadata 
         %------------------------------------------------------------------
