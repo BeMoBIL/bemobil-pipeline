@@ -130,7 +130,6 @@ if isfield(config, 'session')
 end
 
 
-
 % EEG-related fields
 %--------------------------------------------------------------------------
 if importEEG
@@ -141,14 +140,26 @@ end
 %--------------------------------------------------------------------------
 if importMotion
     
+    config.motion = checkfield(config.motion, 'tracksys', 'required', '');
     config.motion = checkfield(config.motion, 'streams', 'required', '');
+
+    tracksysNames       = {}; 
     
-    for Si = 1:numel(config.motion.streams)
-        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'stream_name', 'required', '');
-        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracking_system', 'required', '');
-        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracked_points', 'required', '');
+    % check tracking system fields
+    for Ti = 1:numel(config.motion.tracksys)
+        config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'name', 'required', '');
+        tracksysNames{end+1} = config.motion.tracksys{Ti}.name;  
     end
     
+    % check stream fields
+    for Si = 1:numel(config.motion.streams)
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'name', 'required', '');
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracksys', 'required', '');
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracked_points', 'required', '');
+        
+        % check if tracksys name fields match
+        assert(ismember(config.motion.streams{Si}.tracksys, tracksysNames))
+    end
     
     % default channel types and units
     motion_type.POS.unit        = 'm'; 
@@ -159,6 +170,7 @@ if importMotion
     motion_type.ANGACC.unit     = 'r/s^2';
     motion_type.MAGN.unit       = 'fm';
     motion_type.JNTANG.unit     = 'r';
+    motion_type.TIMESTAMPS.unit = 'timestamps'; 
 
 end
 
@@ -240,8 +252,8 @@ if importMotion
     
     % check how many different tracking systems are specified
     for Si = 1:numel(config.motion.streams)
-        streamNames{Si}     = config.motion.streams{Si}.stream_name;
-        trackSysNames{Si}   = config.motion.streams{Si}.tracking_system;
+        streamNames{Si}     = config.motion.streams{Si}.name;
+        trackSysNames{Si}   = config.motion.streams{Si}.tracksys;
         trackedPointNames{Si} = config.motion.streams{Si}.tracked_points; 
         
         if isfield(config.motion.streams{Si}, 'tracked_points_anat')
@@ -256,14 +268,14 @@ if importMotion
   
     % get all stream names corresponding to each tracking system
     for Si = 1:numel(trackSysInData)
-        trackSysInds = find(strcmp(trackSysNames, trackSysInData{Si})); 
+        trackSysInds                = find(strcmp(trackSysNames, trackSysInData{Si})); 
         streamsInData{Si}           = streamNames(trackSysInds);
         trackedPointsInData{Si}     = trackedPointNames(trackSysInds); 
         anatInData{Si}              = anatomicalNames(trackSysInds); 
     end
     
     % construct default info for tracking systems
-    tracking_systems                                    = trackSysInData;
+    tracking_systems                = trackSysInData;
     
     for Ti = 1:numel(tracking_systems)
         defaultTrackingSystems.(tracking_systems{Ti}).Manufacturer                     = 'DefaultManufacturer';
@@ -461,7 +473,6 @@ for i=1:numel(streams)
         catch
         end
     end
-    
 end
 
 if importEEG
