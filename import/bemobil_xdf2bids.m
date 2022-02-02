@@ -121,17 +121,6 @@ if importMotion
         config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracked_points', 'required', '');
     end
     
-    if isfield(config.motion, 'custom_function')
-        if isempty(config.motion.custom_function)
-            % functions that resolve dataset-specific problems
-            motionCustom            = 'bemobil_bids_motionconvert';
-        else
-            motionCustom            = config.motion.custom_function;
-        end
-
-    else
-        motionCustom = 'bemobil_bids_motionconvert'; 
-    end
     
     % default channel types and units
     motion_type.POS.unit        = 'm'; 
@@ -679,10 +668,9 @@ if importMotion
            end
         end
         
-        % if needed, execute a custom function for any alteration to the data to address dataset specific issues
-        % (quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating for instance)
-        motion = feval(motionCustom, ftmotion(streamInds), trackedPointNames, config.subject, si, ri);
-      
+        % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, config.subject, si, ri, interpMotion);
+        
         % channel metadata 
         %------------------------------------------------------------------
         rb_streams = motionStreamNames;
