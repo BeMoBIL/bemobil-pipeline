@@ -12,35 +12,63 @@ function bemobil_xdf2bids(config, varargin)
 %       config.run                    = 1;                                  % optional
 %       config.task                   = 'rotation';                         % optional 
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
-% 
+%
+% EEG parameters 
+%--------------------------------------------------------------------------
 %       config.eeg.stream_name        = 'BrainVision';                      % required
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
 %       config.eeg.elec_struct        = elecStruct;                         % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
 %       config.eeg.chanloc_newname    = {'chan1', 'chan2'};                 % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
-%         
-%       config.motion.streams{1}.stream_name        = 'stream1';            % required, keyword in stream name  
-%                                                                                   % searched for in field "xdfdata{streamIndex}.info.name"
-%       config.motion.streams{1}.tracking_system    = 'HTCVive';            % required, user-defined name of the tracking system
-%                                                                                   % in case motion metadata are provided, match with fieldname in "motionInfo.motion.TrackingSystems.(fieldname)"
-%                                                                                   % e.g., motionInfo.motion.TrackingSystems.HTCVive.Manufacturer = 'HTC'; 
-%       config.motion.streams{1}.tracked_points     = 'rigid1';             % required, keyword in channel names, indicating which object (tracked point) is included in the stream 
-%                                                                                   % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
-%                                                                                   % required to be unique in a single tracking system
-%       config.motion.streams{1}.tracked_points_anat = 'leftFoot';          % optional, user-defined anatomical name of the point being tracked 
-%       config.motion.streams{2}.stream_name        = 'stream2'; 
-%       config.motion.streams{2}.tracking_system    = 'HTCVive'; 
-%       config.motion.streams{2}.tracked_points     = 'rigid2';
-%       config.motion.streams{2}.tracked_points_anat = 'rightFoot';
-%       config.motion.streams{3}.stream_name        = 'stream3'; 
-%       config.motion.streams{3}.tracking_system    = 'phaseSpace'; 
-%       config.motion.streams{3}.tracked_points     = {'leftFoot', 'rightFoot'}; % keywords in channel names, when multiple tracked points are included in a single stream 
-%       config.motion.POS.unit                      = 'vm';                 % optional, in case you want to use custom unit
+%   
+% MOTION parameters
+%--------------------------------------------------------------------------
+% The following example shows a situation where there are two tracking
+% systems ('PhaseSpace' and 'HTCVive').
+% Tracking system 'PhaseSpace' consists of one xdf stream ('stream1') that 
+% contains 3 tracked points ('torso', 'leftLeg', 'rightLeg')
+% Tracking system 'HTCVive' consists of two xdf streams ('stream2', 'stream3')
+% which contains one tracked point each ('leftArm', 'rightArm')
 %
+% How to describe tracking systems in your data :  
+%
+%       config.motion.tracksys{1}.name                    = 'PhaseSpace';   % required, string, name of the tracking system
+%                                                                           % in case motion metadata are provided, match with fieldname in "motionInfo.motion.TrackingSystems.(fieldname)"
+%                                                                           % e.g., motionInfo.motion.TrackingSystems.HTCVive.Manufacturer = 'HTC'; 
+%       config.motion.tracksys{1}.quaternions             = {'w','x','y','z'}; % optional, your quaternion [w,x,y,z] components, in this order. if specified, script will find and convert quaternion elements to euler angles
+%       config.motion.tracksys{1}.eulercomponents         = {'x','y','z'};  % optional, your euler components - the rotation order of the output of quat2eul will be reversed 
+%       config.motion.tracksys{1}.cartesiancoordinates    = {'x','y','z'};  % optional, your cartesian coordinates for position data
+%       config.motion.tracksys{1}.keeptimestamps          = 'on';           % optional, 'on' by default, 'off' will lead to interpolation for making intersample intervals regular 
+%       config.motion.tracksys{1}.missingValues           = 'NaN';          % optional, how missing samples are represented in the stream. takes one of the values from 'NaN', '0';   
+%       config.motion.tracksys{1}.POS.unit                = 'vm';           % optional, in case you want to use custom unit
+%       
+%       config.motion.tracksys{2}.name                    = 'HTCVive';     
+%       
+% How to describe xdf streams in your data and assign them to tracking systems : 
+%
+%       config.motion.streams{1}.name                     = 'stream1';      % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
+%       config.motion.streams{1}.tracksys                 = 'PhaseSpace';   % required, match with one of the values in "motion.tracksys{}.name"
+%       config.motion.streams{1}.tracked_points           = {'torso','leftLeg', 'rightLeg'}; %  keyword in channel names, indicating which object (tracked point) is included in the stream
+%                                                                            % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
+%                                                                            % required to be unique in a single tracking system
+%       config.motion.streams{1}.tracked_points_anat      = {'back center', 'left knee', 'right knee'}; % optional, anatomical description of placing of the trackers in case human body motion is being tracked
+%
+%       config.motion.streams{2}.name                     = 'stream2';
+%       config.motion.streams{2}.tracksys                 = 'HTCVive';
+%       config.motion.streams{2}.tracked_points           = 'leftArm'; 
+% 
+%       config.motion.streams{3}.name                     = 'stream3'; 
+%       config.motion.streams{3}.tracksys                 = 'HTCVive'; 
+%       config.motion.streams{3}.tracked_points           = 'rightArm'; 
+%
+% PHYSIO parameters
+%--------------------------------------------------------------------------
 %       config.phys.streams{1}.stream_name          = {'force1'};           % optional
+%       config.phys.skip_interp                     = 1;                    % optional, logical. Set as 1 if you wish to not correct intersample intervals by interpolation for physio data 
 %
 %--------------------------------------------------------------------------
 % Optional Inputs :
-%       Provide optional inputs as key value pairs. See below for example
+%       Provide optional inputs as key value pairs. 
+%       Usage:
 %       bemobil_xdf2bids(config, 'general_metadata', generalInfo); 
 % 
 %       general_metadata
