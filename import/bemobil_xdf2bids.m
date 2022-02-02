@@ -35,10 +35,10 @@ function bemobil_xdf2bids(config, varargin)
 %                                                                           % in case motion metadata are provided, match with fieldname in "motionInfo.motion.TrackingSystems.(fieldname)"
 %                                                                           % e.g., motionInfo.motion.TrackingSystems.HTCVive.Manufacturer = 'HTC'; 
 %       config.motion.tracksys{1}.quaternions             = {'w','x','y','z'}; % optional, your quaternion [w,x,y,z] components, in this order. if specified, script will find and convert quaternion elements to euler angles
-%       config.motion.tracksys{1}.eulercomponents         = {'x','y','z'};  % optional, your euler components - the rotation order of the output of quat2eul will be reversed 
-%       config.motion.tracksys{1}.cartesiancoordinates    = {'x','y','z'};  % optional, your cartesian coordinates for position data
-%       config.motion.tracksys{1}.keeptimestamps          = 'on';           % optional, 'on' by default, 'off' will lead to interpolation for making intersample intervals regular 
-%       config.motion.tracksys{1}.missingValues           = 'NaN';          % optional, how missing samples are represented in the stream. takes one of the values from 'NaN', '0';   
+%       config.motion.tracksys{1}.euler_components        = {'x','y','z'};  % optional, your euler components - the rotation order of the output of quat2eul will be reversed 
+%       config.motion.tracksys{1}.cartesian_coordinates   = {'x','y','z'};  % optional, your cartesian coordinates for position data
+%       config.motion.tracksys{1}.keep_timestamps         = 'on';           % optional, 'on' by default, 'off' will lead to interpolation for making intersample intervals regular 
+%       config.motion.tracksys{1}.missing_values          = 'NaN';          % optional, how missing samples are represented in the stream. takes one of the values from 'NaN', '0';   
 %       config.motion.tracksys{1}.POS.unit                = 'vm';           % optional, in case you want to use custom unit
 %       
 %       config.motion.tracksys{2}.name                    = 'HTCVive';     
