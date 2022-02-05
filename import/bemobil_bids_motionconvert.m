@@ -291,20 +291,20 @@ end
 
 %--------------------------------------------------------------------------
 % find the one with the highest sampling rate 
-% & check if data can be reasonably concatenated
+% & check if there are multiple streams in a single tracking system 
 motionsrates    = []; 
-nSamples        = []; 
 for iM = 1:numel(motionStreamAll)
     motionsrates(iM) = motionStreamAll{iM}.hdr.Fs; 
-    nSamples(iM)     = motionStreamAll{iM}.hdr.nSamples; 
 end
 
-if all(nSamples(:) == nSamples(1))
+if numel(motionStreamAll) == 1
+    % if there is one motion stream, check the config field to decide
+    % whether to resample or keep timestamps 
     doResample      = ~strcmp(trackSysConfig.keep_timestamps, 'on'); 
 else
     doResample      = true;
     if strcmp(trackSysConfig.keep_timestamps, 'on') 
-        warning('Config field keep_timestamps was specified as "on", but number of samples among streams in tracksys do not match - resampling...')
+        warning('Config field keep_timestamps was specified as "on", but there are multiple streams in a single tracking system - resampling...')
     end
 end
 
