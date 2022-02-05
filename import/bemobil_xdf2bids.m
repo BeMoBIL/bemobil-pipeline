@@ -148,6 +148,7 @@ if importMotion
     % check tracking system fields
     for Ti = 1:numel(config.motion.tracksys)
         config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'name', 'required', '');
+        config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'keep_timestamps', 'on', 'on');
         tracksysNames{end+1} = config.motion.tracksys{Ti}.name;  
     end
     
@@ -170,7 +171,7 @@ if importMotion
     motion_type.ANGACC.unit     = 'r/s^2';
     motion_type.MAGN.unit       = 'fm';
     motion_type.JNTANG.unit     = 'r';
-    motion_type.TIMESTAMPS.unit = 'timestamps'; 
+    motion_type.LATENCY.unit    = 'seconds'; 
 
 end
 
@@ -725,9 +726,9 @@ if importMotion
             motionChanType          = motion.hdr.chantype{ci};
             
             if isfield(config.motion, motionChanType)
-                motion.hdr.chanunit{ci} = config.motion.(motionChanType).unit; 
+                motion.hdr.chanunit{ci} = config.motion.(motionChanType).unit;
                 disp(['Using custom unit ' config.motion.(motionChanType).unit ' for type ' motionChanType])
-            else
+            elseif isfield(motion_type, motionChanType)
                 motion.hdr.chanunit{ci} = motion_type.(motionChanType).unit;
             end
             

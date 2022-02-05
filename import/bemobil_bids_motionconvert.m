@@ -26,7 +26,8 @@ disp(['Coverting motion data from tracking system ' trackSysConfig.name ' to BID
 % w is the non-axial component
 quaternionComponents    = {'w','x','y','z'}; % default values 
 quaternionKeyword       = 'quat';
-quaternionNames         = {}; 
+quaternionNames         = {};
+eulerComponents         = {'x','y','z'};
 
 if isfield(trackSysConfig, 'quaternions')
     if isfield(trackSysConfig.quaternions, 'channel_names')
@@ -43,8 +44,6 @@ if isfield(trackSysConfig, 'quaternions')
     
     if isfield(trackSysConfig.quaternions, 'output_order')
         eulerComponents         = trackSysConfig.euler_components;
-    else
-        eulerComponents         = {'x','y','z'};
     end
 end
 
@@ -83,7 +82,6 @@ if isfield(trackSysConfig, 'positions')
     end
     
 end
-
 
 % missing value (how tracking loss is represented in the stream)
 if isfield(trackSysConfig, 'missing_values')
@@ -149,43 +147,47 @@ for iM = 1:numel(motionIn)
         if ~isempty(quaternionNames)
             try
                 for qi = 1:4
-                    quaternionIndices(qi) = find(contains(labelsPre, quaternionNames{qi,:}));
+                    quaternionIndices(qi) = find(contains(labelsPre, quaternionNames{qi,:},'IgnoreCase', true));
                 end
                 quatFound = true; 
             catch
                 try
                     for qi = 1:4
-                        quaternionIndices(qi) = find(strcmp(labelsPre, quaternionNames{qi,:}));
+                        quaternionIndices(qi) = find(strcmpi(labelsPre, quaternionNames{qi,:}));
                     end
                     quatFound = true;
                 catch
-                    
                     warning('Quaternion names for the tracking system were specified but could not be used.')
                 end
             end
         end
         
         if ~quatFound
-            for qi = 1:4
-                quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_' quaternionComponents{qi}], 'IgnoreCase', true) & contains(labelsPre, quaternionKeyword, 'IgnoreCase', true));
+            try
+                for qi = 1:4
+                    quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_' quaternionComponents{qi}], 'IgnoreCase', true) & contains(labelsPre, quaternionKeyword, 'IgnoreCase', true));
+                end
+                quatFound = true; 
+            catch
+                warning('No quaternion data found')
             end
         end
         
         cartIndices = NaN(1,3);
         
-         % find position channels
+        % find position channels
         %------------------------------------------------------------------
         cartFound = false; 
-        if ~isempty(quaternionNames)
+        if ~isempty(cartNames)
             try
                 for ci = 1:3
-                    cartIndices(ci) = find(contains(labelsPre, cartNames{ci,:}));
+                    cartIndices(ci) = find(contains(labelsPre, cartNames{ci,:},'IgnoreCase', true));
                 end
                 cartFound = true; 
             catch
                 try
                     for ci = 1:3
-                        cartIndices(ci) = find(strcmp(labelsPre, cartNames{ci,:}));
+                        cartIndices(ci) = find(strcmpi(labelsPre, cartNames{ci,:}));
                     end
                     cartFound = true;
                 catch
@@ -195,47 +197,84 @@ for iM = 1:numel(motionIn)
         end
         
         if ~cartFound
-            for ci = 1:3
-                cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_' cartCoordinates{ci}], 'IgnoreCase', true) & contains(labelsPre, cartKeyword, 'IgnoreCase', true));
+            try
+                for ci = 1:3
+                    cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_' cartCoordinates{ci}], 'IgnoreCase', true) & contains(labelsPre, cartKeyword, 'IgnoreCase', true));
+                end
+                cartFound = true;
+            catch
+                warning('No cartesian position data found')
             end
         end
         
+        if quatFound
+            % convert from quaternions to euler angles
+            orientationInQuaternion    = dataPre(quaternionIndices,:)';
+            orientationInEuler         = util_quat2eul(orientationInQuaternion); % the BeMoBIL util script
+            orientationInEuler         = orientationInEuler';
+            occindices                 = find(orientationInQuaternion(1,:) == missingval);
+            orientationInEuler(:,occindices) = nan;
+            orientationInEuler  = fillmissing(orientationInEuler', 'nearest')';
+            
+            % unwrap euler angles
+            orientationInEuler  = unwrap(orientationInEuler, [], 2);
+        else
+            orientationInEuler = []; 
+            quaternionIndices = []; 
+        end
+        
+        if cartFound
+            % find and fill missing values
+            position                    = dataPre(cartIndices,:);
+            occindices                  = find(position(1,:) == missingval);
+            position(:,occindices)      = nan;
+            position            = fillmissing(position', 'pchip')';
+        else
+           position     = []; 
+           cartIndices  = [];  
+        end
+        
+        % construct a latency channel
+        latency  = motionStream.time{1};
+        
         % all other channels 
-        otherChans = setdiff(objectChans, union(cartIndices, quaternionIndices)); 
-        
-        % convert from quaternions to euler angles
-        orientationInQuaternion    = dataPre(quaternionIndices,:)';
-        orientationInEuler         = util_quat2eul(orientationInQuaternion); % the BeMoBIL util script
-        orientationInEuler         = orientationInEuler';
-        position                   = dataPre(cartIndices,:);
-        
-        % find and fill missing values 
-        occindices                  = find(position(1,:) == missingval); 
-        position(:,occindices)      = nan; 
-        orientationInEuler(:,occindices) = nan; 
-        position            = fillmissing(position', 'pchip')'; 
-        orientationInEuler  = fillmissing(orientationInEuler', 'nearest')'; 
-        
-        % unwrap euler angles 
-        orientationInEuler         = unwrap(orientationInEuler, [], 2); 
+        otherChans          = setdiff(objectChans, union(cartIndices, quaternionIndices));
+        otherData           = dataPre(otherChans,:);
         
         % concatenate the converted data
-        dataPost                   = [dataPost; orientationInEuler; position];
+        objectData         = [orientationInEuler; position; otherData; latency];
+        dataPost           = [dataPost; objectData];
         
         % enter channel information
-        for ei = 1:3
-            motionStream.label{6*(oi-1) + ei}                 = [objects{ni} '_eul_' eulerComponents{ei}];
-            motionStream.hdr.label{6*(oi-1) + ei}             = [objects{ni} '_eul_' eulerComponents{ei}];
-            motionStream.hdr.chantype{6*(oi-1) + ei}          = 'ORNT';
-            motionStream.hdr.chanunit{6*(oi-1) + ei}          = 'rad';
+        for ei = 1:size(orientationInEuler,1)
+            motionStream.label{end + 1}                 = [objects{ni} '_eul_' eulerComponents{ei}];
+            motionStream.hdr.label{end + 1}             = [objects{ni} '_eul_' eulerComponents{ei}];
+            motionStream.hdr.chantype{end + 1}          = 'ORNT';
+            motionStream.hdr.chanunit{end + 1}          = 'rad';
         end
         
-        for ci = 1:3
-            motionStream.label{6*(oi-1) + 3 + ci}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
-            motionStream.hdr.label{6*(oi-1) + 3 + ci}             = [objects{ni} '_cart_' cartCoordinates{ci}];
-            motionStream.hdr.chantype{6*(oi-1) + 3 + ci}          = 'POS';
-            motionStream.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'm';
+        for ci = 1:size(position,1)
+            motionStream.label{end + 1}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
+            motionStream.hdr.label{end + 1}             = [objects{ni} '_cart_' cartCoordinates{ci}];
+            motionStream.hdr.chantype{end + 1}          = 'POS';
+            motionStream.hdr.chanunit{end + 1}          = 'm';
         end
+        
+        for ii = 1:size(otherData,1)
+            motionStream.label{end + 1}                 = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.label;
+            motionStream.hdr.label{end + 1}             = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.label;
+            motionStream.hdr.chantype{end + 1}          = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.type;
+            if isfield( motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}, 'unit')
+                motionStream.hdr.chanunit{end + 1}          = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.unit;
+            else
+                motionStream.hdr.chanunit{end + 1}          = 'n/a';
+            end
+        end
+        
+        motionStream.label{end + 1}                 = [objects{ni} '_latency'];
+        motionStream.hdr.label{end + 1}             = [objects{ni} '_latency'];
+        motionStream.hdr.chantype{end + 1}          = 'LATENCY';
+        motionStream.hdr.chanunit{end + 1}          = 'seconds';
         
     end
     
@@ -248,7 +287,6 @@ for iM = 1:numel(motionIn)
         motionStreamAll{iM}       = motionStream;
     end
     
-    
 end
 
 %--------------------------------------------------------------------------
@@ -258,7 +296,7 @@ motionsrates    = [];
 nSamples        = []; 
 for iM = 1:numel(motionStreamAll)
     motionsrates(iM) = motionStreamAll{iM}.hdr.Fs; 
-    nSampels(iM)     = motionStreamAll{iM}.hdr.nSamples; 
+    nSamples(iM)     = motionStreamAll{iM}.hdr.nSamples; 
 end
 
 if all(nSamples(:) == nSamples(1))
