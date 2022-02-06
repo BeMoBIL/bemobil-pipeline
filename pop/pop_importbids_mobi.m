@@ -744,8 +744,11 @@ for iSubject = 2:size(bids.participants,1)
                             
                             % check if the .tsv file has a line of header
                             fid = fopen(otherFileRaw);
-                            header = textscan(fid,'%s',1);
+                            header = textscan(fid, '%s',1, 'delimiter', '\n');
+                            header = header{1};
+                            headers = regexp(header{1},'\t','split');
                             fclose(fid);
+                            
                             if isempty(header)
                                 DATA.data   = dlmread(otherFileRaw,'\t')';
                             else
@@ -753,6 +756,7 @@ for iSubject = 2:size(bids.participants,1)
                             end
                             
                             if strcmp(datatype,'motion') && isfield(infoData, 'TrackingSystems')
+                                
                                 DATA.srate  = infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective; 
                             else
                                 try
@@ -760,6 +764,15 @@ for iSubject = 2:size(bids.participants,1)
                                 catch
                                     DATA.srate  = infoData.SamplingFrequency; % Generic physio data 
                                 end
+                            end
+                            
+                            useLatency = 0;
+                            if strcmp(datatype,'motion')
+                                % check if the tracking system comes with latency
+                                latencyInd      = intersect(find(strcmp(channelData(:,strcmp(channelData(1,:),'tracking_system')), tracksys)),find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency')));
+                                latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
+                                latencyRowInData = find(strcmp(headers, latencyHeader));
+                                useLatency = ~isempty(latencyInd);
                             end
                             
                             % reconstruct time : use scans.tsv for synching
@@ -823,12 +836,17 @@ for iSubject = 2:size(bids.participants,1)
                             
                             DATA.etc.starttime = startTime;
                             
-                            if isfield(infoData, 'TrackingSystems')
-                                DATA.times  = (0:1000/infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective:infoData.TrackingSystems.(tracksys).RecordingDuration*1000); % time is in ms
-                            elseif isfield(infoData, 'RecordingDuration')
-                                DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
+                            if useLatency
+                                DATA.times = (DATA.data(latencyRowInData,:) - DATA.data(latencyRowInData,1))*1000;
+                                DATA.data(latencyRowInData,:)   = [];
                             else
-                                DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
+                                if isfield(infoData, 'TrackingSystems')
+                                    DATA.times  = (0:1000/infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective:infoData.TrackingSystems.(tracksys).RecordingDuration*1000); % time is in ms
+                                elseif isfield(infoData, 'RecordingDuration')
+                                    DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
+                                else
+                                    DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
+                                end
                             end
                             
                             DATA.nbchan = size(DATA.data,1);
@@ -857,6 +875,9 @@ for iSubject = 2:size(bids.participants,1)
                                 if size(channelData,2) > 3
                                     chanlocs(iChan-1).status = channelData{iChan,4};
                                 end
+                            end
+                            if useLatency
+                                chanlocs(latencyRowInData)   = [];
                             end
                         end
                     end
