@@ -234,15 +234,12 @@ for iM = 1:numel(motionIn)
            cartIndices  = [];  
         end
         
-        % construct a latency channel
-        latency  = motionStream.time{1};
-        
         % all other channels 
         otherChans          = setdiff(objectChans, union(cartIndices, quaternionIndices));
         otherData           = dataPre(otherChans,:);
         
         % concatenate the converted data
-        objectData         = [orientationInEuler; position; otherData; latency];
+        objectData         = [orientationInEuler; position; otherData];
         dataPost           = [dataPost; objectData];
         
         % enter channel information
@@ -270,21 +267,25 @@ for iM = 1:numel(motionIn)
                 motionStream.hdr.chanunit{end + 1}          = 'n/a';
             end
         end
+            
+    end
+    
+    % only include streams that have data from at least one object 
+    if oi > 0
         
+        % construct a latency channel
+        latency  = motionStream.time{1};
+        dataPost = [dataPost; latency];
         motionStream.label{end + 1}                 = [objects{ni} '_latency'];
         motionStream.hdr.label{end + 1}             = [objects{ni} '_latency'];
         motionStream.hdr.chantype{end + 1}          = 'LATENCY';
         motionStream.hdr.chanunit{end + 1}          = 'seconds';
-        
-    end
-    
-    % only include streams that have data from at least one object 
-    if oi > 0 
         motionStream.trial{1}     = dataPost;
         motionStream.hdr.nChans   = numel(motionStream.hdr.chantype);
         
         % add time stamps channel to the stream before concatenating
         motionStreamAll{iM}       = motionStream;
+        
     end
     
 end
