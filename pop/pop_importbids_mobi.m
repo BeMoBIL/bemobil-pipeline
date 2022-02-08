@@ -920,6 +920,9 @@ stats.eventConsistency   = 0;
 stats.channelConsistency = 0;
 stats.EventDescription    = 0;
 if ~isempty(bids.README), stats.README = 1; end
+if isempty(bids.participants)
+    error('No BIDS files found for specified participants')
+end
 if ismember('age'   , bids.participants(1,:)) && ismember('sex', bids.participants(1,:))
     stats.ParticipantsAgeAndSex = 1; 
 end
