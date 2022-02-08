@@ -196,12 +196,19 @@ bemobil_config.number_of_dipoles = 1;
 bemobil_config.iclabel_classifier = 'lite';
 
 % 'Brain', 'Muscle', 'Eye', 'Heart', 'Line Noise', 'Channel Noise', 'Other'
-bemobil_config.iclabel_classes = [1];
+% bemobil_config.iclabel_classes = [1]; % this setting removes everything that is not brain
+% bemobil_config.iclabel_classes = [1 7]; % this setting removes everything that is classified as an artifact IC, but not brain, and not "other"
+bemobil_config.iclabel_classes = [1 2 4 5 6 7]; % this setting only removes eye components
 
 % if the threshold is set to -1, the popularity classifier is used (i.e. every IC gets the class with the highest
 % probability), if it is set to a value, the summed score of the iclabel_classes must be higher than this threshold to
 % keep an IC. Must be in the [0 1] range!
 bemobil_config.iclabel_threshold = -1; 
+
+%% finalization
+
+bemobil_config.final_filter_lower_edge = 0.2;
+bemobil_config.final_filter_higher_edge = [];
 
 %% Motion Processing Parameters
 
