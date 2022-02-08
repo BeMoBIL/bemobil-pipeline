@@ -41,7 +41,9 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.tracksys{1}.missing_values          = 'NaN';          % optional, how missing samples are represented in the stream. takes one of the values from 'NaN', '0';   
 %       config.motion.tracksys{1}.POS.unit                = 'vm';           % optional, in case you want to use custom unit
 %       
-%       config.motion.tracksys{2}.name                    = 'HTCVive';     
+%       config.motion.tracksys{2}.name                    = 'HTCViveLeftArm';
+%
+%       config.motion.tracksys{3}.name                    = 'HTCViveRightArm';
 %       
 % How to describe xdf streams in your data and assign them to tracking systems : 
 %
@@ -53,11 +55,11 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{1}.tracked_points_anat      = {'back center', 'left knee', 'right knee'}; % optional, anatomical description of placing of the trackers in case human body motion is being tracked
 %
 %       config.motion.streams{2}.name                     = 'stream2';
-%       config.motion.streams{2}.tracksys                 = 'HTCVive';
+%       config.motion.streams{2}.tracksys                 = 'HTCViveLeftArm';
 %       config.motion.streams{2}.tracked_points           = 'leftArm'; 
 % 
 %       config.motion.streams{3}.name                     = 'stream3'; 
-%       config.motion.streams{3}.tracksys                 = 'HTCVive'; 
+%       config.motion.streams{3}.tracksys                 = 'HTCViveRightArm'; 
 %       config.motion.streams{3}.tracked_points           = 'rightArm'; 
 %
 % PHYSIO parameters
@@ -180,7 +182,7 @@ end
 if importPhys
     
     config.phys = checkfield(config.phys, 'streams', 'required', '');
-    
+    config.phys = checkfield(config.phys, 'skip_interp', 0, '0');
     for Si = 1:numel(config.phys.streams)
         config.phys.streams{Si} = checkfield(config.phys.streams{Si}, 'stream_name', 'required', '');
     end
@@ -717,7 +719,6 @@ if importMotion
         
         % channel metadata 
         %------------------------------------------------------------------
-        rb_streams = motionStreamNames;
         rb_names = trackedPointNames ;
         rb_anat = anatomicalNames;
         
@@ -802,8 +803,20 @@ if importPhys
         ftphysio{iP} = stream2ft(xdfphysio{iP});
     end
     
+    % check if user wants to skip interpolation 
+    if config.phys.skip_interp
+        if numel(ftphysio) > 1
+            warning('"config.phys.skip_interp" is on, but there are multiple physio streams to be concatenated')
+            warning('Streams will still be resampled')
+        else
+            disp('Interpolation for correcting intersample interval will not be applied to generic physio data.')
+            disp('Set "config.phys.skip_interp" to 1 only when you are sure that intersample intervals are regular enough.')
+        end
+    else
+    end
+    
     % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
-    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri);
+    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri, interpPhys);
     
     % construct physio metadata
     physiocfg               = cfg;                                           % copy general fields
