@@ -583,7 +583,7 @@ resamplecfg.method      = resampleMethod;
 resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
-ftData.time{1}          = ftData.time{1} + offset; 
+ftData.time{1}          = oldTimes/1000 + offset; 
 resampledData           = ft_resampledata(resamplecfg, ftData);
 EEG.data                = resampledData.trial{1};
 EEG.srate               = newSRate;
