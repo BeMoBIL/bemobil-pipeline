@@ -151,19 +151,6 @@ if ~exist('EEG_preprocessed_and_ICA','var')
             
         end
         
-        % allow for random subsampling to a given amount of samples
-        if isfield(bemobil_config,'random_sumsampling_AMICA') && bemobil_config.random_sumsampling_AMICA
-            
-            retain_idx = [ones(1,bemobil_config.random_sumsampling_AMICA) zeros(1,EEG_filtered_for_AMICA.pnts-bemobil_config.random_sumsampling_AMICA)];
-            retain_idx = logical(retain_idx(randperm(length(retain_idx))));
-            
-            EEG_filtered_for_AMICA.pnts = bemobil_config.random_sumsampling_AMICA;
-            EEG_filtered_for_AMICA.times = EEG_filtered_for_AMICA.times(retain_idx);
-            EEG_filtered_for_AMICA.data = EEG_filtered_for_AMICA.data(:,retain_idx);
-            
-            
-        end
-        
         [ALLEEG, EEG_AMICA, CURRENTSET] = bemobil_signal_decomposition(ALLEEG, EEG_filtered_for_AMICA, ...
             CURRENTSET, true, bemobil_config.num_models, bemobil_config.max_threads, EEG_filtered_for_AMICA.etc.rank, [], ...
             [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.amica_filename_output], output_filepath,...
