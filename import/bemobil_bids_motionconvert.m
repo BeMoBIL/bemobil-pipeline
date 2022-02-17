@@ -1,17 +1,103 @@
 
-function motionOut = bemobil_bids_motionconvert(motionIn, objects, pi, si, ri)
+function motionOut = bemobil_bids_motionconvert(motionIn, objects, trackSysConfig)
+% This function performs minimal preprocessing and channel sorting for motion data 
+%--------------------------------------------------------------------------
 
-% your quaternion [w,x,y,z] components, in this order
-quaternionComponents    = {'w','x','y','z'};
+disp(['Coverting motion data from tracking system ' trackSysConfig.name ' to BIDS format'])
 
-% your euler components - the rotation order of the output of quat2eul will be reversed 
-eulerComponents         = {'x','y','z'}; 
+% Finding quaternion data
+%--------------------------------------------------------------------------
+% method 1 : keyword + components
+% trackSysConfig.quaternions.keyword              = '_quat'; 
+% trackSysConfig.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
+%                                                                           % if this rule is violated, use channel_names option
+%
+% method 2 : channel_names 
+% trackSysConfig.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ... 
+%                                                    'headRigid_rotX', 'rightHand_rotX';, ...
+%                                                    'headRigid_rotY', 'rightHand_rotY';, ...
+%                                                    'headRigid_rotZ', 'rightHand_rotZ'}; 
+%
+% if nothing is found using these methods, no stream is processed as
+% quaternion
+% search by channel names is prioritized
 
-% yourcartesian coordinates 
-cartCoordinates         = {'x','y','z'};
+% quaternion [w,x,y,z] components, in this order
+% w is the non-axial component
+quaternionComponents    = {'w','x','y','z'}; % default values 
+quaternionKeyword       = 'quat';
+quaternionNames         = {};
+eulerComponents         = {'x','y','z'};
+
+if isfield(trackSysConfig, 'quaternions')
+    if isfield(trackSysConfig.quaternions, 'channel_names')
+        quaternionNames    = trackSysConfig.quaternions.channel_names;
+    end
+    
+    if isfield(trackSysConfig.quaternions, 'keyword')
+        quaternionKeyword = trackSysConfig.quaternions.keyword; 
+    end
+    
+    if isfield(trackSysConfig.quaternions, 'components')
+        quaternionComponents = trackSysConfig.quaternions.components; 
+    end
+    
+    if isfield(trackSysConfig.quaternions, 'output_order')
+        eulerComponents         = trackSysConfig.euler_components;
+    end
+end
+
+% Finding position data
+%--------------------------------------------------------------------------
+% method 1 : keyword + components
+% trackSysConfig.positions.keyword              = '_pos_'; 
+% trackSysConfig.positions.components           = {'x', 'y', 'z'}; 
+%
+% method 2 : channel_names 
+% trackSysConfig.quaternions.channel_names        = {'headRigid_posX', 'rightHandX';, ... 
+%                                                    'headRigid_posY', 'rightHandY';, ...
+%                                                    'headRigid_posZ', 'rightHandZ'}; 
+%
+% if nothing is found using these methods, no stream is processed as
+% quaternion
+% search by channel names is prioritized
+
+% cartesian [x,y,z] components, in this order
+% 1-D or 2-D cases are not implemented yet
+cartCoordinates    = {'x','y','z'}; % default values
+cartKeyword       = 'pos';
+cartNames         = {}; 
+
+if isfield(trackSysConfig, 'positions')
+    if isfield(trackSysConfig.positions, 'channel_names')
+        cartNames      = trackSysConfig.positions.channel_names;
+    end
+    
+    if isfield(trackSysConfig.positions, 'keyword')
+        cartKeyword    = trackSysConfig.positions.keyword; 
+    end
+    
+    if isfield(trackSysConfig.positions, 'components')
+        cartCoordinates = trackSysConfig.positions.components; 
+    end
+    
+end
 
 % missing value (how tracking loss is represented in the stream)
-missingval = 0; 
+if isfield(trackSysConfig, 'missing_values')
+    switch trackSysConfig.missing_values
+        case '0'
+            missingval = 0;
+        case 'NaN'
+            missingval = NaN;
+        otherwise
+            warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.name ': it should be "0" or "NaN" formatted as string.'])
+            warning('Taking default value NaN for missing samples.')
+            missingval = NaN;
+    end
+else
+    missingval = NaN;
+end
 
 newCell = {}; 
 % check if object input is a nested cell
@@ -43,8 +129,11 @@ for iM = 1:numel(motionIn)
     
     for ni = 1:numel(objects)
         
+        % find all channels from the given object 
+        objectChans         = find(contains(labelsPre, objects{ni})); 
+        
         % check first if the object exists at all and if not, skip
-        if isempty(find(contains(labelsPre, objects{ni}),1))
+        if isempty(objectChans)
             continue;
         else
             oi = oi + 1;
@@ -52,70 +141,172 @@ for iM = 1:numel(motionIn)
         
         quaternionIndices = NaN(1,4);
         
-        % check the lines below for quaternion channel names
-        for qi = 1:4
-            quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, [objects{ni} '_quat_' quaternionComponents{qi}], 'IgnoreCase', true));
+        % find quaternion channels
+        %------------------------------------------------------------------
+        quatFound = false; 
+        if ~isempty(quaternionNames)
+            try
+                for qi = 1:4
+                    quaternionIndices(qi) = find(contains(labelsPre, quaternionNames{qi,:},'IgnoreCase', true));
+                end
+                quatFound = true; 
+            catch
+                try
+                    for qi = 1:4
+                        quaternionIndices(qi) = find(strcmpi(labelsPre, quaternionNames{qi,:}));
+                    end
+                    quatFound = true;
+                catch
+                    warning('Quaternion names for the tracking system were specified but could not be used.')
+                end
+            end
+        end
+        
+        if ~quatFound
+            try
+                for qi = 1:4
+                    quaternionIndices(qi) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_' quaternionComponents{qi}], 'IgnoreCase', true) & contains(labelsPre, quaternionKeyword, 'IgnoreCase', true));
+                end
+                quatFound = true; 
+            catch
+                warning('No quaternion data found')
+            end
         end
         
         cartIndices = NaN(1,3);
         
-        % check the lines below for position channel names
-        for ci = 1:3
-            cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, [objects{ni} '_' cartCoordinates{ci}], 'IgnoreCase', true));
+        % find position channels
+        %------------------------------------------------------------------
+        cartFound = false; 
+        if ~isempty(cartNames)
+            try
+                for ci = 1:3
+                    cartIndices(ci) = find(contains(labelsPre, cartNames{ci,:},'IgnoreCase', true));
+                end
+                cartFound = true; 
+            catch
+                try
+                    for ci = 1:3
+                        cartIndices(ci) = find(strcmpi(labelsPre, cartNames{ci,:}));
+                    end
+                    cartFound = true;
+                catch
+                    warning('Cartesian coordinates for the tracking system were specified but could not be used.')
+                end
+            end
         end
         
-        % convert from quaternions to euler angles
-        orientationInQuaternion    = dataPre(quaternionIndices,:)';
-        orientationInEuler         = util_quat2eul(orientationInQuaternion);    % the BeMoBIL util script
-        orientationInEuler         = orientationInEuler';
-        position                   = dataPre(cartIndices,:);
+        if ~cartFound
+            try
+                for ci = 1:3
+                    cartIndices(ci) = find(contains(labelsPre, objects{ni}) & contains(labelsPre, ['_' cartCoordinates{ci}], 'IgnoreCase', true) & contains(labelsPre, cartKeyword, 'IgnoreCase', true));
+                end
+                cartFound = true;
+            catch
+                warning('No cartesian position data found')
+            end
+        end
         
-        % find and fill missing values 
-        occindices                  = find(position(1,:) == missingval); 
-        position(:,occindices)      = nan; 
-        orientationInEuler(:,occindices) = nan; 
-        position            = fillmissing(position', 'pchip')'; 
-        orientationInEuler  = fillmissing(orientationInEuler', 'nearest')'; 
+        if quatFound
+            % convert from quaternions to euler angles
+            orientationInQuaternion    = dataPre(quaternionIndices,:)';
+            orientationInEuler         = util_quat2eul(orientationInQuaternion); % the BeMoBIL util script
+            orientationInEuler         = orientationInEuler';
+            occindices                 = find(orientationInQuaternion(1,:) == missingval);
+            orientationInEuler(:,occindices) = nan;
+            orientationInEuler  = fillmissing(orientationInEuler', 'nearest')';
+            
+            % unwrap euler angles
+            orientationInEuler  = unwrap(orientationInEuler, [], 2);
+        else
+            orientationInEuler = []; 
+            quaternionIndices = []; 
+        end
         
-        % unwrap euler angles 
-        orientationInEuler         = unwrap(orientationInEuler, [], 2); 
+        if cartFound
+            % find and fill missing values
+            position                    = dataPre(cartIndices,:);
+            occindices                  = find(position(1,:) == missingval);
+            position(:,occindices)      = nan;
+            position            = fillmissing(position', 'pchip')';
+        else
+           position     = []; 
+           cartIndices  = [];  
+        end
+        
+        % all other channels 
+        otherChans          = setdiff(objectChans, union(cartIndices, quaternionIndices));
+        otherData           = dataPre(otherChans,:);
         
         % concatenate the converted data
-        dataPost                   = [dataPost; orientationInEuler; position];
+        objectData         = [orientationInEuler; position; otherData];
+        dataPost           = [dataPost; objectData];
         
         % enter channel information
-        for ei = 1:3
-            motionStream.label{6*(oi-1) + ei}                 = [objects{ni} '_eul_' eulerComponents{ei}];
-            motionStream.hdr.label{6*(oi-1) + ei}             = [objects{ni} '_eul_' eulerComponents{ei}];
-            motionStream.hdr.chantype{6*(oi-1) + ei}          = 'ORNT';
-            motionStream.hdr.chanunit{6*(oi-1) + ei}          = 'rad';
+        for ei = 1:size(orientationInEuler,1)
+            motionStream.label{end + 1}                 = [objects{ni} '_eul_' eulerComponents{ei}];
+            motionStream.hdr.label{end + 1}             = [objects{ni} '_eul_' eulerComponents{ei}];
+            motionStream.hdr.chantype{end + 1}          = 'ORNT';
+            motionStream.hdr.chanunit{end + 1}          = 'rad';
         end
         
-        for ci = 1:3
-            motionStream.label{6*(oi-1) + 3 + ci}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
-            motionStream.hdr.label{6*(oi-1) + 3 + ci}             = [objects{ni} '_cart_' cartCoordinates{ci}];
-            motionStream.hdr.chantype{6*(oi-1) + 3 + ci}          = 'POS';
-            motionStream.hdr.chanunit{6*(oi-1) + 3 + ci}          = 'm';
+        for ci = 1:size(position,1)
+            motionStream.label{end + 1}                 = [objects{ni} '_cart_' cartCoordinates{ci}];
+            motionStream.hdr.label{end + 1}             = [objects{ni} '_cart_' cartCoordinates{ci}];
+            motionStream.hdr.chantype{end + 1}          = 'POS';
+            motionStream.hdr.chanunit{end + 1}          = 'm';
         end
         
+        for ii = 1:size(otherData,1)
+            motionStream.label{end + 1}                 = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.label;
+            motionStream.hdr.label{end + 1}             = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.label;
+            motionStream.hdr.chantype{end + 1}          = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.type;
+            if isfield( motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}, 'unit')
+                motionStream.hdr.chanunit{end + 1}          = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.unit;
+            else
+                motionStream.hdr.chanunit{end + 1}          = 'n/a';
+            end
+        end
+            
     end
     
     % only include streams that have data from at least one object 
-    if oi > 0 
+    if oi > 0
+        
+        % construct a latency channel
+        latency  = motionStream.time{1};
+        dataPost = [dataPost; latency];
+        motionStream.label{end + 1}                 = [objects{ni} '_latency'];
+        motionStream.hdr.label{end + 1}             = [objects{ni} '_latency'];
+        motionStream.hdr.chantype{end + 1}          = 'LATENCY';
+        motionStream.hdr.chanunit{end + 1}          = 'seconds';
         motionStream.trial{1}     = dataPost;
         motionStream.hdr.nChans   = numel(motionStream.hdr.chantype);
+        
+        % add time stamps channel to the stream before concatenating
         motionStreamAll{iM}       = motionStream;
+        
     end
-    
     
 end
 
 %--------------------------------------------------------------------------
-% find the one with the highest sampling rate
-motionsrates = []; 
-
+% find the one with the highest sampling rate 
+% & check if there are multiple streams in a single tracking system 
+motionsrates    = []; 
 for iM = 1:numel(motionStreamAll)
     motionsrates(iM) = motionStreamAll{iM}.hdr.Fs; 
+end
+
+if numel(motionStreamAll) == 1
+    % if there is one motion stream, check the config field to decide
+    % whether to resample or keep timestamps 
+    doResample      = ~strcmp(trackSysConfig.keep_timestamps, 'on'); 
+else
+    doResample      = true;
+    if strcmp(trackSysConfig.keep_timestamps, 'on') 
+        warning('Config field keep_timestamps was specified as "on", but there are multiple streams in a single tracking system - resampling...')
+    end
 end
 
 [~,maxind] = max(motionsrates);
@@ -138,9 +329,9 @@ keephdr.label       = {};
 keephdr.chantype    = {};
 keephdr.chanunit    = {};
 
-if numel(motionStreamAll)>1
-    % resample all data structures, except the one with the max sampling rate
-    % this will also align the time axes
+if numel(motionStreamAll)> 1 
+    
+    % resample all data structures by interpolation, this will also align the time axes
     for i=1:numel(motionStreamAll)
         
         % append channel information to the header
@@ -149,15 +340,18 @@ if numel(motionStreamAll)>1
         keephdr.chantype    = [keephdr.chantype;    motionStreamAll{i}.hdr.chantype];
         keephdr.chanunit    = [keephdr.chanunit;    motionStreamAll{i}.hdr.chanunit];
         
-        % resample
-        %------------------------------------------------------------------ 
-        ft_notice('resampling %s', motionStreamAll{i}.hdr.orig.name);
-        cfg                 = [];
-        cfg.time            = regularTime;
-        cfg.detrend         = 'no'; 
-        motionStreamAll{i} = ft_resampledata(cfg, motionStreamAll{i});
+        if doResample
+            % resample
+            %--------------------------------------------------------------
+            ft_notice('resampling %s', motionStreamAll{i}.hdr.orig.name);
+            cfg                 = [];
+            cfg.time            = regularTime;
+            cfg.detrend         = 'no';
+            motionStreamAll{i} = ft_resampledata(cfg, motionStreamAll{i});
+        end
+        
     end
-    
+
     % append all data structures
     motionOut = ft_appenddata([], motionStreamAll{:});
     
