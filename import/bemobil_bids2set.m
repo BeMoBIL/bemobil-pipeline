@@ -21,6 +21,7 @@ function bemobil_bids2set(config)
 %                                                                             Resulting chanloc will take labels from eloc file. 
 %                                                                             Use empty string for a missing chanloc 
 %                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
+%       config.other_data_types        = {};                                % optional, default value {'motion'}   
 %
 % Out
 %       none
@@ -545,7 +546,7 @@ for iSub = 1:numel(subDirList)
                     fillIndices = zeros(1,numel(config.session_names)); 
                     
                     for Si = 1:numel(config.session_names)
-                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                        if strcmpi(otherDataTypes{iType}, 'MOTION')
                             [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
                         else
                             [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
@@ -589,7 +590,7 @@ for iSub = 1:numel(subDirList)
                     
                      ALLDATA = []; CURRENTSET = []; DATA = []; 
                     for Si = 1:numel(config.session_names)
-                        if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                        if strcmpi(otherDataTypes{iType}, 'MOTION')
                             [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
                         else
                             [outPath, outName] = sessionfilename(targetDir, upper(otherDataTypes{iType}), config, Si, subjectNr);
@@ -604,7 +605,7 @@ for iSub = 1:numel(subDirList)
                             [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
                         end
                     end
-                    if strcmp(bemobilModality, 'MOTION') && isMultiTrackSys
+                    if strcmpi(otherDataTypes{iType}, 'MOTION')
                         [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     else
                         [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' upper(otherDataTypes{iType}) '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
@@ -630,8 +631,14 @@ end
 function [outEEG] = interpToTime(EEG, newSRate, tFirst, tLast, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
+
 % check if any row is all zeros - use nearest interp if so
-hasNonZero = any(EEG.data,2);
+hasNonZero = zeros(size(EEG.data,1));
+
+for iRow = 1:size(EEG.data,1)
+   hasNonZero(iRow) = any(EEG.data(iRow,:));
+end
+
 if any(hasNonZero == 0)
     resampleMethod = 'nearest'; 
 else
@@ -650,7 +657,7 @@ resamplecfg.method      = resampleMethod;
 resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
-ftData.time{1}          = ftData.time{1} + offset; 
+ftData.time{1}          = oldTimes/1000 + offset; 
 resampledData           = ft_resampledata(resamplecfg, ftData);
 EEG.data                = resampledData.trial{1};
 EEG.srate               = newSRate;

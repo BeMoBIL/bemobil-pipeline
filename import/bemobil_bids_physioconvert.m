@@ -1,5 +1,5 @@
 
-function physioOut = bemobil_bids_physioconvert(physioIn, objects, pi, si, ri)
+function physioOut = bemobil_bids_physioconvert(physioIn, objects, pi, si, ri, interpPhys)
 % Process generic physiological data 
 % (resampling to the highest sampling rate among all streams of the type)
 
@@ -32,9 +32,19 @@ for iP = 1:numel(physioIn)
     
     % do not include streams that contain 0 objects
     if oi > 0 
+        
+        % construct a latency channel
+        latency  = physioStream.time{1};
+        dataPost = [dataPost; latency];
+        physioStream.label{end + 1}                 = [objects{ni} '_latency'];
+        physioStream.hdr.label{end + 1}             = [objects{ni} '_latency'];
+        physioStream.hdr.chantype{end + 1}          = 'LATENCY';
+        physioStream.hdr.chanunit{end + 1}          = 'seconds';
+        
         physioStream.trial{1}     = dataPost;
         physioStream.hdr.nChans   = numel(physioStream.hdr.chantype);
         physioStreamAll{iP}       = physioStream;
+        
     end
     
 end
@@ -45,6 +55,18 @@ physiosrates = [];
 
 for iP = 1:numel(physioStreamAll)
     physiosrates(iP) = physioStreamAll{iP}.hdr.Fs; 
+end
+
+
+if numel(physioStreamAll) == 1
+    % if there is one physio stream, check the config field to decide
+    % whether to resample or keep timestamps 
+    doResample      = interpPhys; 
+else
+    doResample      = true;
+    if interpPhys 
+        warning('Config field phys.skip_interp was specified as true, but there are multiple streams to be concatenated - resampling via interpolation')
+    end
 end
 
 [~,maxind] = max(physiosrates);
@@ -78,14 +100,16 @@ if numel(physioStreamAll)>1
         keephdr.chantype    = [keephdr.chantype;    physioStreamAll{i}.hdr.chantype];
         keephdr.chanunit    = [keephdr.chanunit;    physioStreamAll{i}.hdr.chanunit];
         
-        % resample
-        %------------------------------------------------------------------ 
-        ft_notice('resampling %s', physioStreamAll{i}.hdr.orig.name);
-        cfg                 = [];
-        cfg.time            = regularTime;
-        cfg.detrend         = 'no'; 
-        physioStreamAll{i}  = ft_struct2double(physioStreamAll{i});
-        physioStreamAll{i}  = ft_resampledata(cfg, physioStreamAll{i});
+        if doresample
+            % resample
+            %------------------------------------------------------------------
+            ft_notice('resampling %s', physioStreamAll{i}.hdr.orig.name);
+            cfg                 = [];
+            cfg.time            = regularTime;
+            cfg.detrend         = 'no';
+            physioStreamAll{i}  = ft_struct2double(physioStreamAll{i});
+            physioStreamAll{i}  = ft_resampledata(cfg, physioStreamAll{i});
+        end
     end
     
     % append all data structures
