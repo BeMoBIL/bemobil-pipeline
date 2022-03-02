@@ -281,9 +281,10 @@ if importMotion
     tracking_systems                = trackSysInData;
     
     for Ti = 1:numel(tracking_systems)
-        defaultTrackingSystems.(tracking_systems{Ti}).Manufacturer                     = 'DefaultManufacturer';
-        defaultTrackingSystems.(tracking_systems{Ti}).ManufacturersModelName           = 'DefaultModel';
-        defaultTrackingSystems.(tracking_systems{Ti}).SamplingFrequencyNominal         = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
+        defaultTrackingSystems(Ti).TrackingSystemName               = tracking_systems{Ti};
+        defaultTrackingSystems(Ti).Manufacturer                     = 'DefaultManufacturer';
+        defaultTrackingSystems(Ti).ManufacturersModelName           = 'DefaultModel';
+        defaultTrackingSystems(Ti).SamplingFrequency                = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
     end
     
     if ~exist('motionInfo', 'var')
@@ -307,23 +308,24 @@ if importMotion
             if isfield(motionInfo.motion, 'TrackingSystems')
                 
                 % take all tracking systems defined in the metadata input
-                trackSysInMeta = fieldnames(motionInfo.motion.TrackingSystems);
+                trackSysInMeta = {motionInfo.motion.TrackingSystems(:).TrackingSystemName};
                 
                 % identify tracking systems in the data but not in metadata
                 trackSysNoMeta  = setdiff(trackSysInData, trackSysInMeta);
                 
                 % construct metadata for ones that are missing them
                 for Ti = 1:numel(trackSysNoMeta)
-                    motionInfo.motion.TrackingSystems.(trackSysNoMeta{Ti}).Manufacturer                     = 'DefaultManufacturer';
-                    motionInfo.motion.TrackingSystems.(trackSysNoMeta{Ti}).ManufacturerModelName            = 'DefaultModel';
-                    motionInfo.motion.TrackingSystems.(trackSysNoMeta{Ti}).SamplingFrequencyNominal         = 'n/a';
+                    defaultTrackingSystems(Ti).TrackingSystemName               = tracking_systems{Ti};
+                    defaultTrackingSystems(Ti).Manufacturer                     = 'DefaultManufacturer';
+                    defaultTrackingSystems(Ti).ManufacturersModelName           = 'DefaultModel';
+                    defaultTrackingSystems(Ti).SamplingFrequency                = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
                 end
                 
                 % identify tracking systems in metadata but not in the data
-                trackSysNoData = setdiff(trackSysInMeta, trackSysInData);
+                [trackSysNoData, indrm] = setdiff(trackSysInMeta, trackSysInData);
                 
                 % remove unused tracking systems from metadata struct
-                motionInfo.motion.TrackingSystems = rmfield(motionInfo.motion.TrackingSystems, trackSysNoData);
+                motionInfo.motion.TrackingSystems(indrm) = [];
             else
                 warning('No information on tracking system given - filling with default info')
                 

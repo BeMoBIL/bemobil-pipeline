@@ -1,103 +1,9 @@
 
-function motionOut = bemobil_bids_motionconvert(motionIn, objects, trackSysConfig)
+function motionOut = bemobil_bids_motionconvert(motionIn, objects, trackSysConfig, streamsConfig)
 % This function performs minimal preprocessing and channel sorting for motion data 
 %--------------------------------------------------------------------------
 
 disp(['Coverting motion data from tracking system ' trackSysConfig.name ' to BIDS format'])
-
-% Finding quaternion data
-%--------------------------------------------------------------------------
-% method 1 : keyword + components
-% trackSysConfig.quaternions.keyword              = '_quat'; 
-% trackSysConfig.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
-%                                                                           % if this rule is violated, use channel_names option
-%
-% method 2 : channel_names 
-% trackSysConfig.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ... 
-%                                                    'headRigid_rotX', 'rightHand_rotX';, ...
-%                                                    'headRigid_rotY', 'rightHand_rotY';, ...
-%                                                    'headRigid_rotZ', 'rightHand_rotZ'}; 
-%
-% if nothing is found using these methods, no stream is processed as
-% quaternion
-% search by channel names is prioritized
-
-% quaternion [w,x,y,z] components, in this order
-% w is the non-axial component
-quaternionComponents    = {'w','x','y','z'}; % default values 
-quaternionKeyword       = 'quat';
-quaternionNames         = {};
-eulerComponents         = {'x','y','z'};
-
-if isfield(trackSysConfig, 'quaternions')
-    if isfield(trackSysConfig.quaternions, 'channel_names')
-        quaternionNames    = trackSysConfig.quaternions.channel_names;
-    end
-    
-    if isfield(trackSysConfig.quaternions, 'keyword')
-        quaternionKeyword = trackSysConfig.quaternions.keyword; 
-    end
-    
-    if isfield(trackSysConfig.quaternions, 'components')
-        quaternionComponents = trackSysConfig.quaternions.components; 
-    end
-    
-    if isfield(trackSysConfig.quaternions, 'output_order')
-        eulerComponents         = trackSysConfig.euler_components;
-    end
-end
-
-% Finding position data
-%--------------------------------------------------------------------------
-% method 1 : keyword + components
-% trackSysConfig.positions.keyword              = '_pos_'; 
-% trackSysConfig.positions.components           = {'x', 'y', 'z'}; 
-%
-% method 2 : channel_names 
-% trackSysConfig.quaternions.channel_names        = {'headRigid_posX', 'rightHandX';, ... 
-%                                                    'headRigid_posY', 'rightHandY';, ...
-%                                                    'headRigid_posZ', 'rightHandZ'}; 
-%
-% if nothing is found using these methods, no stream is processed as
-% quaternion
-% search by channel names is prioritized
-
-% cartesian [x,y,z] components, in this order
-% 1-D or 2-D cases are not implemented yet
-cartCoordinates    = {'x','y','z'}; % default values
-cartKeyword       = 'pos';
-cartNames         = {}; 
-
-if isfield(trackSysConfig, 'positions')
-    if isfield(trackSysConfig.positions, 'channel_names')
-        cartNames      = trackSysConfig.positions.channel_names;
-    end
-    
-    if isfield(trackSysConfig.positions, 'keyword')
-        cartKeyword    = trackSysConfig.positions.keyword; 
-    end
-    
-    if isfield(trackSysConfig.positions, 'components')
-        cartCoordinates = trackSysConfig.positions.components; 
-    end
-    
-end
-
-% missing value (how tracking loss is represented in the stream)
-if isfield(trackSysConfig, 'missing_values')
-    switch trackSysConfig.missing_values
-        case '0'
-            missingval = 0;
-        case 'NaN'
-            missingval = NaN;
-        otherwise
-            warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.name ': it should be "0" or "NaN" formatted as string.'])
-            warning('Taking default value NaN for missing samples.')
-            missingval = NaN;
-    end
-else
-    missingval = NaN;
-end
 
 newCell = {}; 
 % check if object input is a nested cell
@@ -115,6 +21,101 @@ objects = newCell;
 motionStreamAll    = cell(numel(motionIn), 1);
 
 for iM = 1:numel(motionIn)
+    
+    % Finding quaternion data
+    %--------------------------------------------------------------------------
+    % method 1 : keyword + components
+    % trackSysConfig.quaternions.keyword              = '_quat';
+    % trackSysConfig.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
+    %                                                                           % if this rule is violated, use channel_names option
+    %
+    % method 2 : channel_names
+    % trackSysConfig.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ...
+    %                                                    'headRigid_rotX', 'rightHand_rotX';, ...
+    %                                                    'headRigid_rotY', 'rightHand_rotY';, ...
+    %                                                    'headRigid_rotZ', 'rightHand_rotZ'};
+    %
+    % if nothing is found using these methods, no stream is processed as
+    % quaternion
+    % search by channel names is prioritized
+    
+    % quaternion [w,x,y,z] components, in this order
+    % w is the non-axial component
+    quaternionComponents    = {'w','x','y','z'}; % default values
+    quaternionKeyword       = 'quat';
+    quaternionNames         = {};
+    eulerComponents         = {'x','y','z'};
+    
+    if isfield(streamsConfig{iM}, 'quaternions')
+        if isfield(streamsConfig{iM}.quaternions, 'channel_names')
+            quaternionNames    = streamsConfig{iM}.quaternions.channel_names;
+        end
+        
+        if isfield(streamsConfig{iM}.quaternions, 'keyword')
+            quaternionKeyword = streamsConfig{iM}.quaternions.keyword;
+        end
+        
+        if isfield(streamsConfig{iM}.quaternions, 'components')
+            quaternionComponents = streamsConfig{iM}.quaternions.components;
+        end
+        
+        if isfield(streamsConfig{iM}.quaternions, 'output_order')
+            eulerComponents         = streamsConfig{iM}.euler_components;
+        end
+    end
+    
+    % Finding position data
+    %--------------------------------------------------------------------------
+    % method 1 : keyword + components
+    % trackSysConfig.positions.keyword              = '_pos_';
+    % trackSysConfig.positions.components           = {'x', 'y', 'z'};
+    %
+    % method 2 : channel_names
+    % trackSysConfig.positions.channel_names        = {'headRigid_posX', 'rightHandX';, ...
+    %                                                    'headRigid_posY', 'rightHandY';, ...
+    %                                                    'headRigid_posZ', 'rightHandZ'};
+    %
+    % if nothing is found using these methods, no stream is processed as
+    % quaternion
+    % search by channel names is prioritized
+    
+    % cartesian [x,y,z] components, in this order
+    % 1-D or 2-D cases are not implemented yet
+    cartCoordinates    = {'x','y','z'}; % default values
+    cartKeyword       = 'pos';
+    cartNames         = {};
+    
+    if isfield(streamsConfig{iM}, 'positions')
+        
+        if isfield(streamsConfig{iM}.positions, 'channel_names')
+            cartNames      = streamsConfig{iM}.positions.channel_names;
+        end
+        
+        if isfield(streamsConfig{iM}.positions, 'keyword')
+            cartKeyword    = streamsConfig{iM}.positions.keyword;
+        end
+        
+        if isfield(streamsConfig{iM}.positions, 'components')
+            cartCoordinates = streamsConfig{iM}.positions.components;
+        end
+        
+    end
+    
+    % missing value (how tracking loss is represented in the stream)
+    if isfield(trackSysConfig, 'missing_values')
+        switch trackSysConfig.missing_values
+            case '0'
+                missingval = 0;
+            case 'NaN'
+                missingval = NaN;
+            otherwise
+                warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.TrackingSystemName ': it should be "0" or "NaN" formatted as string.'])
+                warning('Taking default value NaN for missing samples.')
+                missingval = NaN;
+        end
+    else
+        missingval = NaN;
+    end
 
     motionStream                  = motionIn{iM};
     labelsPre                     = [motionStream.label];
@@ -147,13 +148,13 @@ for iM = 1:numel(motionIn)
         if ~isempty(quaternionNames)
             try
                 for qi = 1:4
-                    quaternionIndices(qi) = find(contains(labelsPre, quaternionNames{qi,:},'IgnoreCase', true));
+                    quaternionIndices(qi) = find(contains(labelsPre, quaternionNames(qi,ni),'IgnoreCase', true));
                 end
                 quatFound = true; 
             catch
                 try
                     for qi = 1:4
-                        quaternionIndices(qi) = find(strcmpi(labelsPre, quaternionNames{qi,:}));
+                        quaternionIndices(qi) = find(strcmpi(labelsPre, quaternionNames(qi,ni)));
                     end
                     quatFound = true;
                 catch
@@ -181,13 +182,13 @@ for iM = 1:numel(motionIn)
         if ~isempty(cartNames)
             try
                 for ci = 1:3
-                    cartIndices(ci) = find(contains(labelsPre, cartNames{ci,:},'IgnoreCase', true));
+                    cartIndices(ci) = find(contains(labelsPre, cartNames(ci,ni),'IgnoreCase', true));
                 end
                 cartFound = true; 
             catch
                 try
                     for ci = 1:3
-                        cartIndices(ci) = find(strcmpi(labelsPre, cartNames{ci,:}));
+                        cartIndices(ci) = find(strcmpi(labelsPre, cartNames(ci,ni)));
                     end
                     cartFound = true;
                 catch
