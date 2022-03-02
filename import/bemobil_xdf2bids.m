@@ -285,6 +285,9 @@ if importMotion
         defaultTrackingSystems(Ti).Manufacturer                     = 'DefaultManufacturer';
         defaultTrackingSystems(Ti).ManufacturersModelName           = 'DefaultModel';
         defaultTrackingSystems(Ti).SamplingFrequency                = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
+        defaultTrackingSystems(Ti).DeviceSerialNumber               = 'n/a';
+        defaultTrackingSystems(Ti).SoftwareVersions                 = 'n/a';
+        defaultTrackingSystems(Ti).ExternalSoftwareVersions         = 'n/a';
     end
     
     if ~exist('motionInfo', 'var')
