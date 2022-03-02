@@ -665,6 +665,9 @@ if importMotion
     motioncfg.channels.component            = {};
     motioncfg.channels.placement            = {};
     MotionChannelCount = 0;
+        
+    % copy motion metadata fields
+    motioncfg.motion = motionInfo.motion;
     
     for tsi = 1:numel(trackSysInData)
         
@@ -716,12 +719,15 @@ if importMotion
         % select tracking system configuration 
         trackSysConfig = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
         
+        % stream configuration 
+        streamsConfig = config.motion.streams;
+         
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig);
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig);
         
         % channel metadata 
         %------------------------------------------------------------------
-        rb_names = trackedPointNames ;
+        rb_names = trackedPointNames;
         rb_anat = anatomicalNames;
         
         for ci  = 1:motion.hdr.nChans
@@ -762,9 +768,6 @@ if importMotion
             effectiveSRate = motion.hdr.Fs;
         end
         
-        % copy motion metadata fields
-        motioncfg.motion = motionInfo.motion;
-        
         % start time
         motionStartTime                 = motion.time{1}(1);
         motionTimeShift                 = motionStartTime - eegStartTime;
@@ -773,14 +776,17 @@ if importMotion
         acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
         motioncfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
   
+        tempTSNames         = {motioncfg.motion.TrackingSystems(:).TrackingSystemName};
+        tempTSi             = find(strcmp(tempTSNames,trackSysInData{tsi}));  
+        
         % effective sampling rate 
-        motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).SamplingFrequencyEffective = effectiveSRate; 
+        motioncfg.motion.TrackingSystems(tempTSi).SamplingFrequencyEffective = effectiveSRate; 
         
         % RecordingDuration
-        motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
+        motioncfg.motion.TrackingSystems(tempTSi).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
 
         % add the number of tracking points to tracked point count
-        motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
+        motioncfg.motion.TrackingSystems(tempTSi).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
         
         % add the number of channels to MotionChannelCount
         motioncfg.motion.MotionChannelCount = MotionChannelCount + motion.hdr.nChans;
