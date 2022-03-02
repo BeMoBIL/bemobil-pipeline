@@ -664,6 +664,8 @@ if importMotion
     motioncfg.channels.tracked_point        = {};
     motioncfg.channels.component            = {};
     motioncfg.channels.placement            = {};
+    motioncfg.channels.type                 = {};
+    
     MotionChannelCount = 0;
         
     % copy motion metadata fields
@@ -744,6 +746,7 @@ if importMotion
             splitlabel                                      = regexp(motion.hdr.label{ci}, '_', 'split');
             motioncfg.channels.name{end+1}                  = motion.hdr.label{ci};
             motioncfg.channels.tracking_system{end+1}       = trackSysInData{tsi};
+            motioncfg.channels.type{end+1}                  = motion.hdr.chantype{ci};
             
             % assign object names and anatomical positions
             for iN = 1:numel(rb_names)
@@ -776,17 +779,16 @@ if importMotion
         acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
         motioncfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
   
-        tempTSNames         = {motioncfg.motion.TrackingSystems(:).TrackingSystemName};
-        tempTSi             = find(strcmp(tempTSNames,trackSysInData{tsi}));  
-        
+        % tracking system information will be appended with iterations
+        %------------------------------------------------------------------
         % effective sampling rate 
-        motioncfg.motion.TrackingSystems(tempTSi).SamplingFrequencyEffective = effectiveSRate; 
+        motioncfg.motion.TrackingSystems(tsi).SamplingFrequencyEffective = effectiveSRate; 
         
         % RecordingDuration
-        motioncfg.motion.TrackingSystems(tempTSi).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
+        motioncfg.motion.TrackingSystems(tsi).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
 
         % add the number of tracking points to tracked point count
-        motioncfg.motion.TrackingSystems(tempTSi).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
+        motioncfg.motion.TrackingSystems(tsi).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
         
         % add the number of channels to MotionChannelCount
         motioncfg.motion.MotionChannelCount = MotionChannelCount + motion.hdr.nChans;
