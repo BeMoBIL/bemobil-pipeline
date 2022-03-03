@@ -728,7 +728,7 @@ if importMotion
         streamsConfig = config.motion.streams;
          
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig);
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig(streamInds));
         
         % channel metadata 
         %------------------------------------------------------------------
