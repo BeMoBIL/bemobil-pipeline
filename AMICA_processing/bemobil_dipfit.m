@@ -58,19 +58,23 @@ dipfitdefs;
 % build the command for editing channel labels with variable channel editing counts
 if ~isempty(warping_channel_names)
     
-    command = 'EEG = pop_chanedit(EEG';
-    for channel = 1:length(warping_channel_names)
-        command = [command ', ''changefield'',{' num2str(warping_channel_names{channel,1}) ' ''labels'' ''' warping_channel_names{channel,2} '''}'];
+    if isnumeric(warping_channel_names) && all(size(warping_channel_names) == [1 9])
+        % transform is provided directly
+        transform = warping_channel_names;
+    else
+        command = 'EEG = pop_chanedit(EEG';
+        for channel = 1:length(warping_channel_names)
+            command = [command ', ''changefield'',{' num2str(warping_channel_names{channel,1}) ' ''labels'' ''' warping_channel_names{channel,2} '''}'];
+        end
+        command = [command ');'];
+
+        % run it
+        eval(command);
+
+
+        % warp the locations to the standard head model
+        [newlocs transform] = coregister(EEG.chanlocs, template_models(2).chanfile, 'warp', 'auto', 'manual', 'off');
     end
-    command = [command ');'];
-    
-    % run it
-    eval(command);
-    
-
-    % warp the locations to the standard head model
-    [newlocs transform] = coregister(EEG.chanlocs, template_models(2).chanfile, 'warp', 'auto', 'manual', 'off');
-
 else
     transform = [0.83215 -15.6287 2.4114 0.081214 0.00093739 -1.5732 1.1742 1.0601 1.1485];
 end
