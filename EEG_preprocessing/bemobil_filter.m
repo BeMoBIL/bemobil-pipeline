@@ -165,6 +165,10 @@ else
     
 end
 
+% remove ica activation after filtering
+EEG.icaact = [];
+EEG = eeg_checkset( EEG );
+
 % new data set in EEGLAB
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET, 'gui', 'off');
 EEG = eeg_checkset( EEG );
