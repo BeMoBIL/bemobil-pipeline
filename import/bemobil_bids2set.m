@@ -327,10 +327,11 @@ for iSub = 1:numel(subDirList)
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
-                EEG         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
-                eegTimes(:,Ri) = [EEG.times(1); EEG.times(end)];
-                [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
-                eegEvents{end +1} = EEG.event;
+                EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
+                eegTimes(:,Ri)      = [EEG.times(1); EEG.times(end)];
+                EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
+%                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+                eegEvents{end +1}   = EEG.event;
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
             [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
@@ -340,7 +341,8 @@ for iSub = 1:numel(subDirList)
             EEGSessionFileName  = eegFiles{1};
             EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
             eegTimes(:,1)       = [EEG.times(1); EEG.times(end)];
-            [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+            EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
+%             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
             eegEvents{end +1}   = EEG.event;
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
@@ -558,19 +560,6 @@ function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
 
-% check if any row is all zeros - use nearest interp if so
-hasNonZero = zeros(size(EEG.data,1));
-
-for iRow = 1:size(EEG.data,1)
-   hasNonZero(iRow) = any(EEG.data(iRow,:));
-end
-
-if any(hasNonZero == 0)
-    resampleMethod = 'nearest'; 
-else
-    resampleMethod = 'pchip'; 
-end
-
 % save old times
 oldTimes                = EEG.times; 
 
@@ -579,7 +568,7 @@ newTimes                = (tFirst:1000/newSRate:tLast)/1000;
 
 resamplecfg.time        = {newTimes};
 resamplecfg.detrend     = 'no';
-resamplecfg.method      = resampleMethod; 
+resamplecfg.method      = 'pchip'; 
 resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
@@ -613,8 +602,8 @@ function [DATA] = unwrapAngles(DATA)
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
     if ischar(DATA.chanlocs(Ci).units)
-        if  contains(DATA.chanlocs(Ci).units, 'rad')
-            angleind =  [angleind Ci];
+        if  contains(lower(DATA.chanlocs(Ci).units), 'rad') || contains(lower(DATA.chanlocs(Ci).units), 'deg')
+            angleind = [angleind Ci];
         end
     end
 end
@@ -630,8 +619,8 @@ function [DATA] = wrapAngles(DATA)
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
     if ~isempty(DATA.chanlocs(Ci).units)
-        if  contains(DATA.chanlocs(Ci).units, 'rad')
-            angleind =  [angleind Ci];
+        if  contains(lower(DATA.chanlocs(Ci).units), 'rad') || contains(lower(DATA.chanlocs(Ci).units), 'deg')
+            angleind = [angleind Ci];
         end
     end
 end
