@@ -281,9 +281,13 @@ if importMotion
     tracking_systems                = trackSysInData;
     
     for Ti = 1:numel(tracking_systems)
-        defaultTrackingSystems.(tracking_systems{Ti}).Manufacturer                     = 'DefaultManufacturer';
-        defaultTrackingSystems.(tracking_systems{Ti}).ManufacturersModelName           = 'DefaultModel';
-        defaultTrackingSystems.(tracking_systems{Ti}).SamplingFrequencyNominal         = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
+        defaultTrackingSystems(Ti).TrackingSystemName               = tracking_systems{Ti};
+        defaultTrackingSystems(Ti).Manufacturer                     = 'DefaultManufacturer';
+        defaultTrackingSystems(Ti).ManufacturersModelName           = 'DefaultModel';
+        defaultTrackingSystems(Ti).SamplingFrequency                = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
+        defaultTrackingSystems(Ti).DeviceSerialNumber               = 'n/a';
+        defaultTrackingSystems(Ti).SoftwareVersions                 = 'n/a';
+        defaultTrackingSystems(Ti).ExternalSoftwareVersions         = 'n/a';
     end
     
     if ~exist('motionInfo', 'var')
@@ -307,23 +311,24 @@ if importMotion
             if isfield(motionInfo.motion, 'TrackingSystems')
                 
                 % take all tracking systems defined in the metadata input
-                trackSysInMeta = fieldnames(motionInfo.motion.TrackingSystems);
+                trackSysInMeta = {motionInfo.motion.TrackingSystems(:).TrackingSystemName};
                 
                 % identify tracking systems in the data but not in metadata
                 trackSysNoMeta  = setdiff(trackSysInData, trackSysInMeta);
                 
                 % construct metadata for ones that are missing them
                 for Ti = 1:numel(trackSysNoMeta)
-                    motionInfo.motion.TrackingSystems.(trackSysNoMeta{Ti}).Manufacturer                     = 'DefaultManufacturer';
-                    motionInfo.motion.TrackingSystems.(trackSysNoMeta{Ti}).ManufacturerModelName            = 'DefaultModel';
-                    motionInfo.motion.TrackingSystems.(trackSysNoMeta{Ti}).SamplingFrequencyNominal         = 'n/a';
+                    defaultTrackingSystems(Ti).TrackingSystemName               = tracking_systems{Ti};
+                    defaultTrackingSystems(Ti).Manufacturer                     = 'DefaultManufacturer';
+                    defaultTrackingSystems(Ti).ManufacturersModelName           = 'DefaultModel';
+                    defaultTrackingSystems(Ti).SamplingFrequency                = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
                 end
                 
                 % identify tracking systems in metadata but not in the data
-                trackSysNoData = setdiff(trackSysInMeta, trackSysInData);
+                [trackSysNoData, indrm] = setdiff(trackSysInMeta, trackSysInData);
                 
                 % remove unused tracking systems from metadata struct
-                motionInfo.motion.TrackingSystems = rmfield(motionInfo.motion.TrackingSystems, trackSysNoData);
+                motionInfo.motion.TrackingSystems(indrm) = [];
             else
                 warning('No information on tracking system given - filling with default info')
                 
@@ -662,7 +667,12 @@ if importMotion
     motioncfg.channels.tracked_point        = {};
     motioncfg.channels.component            = {};
     motioncfg.channels.placement            = {};
+    motioncfg.channels.type                 = {};
+    
     MotionChannelCount = 0;
+        
+    % copy motion metadata fields
+    motioncfg.motion = motionInfo.motion;
     
     for tsi = 1:numel(trackSysInData)
         
@@ -714,12 +724,15 @@ if importMotion
         % select tracking system configuration 
         trackSysConfig = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
         
+        % stream configuration 
+        streamsConfig = config.motion.streams;
+         
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig);
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig(streamInds));
         
         % channel metadata 
         %------------------------------------------------------------------
-        rb_names = trackedPointNames ;
+        rb_names = trackedPointNames;
         rb_anat = anatomicalNames;
         
         for ci  = 1:motion.hdr.nChans
@@ -736,6 +749,7 @@ if importMotion
             splitlabel                                      = regexp(motion.hdr.label{ci}, '_', 'split');
             motioncfg.channels.name{end+1}                  = motion.hdr.label{ci};
             motioncfg.channels.tracking_system{end+1}       = trackSysInData{tsi};
+            motioncfg.channels.type{end+1}                  = motion.hdr.chantype{ci};
             
             % assign object names and anatomical positions
             for iN = 1:numel(rb_names)
@@ -760,9 +774,6 @@ if importMotion
             effectiveSRate = motion.hdr.Fs;
         end
         
-        % copy motion metadata fields
-        motioncfg.motion = motionInfo.motion;
-        
         % start time
         motionStartTime                 = motion.time{1}(1);
         motionTimeShift                 = motionStartTime - eegStartTime;
@@ -771,14 +782,16 @@ if importMotion
         acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
         motioncfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
   
+        % tracking system information will be appended with iterations
+        %------------------------------------------------------------------
         % effective sampling rate 
-        motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).SamplingFrequencyEffective = effectiveSRate; 
+        motioncfg.motion.TrackingSystems(tsi).SamplingFrequencyEffective = effectiveSRate; 
         
         % RecordingDuration
-        motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
+        motioncfg.motion.TrackingSystems(tsi).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
 
         % add the number of tracking points to tracked point count
-        motioncfg.motion.TrackingSystems.(trackSysInData{tsi}).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
+        motioncfg.motion.TrackingSystems(tsi).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
         
         % add the number of channels to MotionChannelCount
         motioncfg.motion.MotionChannelCount = MotionChannelCount + motion.hdr.nChans;
