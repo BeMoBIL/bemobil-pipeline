@@ -328,9 +328,16 @@ for iSub = 1:numel(subDirList)
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
                 EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
-                eegTimes(:,Ri)      = [EEG.times(1); EEG.times(end)];
+                
+                % set srate to nominal srate
+                if isfield(EEG.etc,'nominal_srate')
+                    disp(['Setting EEG srate to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                    EEG.srate = EEG.etc.nominal_srate;
+                end
+                
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+                eegTimes(:,Ri)      = [EEG.times(1); EEG.times(end)];
                 eegEvents{end +1}   = EEG.event;
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
@@ -340,9 +347,16 @@ for iSub = 1:numel(subDirList)
         elseif numel(eegFiles) == 1
             EEGSessionFileName  = eegFiles{1};
             EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
-            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)];
+            
+            % set srate to nominal srate
+            if isfield(EEG.etc,'nominal_srate')
+                disp(['Setting EEG srate to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                EEG.srate = EEG.etc.nominal_srate;
+            end
+            
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
 %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)];
             eegEvents{end +1}   = EEG.event;
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
