@@ -590,7 +590,7 @@ for iSubject = 2:size(bids.participants,1)
                     % copy information inside dataset
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
-                    
+                    EEG.etc.nominal_srate = infoData.SamplingFrequency;
                     if strcmpi(opt.metadata, 'off')
                         if exist(subjectFolderOut{iFold},'dir') ~= 7
                             mkdir(subjectFolderOut{iFold});
@@ -756,8 +756,9 @@ for iSubject = 2:size(bids.participants,1)
                             end
                             
                             if strcmp(datatype,'motion') && isfield(infoData, 'TrackingSystems')
-                                
-                                DATA.srate  = infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective; 
+                                tsi = find(strcmp({infoData.TrackingSystems(:).TrackingSystemName}, tracksys));
+                                DATA.srate                  = infoData.TrackingSystems(tsi).SamplingFrequencyEffective; 
+                                DATA.etc.nominal_srate      = infoData.TrackingSystems(tsi).SamplingFrequency;
                             else
                                 try
                                     DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate used in motion data. Note that the unit of the time must be in second.
@@ -841,7 +842,8 @@ for iSubject = 2:size(bids.participants,1)
                                 DATA.data(latencyRowInData,:)   = [];
                             else
                                 if isfield(infoData, 'TrackingSystems')
-                                    DATA.times  = (0:1000/infoData.TrackingSystems.(tracksys).SamplingFrequencyEffective:infoData.TrackingSystems.(tracksys).RecordingDuration*1000); % time is in ms
+                                    % tsi should have been defined ábove when srate was being read in
+                                    DATA.times  = (0:1000/infoData.TrackingSystems(tsi).SamplingFrequencyEffective:infoData.TrackingSystems(tsi).RecordingDuration*1000); % time is in ms
                                 elseif isfield(infoData, 'RecordingDuration')
                                     DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
                                 else
