@@ -52,6 +52,7 @@ config = checkfield(config, 'other_data_types', {'motion'}, 'motion');
 config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
 config = checkfield(config, 'overwrite', 'off', 'off'); 
 config = checkfield(config, 'match_electrodes_channels', {}, 'none');
+config = checkfield(config, 'use_nominal_srate', {}, 'none');
 
 % check session input
 if ~iscell(config.session_names)
@@ -311,7 +312,7 @@ for iSub = 1:numel(subDirList)
         end
         
         % initializa a matrix storing EEG first and last time stamps (this is used to synch other streams)
-        eegTimes = NaN(2,numel(eegFiles)); 
+        eegTimes = {}; 
         
         % initialize an empty cell array to store EEG events 
         eegEvents = {}; 
@@ -337,7 +338,7 @@ for iSub = 1:numel(subDirList)
                 
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
-                eegTimes(:,Ri)      = [EEG.times(1); EEG.times(end)];
+                eegTimes{Ri}        = EEG.times;
                 eegEvents{end +1}   = EEG.event;
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
@@ -356,7 +357,7 @@ for iSub = 1:numel(subDirList)
             
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
 %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
-            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)];
+            eegTimes            = EEG.times;
             eegEvents{end +1}   = EEG.event;
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
@@ -423,7 +424,35 @@ for iSub = 1:numel(subDirList)
                     for Ri = 1:numel(dataFiles)
                         DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
                         DATA         = unwrapAngles(DATA); % unwrap angles before resampling
-                        [DATA]       = resampleToTime(DATA, newSRate, eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime);
+                        if ~contains(lower(dataFiles{Ri}),lower(config.use_nominal_srate))
+                            [DATA]      = resampleToTime(DATA, newSRate, eegTimes{Ri}, DATA.etc.starttime);
+                        else
+                            disp(['Data file ' dataFiles{Ri} config.use_nominal_srate ' using nominal srate!'])
+                            assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{Ri} config.use_nominal_srate ' was specified to use nominal srate, but none was found!'])
+                            DATA.srate  = DATA.etc.nominal_srate;
+                            DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
+                            
+                            % check beginning of data
+                            sampleshift = round(DATA.etc.starttime*1000/(1/newSRate*1000));
+                            if sampleshift < 0 % negative shift = need to cut data in the beginning
+                                DATA.data   = DATA.data(:,1-sampleshift:end);
+                            elseif sampleshift > 0 % positive shift = need to add nans
+                                DATA.data   = [nan(DATA.nbchan,sampleshift) DATA.data];
+                            end % shift of 0 means nothing needs to be changed
+
+                            % check end of data
+                            if size(DATA.data,2) > length(eegTimes{Ri}) % need to cut data short
+                                DATA.data   = DATA.data(:,1:length(eegTimes{Ri}));
+                            elseif size(DATA.data,2) < length(eegTimes{Ri}) % need to add nans
+                                DATA.data   = [DATA.data nan(DATA.nbchan,length(eegTimes{Ri})-size(DATA.data,2))];
+                            end % if length is perfect and shift is 0, nothing needs to be changed
+
+                            % fix metadata
+                            DATA.times  = eegTimes{Ri};
+                            DATA.pnts   = length(eegTimes{Ri});
+                            DATA.xmax   = DATA.times(end)/1000;
+                            DATA.xmin   = 0;
+                        end
                         DATA         = wrapAngles(DATA);
                         DATA.event   = eegEvents{Ri}; 
                         [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
@@ -434,7 +463,35 @@ for iSub = 1:numel(subDirList)
                     DATASessionFileName  = dataFiles{1};
                     DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
                     DATA             = unwrapAngles(DATA);
-                    [DATA]           = resampleToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);
+                    if ~contains(lower(dataFiles{1}),lower(config.use_nominal_srate))
+                        [DATA]       = resampleToTime(DATA, newSRate, eegTimes, DATA.etc.starttime);
+                    else
+                        disp(['Data file ' dataFiles{1} ' using nominal srate!'])
+                        assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{1} ' was specified to use nominal srate, but none was found!'])
+                        DATA.srate  = DATA.etc.nominal_srate;
+                        DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
+                        
+                        % check beginning of data
+                        sampleshift = round(DATA.etc.starttime*1000/(1/newSRate*1000));
+                        if sampleshift < 0 % negative shift = need to cut data in the beginning
+                            DATA.data   = DATA.data(:,1-sampleshift:end);
+                        elseif sampleshift > 0 % positive shift = need to add nans
+                            DATA.data   = [nan(DATA.nbchan,sampleshift) DATA.data];
+                        end % shift of 0 means nothing needs to be changed
+                        
+                        % check end of data
+                        if size(DATA.data,2) > length(eegTimes) % need to cut data short
+                            DATA.data   = DATA.data(:,1:length(eegTimes));
+                        elseif size(DATA.data,2) < length(eegTimes) % need to add nans
+                            DATA.data   = [DATA.data nan(DATA.nbchan,length(eegTimes)-size(DATA.data,2))];
+                        end % if length is perfect and shift is 0, nothing needs to be changed
+                        
+                        % fix metadata
+                        DATA.times  = eegTimes;
+                        DATA.pnts   = length(eegTimes);
+                        DATA.xmax   = DATA.times(end)/1000;
+                        DATA.xmin   = 0;
+                    end
                     DATA             = wrapAngles(DATA);
                     DATA.event       = eegEvents{1}; 
                 else
@@ -570,7 +627,7 @@ outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)
 
 end
 
-function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
+function [outEEG] = resampleToTime(EEG, newSRate, newTimes, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
 
@@ -578,9 +635,9 @@ function [outEEG] = resampleToTime(EEG, newSRate, tFirst, tLast, offset)
 oldTimes                = EEG.times; 
 
 % Note that in fieldtrip time is in seconds
-newTimes                = (tFirst:1000/newSRate:tLast)/1000;
+newTimesFT                = newTimes/1000;
 
-resamplecfg.time        = {newTimes};
+resamplecfg.time        = {newTimesFT};
 resamplecfg.detrend     = 'no';
 resamplecfg.method      = 'pchip'; 
 resamplecfg.extrapval   = nan; 
@@ -590,7 +647,7 @@ ftData.time{1}          = oldTimes/1000 + offset;
 resampledData           = ft_resampledata(resamplecfg, ftData);
 EEG.data                = resampledData.trial{1};
 EEG.srate               = newSRate;
-EEG.times               = newTimes*1000; % convert back to miliseconds
+EEG.times               = newTimes; % convert back to miliseconds
 EEG.pnts                = size(EEG.data,2);
 EEG.urevent             = EEG.event;
 
