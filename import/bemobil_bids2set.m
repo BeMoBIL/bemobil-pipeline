@@ -339,6 +339,12 @@ for iSub = 1:numel(subDirList)
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 eegTimes{Ri}        = EEG.times;
+                
+                % round event times to have usable indices
+                for i_event = 1:length(EEG.event)
+                    EEG.event(i_event).latency = round(EEG.event(i_event).latency);
+                end
+                
                 eegEvents{end +1}   = EEG.event;
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
@@ -358,6 +364,11 @@ for iSub = 1:numel(subDirList)
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
 %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
             eegTimes            = EEG.times;
+            
+            % round event times to have usable indices
+            for i_event = 1:length(EEG.event)
+                EEG.event(i_event).latency = round(EEG.event(i_event).latency);
+            end
             eegEvents{end +1}   = EEG.event;
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
