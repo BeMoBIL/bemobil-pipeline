@@ -5,13 +5,14 @@ function bemobil_xdf2bids(config, varargin)
 % Inputs :
 %   config [struct, with required fields filename, bids_target_folder, subject, eeg.stream_keywords
 %
-%       config.filename               = 'P:\...SPOT_rotation\0_source-data\vp-1'\vp-1_control_body.xdf'; % required
-%       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';                               % required
-%       config.subject                = 1;                                  % required
-%       config.session                = 'VR';                               % optional 
-%       config.run                    = 1;                                  % optional
-%       config.task                   = 'rotation';                         % optional 
-%       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
+%       config.filename               = 'P:\...SPOT_rotation\0_source-data\vp-1'\vp-1_control_body.xdf';    % required
+%       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';                                  % required
+%       config.subject                = 1;                                                                  % required
+%       config.session                = 'VR';                                                               % optional 
+%       config.run                    = 1;                                                                  % optional
+%       config.task                   = 'rotation';                                                         % optional 
+%       config.acquisition_time       = [2021,9,30,18,14,0.00];                                             % optional ([YYYY,MM,DD,HH,MM,SS]) 
+%       config.load_xdf_flags         = {'Verbose',0}                                                       % optional
 %
 % EEG parameters 
 %--------------------------------------------------------------------------
@@ -116,6 +117,7 @@ config = checkfield(config, 'acquisition_time', [1800,12,31,5,5,5.000], 'default
 % assign default values to optional fields
 %--------------------------------------------------------------------------
 config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
+config = checkfield(config, 'load_xdf_flags',{'Verbose',1},'{''Verbose'',1}');
 
 % validate file name parts 
 %--------------------------------------------------------------------------
@@ -424,7 +426,7 @@ end
 % load and assign streams (parts taken from xdf2fieldtrip)
 %--------------------------------------------------------------------------
 disp('Loading .xdf streams ...')
-streams                  = load_xdf(cfg.dataset);
+streams                  = load_xdf(cfg.dataset,config.load_xdf_flags{:});
 
 % initialize an array of booleans indicating whether the streams are continuous
 iscontinuous = false(size(streams));
@@ -582,12 +584,18 @@ if importEEG % This loop is always executed in current version
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'EEGReference', 'REF', 'REF');
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'PowerLineFrequency', 'n/a', 'n/a');
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'SoftwareFilters', 'n/a', 'n/a');
+        
+        % if specified, replace read labels
+        if isfield(eegcfg.eeg, 'ChannelLabels')
+            eeg.label = eegcfg.eeg.ChannelLabels;
+        end
     else
         eegcfg.eeg.EEGReference = 'REF';
         eegcfg.eeg.PowerLineFrequency = 'n/a';
         eegcfg.eeg.SoftwareFilters = 'n/a';
 
     end
+    
     
     % read in the event stream (synched to the EEG stream)
     if ~isempty(xdfmarkers)
