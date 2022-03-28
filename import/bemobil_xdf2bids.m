@@ -20,6 +20,8 @@ function bemobil_xdf2bids(config, varargin)
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
 %       config.eeg.elec_struct        = elecStruct;                         % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
 %       config.eeg.chanloc_newname    = {'chan1', 'chan2'};                 % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
+%       config.eeg.channel_labels     = {'x','y','z',...}                   % optional, completely replace the channel labels that are in the xdf file
+%       
 %   
 % MOTION parameters
 %--------------------------------------------------------------------------
@@ -586,8 +588,8 @@ if importEEG % This loop is always executed in current version
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'SoftwareFilters', 'n/a', 'n/a');
         
         % if specified, replace read labels
-        if isfield(eegcfg.eeg, 'ChannelLabels')
-            eeg.label = eegcfg.eeg.ChannelLabels;
+        if isfield(config.eeg, 'channel_labels')
+            eeg.label = config.eeg.channel_labels;
         end
     else
         eegcfg.eeg.EEGReference = 'REF';
@@ -980,6 +982,22 @@ outEvents = [];
 for Si = 1:numel(inStreams)
     if iscell(inStreams{Si}.time_series)
         eventsInStream              = cell2struct(inStreams{Si}.time_series, 'value')';
+        
+        % remove linebreaks
+        for i_event = find(contains(inStreams{Si}.time_series,char(10)))
+            eventsInStream(i_event).value = strrep(eventsInStream(i_event).value,char(10),' ');
+        end
+        
+        % remove tabs
+        for i_event = find(contains(inStreams{Si}.time_series,char(9)))
+            eventsInStream(i_event).value = strrep(eventsInStream(i_event).value,char(9),' ');
+        end
+        
+        % remove other kinds of linebreaks
+        for i_event = find(contains(inStreams{Si}.time_series,char(13)))
+            eventsInStream(i_event).value = strrep(eventsInStream(i_event).value,char(13),' ');
+        end
+        
         [eventsInStream.type]       = deal(inStreams{Si}.info.type);
         times                       = num2cell(inStreams{Si}.time_stamps);
         [eventsInStream.timestamp]  = times{:};
