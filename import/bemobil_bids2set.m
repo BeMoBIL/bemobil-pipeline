@@ -328,7 +328,8 @@ for iSub = 1:numel(subDirList)
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
-                EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
+                EEG                     = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
+                EEG.etc.effective_srate = EEG.srate;
                 
                 % set srate to nominal srate
                 if isfield(EEG.etc,'nominal_srate')
@@ -352,8 +353,9 @@ for iSub = 1:numel(subDirList)
             EEG                = EEGMerged;
 
         elseif numel(eegFiles) == 1
-            EEGSessionFileName  = eegFiles{1};
-            EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
+            EEGSessionFileName      = eegFiles{1};
+            EEG                     = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
+            EEG.etc.effective_srate = EEG.srate;
             
             % set srate to nominal srate
             if isfield(EEG.etc,'nominal_srate')
@@ -433,8 +435,9 @@ for iSub = 1:numel(subDirList)
                     % loop over runs
                     ALLDATA = []; CURRENTSET = [];
                     for Ri = 1:numel(dataFiles)
-                        DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
-                        DATA         = unwrapAngles(DATA); % unwrap angles before resampling
+                        DATA                        = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
+                        DATA.etc.effective_srate    = DATA.srate;
+                        DATA                        = unwrapAngles(DATA); % unwrap angles before resampling
                         if ~contains(lower(dataFiles{Ri}),lower(config.use_nominal_srate))
                             [DATA]      = resampleToTime(DATA, newSRate, eegTimes{Ri}, DATA.etc.starttime);
                         else
@@ -472,8 +475,9 @@ for iSub = 1:numel(subDirList)
                     DATA             = DATAMerged;
                 elseif numel(dataFiles) == 1
                     DATASessionFileName  = dataFiles{1};
-                    DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
-                    DATA             = unwrapAngles(DATA);
+                    DATA                        = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
+                    DATA.etc.effective_srate    = DATA.srate;
+                    DATA                        = unwrapAngles(DATA);
                     if ~contains(lower(dataFiles{1}),lower(config.use_nominal_srate))
                         [DATA]       = resampleToTime(DATA, newSRate, eegTimes, DATA.etc.starttime);
                     else
