@@ -839,7 +839,7 @@ if importPhys
     end
     
     % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
-    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri, interpPhys);
+    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri, ~config.phys.skip_interp);
     
     % construct physio metadata
     physiocfg               = cfg;                                           % copy general fields
