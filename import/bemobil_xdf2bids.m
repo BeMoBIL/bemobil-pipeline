@@ -67,7 +67,7 @@ function bemobil_xdf2bids(config, varargin)
 %
 % PHYSIO parameters
 %--------------------------------------------------------------------------
-%       config.phys.streams{1}.stream_name          = {'force1'};           % optional
+%       config.phys.streams{1}.stream_name          = 'force1';           % optional
 %       config.phys.skip_interp                     = 1;                    % optional, logical. Set as 1 if you wish to not correct intersample intervals by interpolation for physio data 
 %
 %--------------------------------------------------------------------------
