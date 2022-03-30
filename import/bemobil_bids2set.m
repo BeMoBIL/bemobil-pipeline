@@ -422,7 +422,12 @@ for iSub = 1:numel(subDirList)
                 dataFiles = modalityFiles(contains(modalityFiles, trackingSystemsInSession{TSi})); 
                 
                 if numel(eegFiles) ~= numel(dataFiles)
-                    warning('Number of EEG and other data files do not match within a session')
+                    warning(['Number of EEG files and data files of type ' bemobilModality ' do not match within session ''' config.session_names{iSes} ''''])
+                end
+                
+                if numel(dataFiles) == 0
+                    warning(['No data file of type ' bemobilModality ' found in session ''' config.session_names{iSes} '''. Skipping....'])
+                    continue
                 end
                 
                 if numel(dataFiles) > 1

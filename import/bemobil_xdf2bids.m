@@ -598,6 +598,16 @@ if importEEG % This loop is always executed in current version
 
     end
     
+    % check if sampling frequency was specified, if it was not, use nominal srate from the stream
+    if ~isfield(eegcfg.eeg,'SamplingFrequency') || isempty(eegcfg.eeg.SamplingFrequency) || strcmp(eegcfg.eeg.SamplingFrequency,'n/a')
+        warning('EEG sampling frequency was not specified. Using nominal srate taken from xdf!')
+        eegcfg.eeg.SamplingFrequency = str2num(xdfeeg{1}.info.nominal_srate);
+    elseif ~isnumeric(eegcfg.eeg.SamplingFrequency) || eegcfg.eeg.SamplingFrequency < 0
+        warning('EEG sampling freq is:')
+        disp(eegcfg.eeg.SamplingFrequency)
+        error(['Specified EEG sampling frequency is not supported. Must be empty, ''n/a'', or numeric greater 0.'])
+    end
+    disp(['EEG sampling frequency is ' num2str(eegcfg.eeg.SamplingFrequency) 'Hz.'])
     
     % read in the event stream (synched to the EEG stream)
     if ~isempty(xdfmarkers)
