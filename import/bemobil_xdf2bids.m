@@ -155,6 +155,9 @@ if importMotion
     for Ti = 1:numel(config.motion.tracksys)
         config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'name', 'required', '');
         config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'keep_timestamps', 'on', 'on');
+        if contains(config.motion.tracksys{Ti}.name,pat)
+            error('Tracking system name MUST NOT contain space or underscore. Please change tracking system name.')
+        end
         tracksysNames{end+1} = config.motion.tracksys{Ti}.name;  
     end
     
@@ -360,7 +363,7 @@ end
 %%
 % check if numerical IDs match subject info, if this was specified
 %--------------------------------------------------------------------------
-if exist('subjectInfo','var')
+if exist('subjectInfo','var') && ~isempty(subjectInfo)
     
     nrColInd                = find(strcmp(subjectInfo.cols, 'nr'));
     
@@ -400,7 +403,7 @@ else
 end
 
 % participant information
-if exist('subjectInfo', 'var')
+if exist('subjectInfo', 'var') && ~isempty(subjectInfo)
     
     allColumns      = subjectInfo.cols;
     
@@ -557,20 +560,6 @@ if importEEG % This loop is always executed in current version
         end
     end
     
-    % try to use information from preprocessing config
-    if isfield(config.eeg, 'ref_channel')
-        eegcfg.eeg.EEGReference                 = config.ref_channel; % field name comes from bemobil preprocessing pipeline
-    end
-    
-    if isfield(config.eeg, 'linefreqs')
-        if numel(config.linefreqs) == 1
-            eegcfg.eeg.PowerLineFrequency           = config.linefreqs; % field name comes from bemobil preprocessing pipeline
-        elseif numel(config.linefreqs) > 1
-            eegcfg.eeg.PowerLineFrequency           = config.linefreqs(1);
-            warning('Only the first value specified in config.eeg.linefreqs entered in eeg.json')
-        end
-    end
-    
     % try to use metadata provided by the user - if provided, will overwrite values from config. 
     if exist('eegInfo','var')
         if isfield(eegInfo, 'eeg')
@@ -581,21 +570,35 @@ if importEEG % This loop is always executed in current version
         end
     end
     
+    % try to use information from preprocessing config
+    if isfield(config.eeg, 'ref_channel')
+        eegcfg.eeg.EEGReference                 = config.eeg.ref_channel; % field name comes from bemobil preprocessing pipeline
+    end
+    if isfield(config.eeg, 'srate')
+        eegcfg.eeg.SamplingFrequency                 = config.eeg.srate; % field name comes from bemobil preprocessing pipeline
+    end    
+    if isfield(config.eeg, 'linefreq')
+        if numel(config.eeg.linefreq) == 1
+            eegcfg.eeg.PowerLineFrequency           = config.eeg.linefreq; % field name comes from bemobil preprocessing pipeline
+        elseif numel(config.eeg.linefreq) > 1
+            eegcfg.eeg.PowerLineFrequency           = config.eeg.linefreq(1);
+            warning('Only the first value specified in config.eeg.linefreq entered in eeg.json')
+        end
+    end
+    % if specified, replace labels of the read eeg stream
+    if isfield(config.eeg, 'channel_labels')
+        eeg.label = config.eeg.channel_labels;
+    end
+    
     % check if mandatory fields are specified and if not, fill with default values
     if isfield(eegcfg, 'eeg')
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'EEGReference', 'REF', 'REF');
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'PowerLineFrequency', 'n/a', 'n/a');
         [eegcfg.eeg] =  checkfield(eegcfg.eeg, 'SoftwareFilters', 'n/a', 'n/a');
-        
-        % if specified, replace read labels
-        if isfield(config.eeg, 'channel_labels')
-            eeg.label = config.eeg.channel_labels;
-        end
     else
         eegcfg.eeg.EEGReference = 'REF';
         eegcfg.eeg.PowerLineFrequency = 'n/a';
         eegcfg.eeg.SoftwareFilters = 'n/a';
-
     end
     
     % check if sampling frequency was specified, if it was not, use nominal srate from the stream
@@ -605,7 +608,7 @@ if importEEG % This loop is always executed in current version
     elseif ~isnumeric(eegcfg.eeg.SamplingFrequency) || eegcfg.eeg.SamplingFrequency < 0
         warning('EEG sampling freq is:')
         disp(eegcfg.eeg.SamplingFrequency)
-        error(['Specified EEG sampling frequency is not supported. Must be empty, ''n/a'', or numeric greater 0.'])
+        error('Specified EEG sampling frequency is not supported. Must be empty, ''n/a'', or numeric greater 0.')
     end
     disp(['EEG sampling frequency is ' num2str(eegcfg.eeg.SamplingFrequency) 'Hz.'])
     
@@ -888,7 +891,7 @@ end
 %--------------------------------------------------------------------------
 ft_hastoolbox('jsonlab', 1);
 
-if exist('subjectInfo', 'var')
+if exist('subjectInfo', 'var') && ~isempty(subjectInfo)
     % participant.json
     pJSONName       = fullfile(cfg.bidsroot, 'participants.json');
     pfid            = fopen(pJSONName, 'wt');
@@ -1053,4 +1056,5 @@ for i = 1:num
         end
     end
 end
+
 end
