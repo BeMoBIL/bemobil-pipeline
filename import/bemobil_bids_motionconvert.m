@@ -215,7 +215,7 @@ for iM = 1:numel(motionIn)
             orientationInEuler         = orientationInEuler';
             occindices                 = find(orientationInQuaternion(1,:) == missingval);
             orientationInEuler(:,occindices) = nan;
-            orientationInEuler  = fillmissing(orientationInEuler', 'nearest')';
+%             orientationInEuler  = fillmissing(orientationInEuler', 'nearest')';
             
             % unwrap euler angles
             orientationInEuler  = unwrap(orientationInEuler, [], 2);
@@ -229,7 +229,7 @@ for iM = 1:numel(motionIn)
             position                    = dataPre(cartIndices,:);
             occindices                  = find(position(1,:) == missingval);
             position(:,occindices)      = nan;
-            position            = fillmissing(position', 'pchip')';
+%             position            = fillmissing(position', 'pchip')';
         else
            position     = []; 
            cartIndices  = [];  
