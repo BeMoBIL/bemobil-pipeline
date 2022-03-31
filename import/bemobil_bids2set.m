@@ -21,7 +21,7 @@ function bemobil_bids2set(config)
 %                                                                             Resulting chanloc will take labels from eloc file. 
 %                                                                             Use empty string for a missing chanloc 
 %                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
-%       config.other_data_types        = {};                                % optional, default value {'motion'}   
+%       config.other_data_types        = {'motion'};                        % optional, default value {'motion','physio'}, only need to change this if you want to skip loading datatypes   
 %
 % Out
 %       none
@@ -48,7 +48,7 @@ config = checkfield(config, 'session_names', 'required', '');
 config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]); 
 config = checkfield(config, 'filename_prefix', 'sub-', 'sub-'); 
 config = checkfield(config, 'merged_filename', 'merged.set', 'merged.set'); 
-config = checkfield(config, 'other_data_types', {'motion'}, 'motion'); 
+config = checkfield(config, 'other_data_types', {'motion','physio'}, '{''motion'',''physio''}'); 
 config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
 config = checkfield(config, 'overwrite', 'off', 'off'); 
 config = checkfield(config, 'match_electrodes_channels', {}, 'none');
