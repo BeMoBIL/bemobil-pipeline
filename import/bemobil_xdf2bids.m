@@ -639,12 +639,14 @@ if importEEG % This loop is always executed in current version
     if isfield(config.eeg, 'elec_struct')
         eegcfg.elec                         = config.eeg.elec_struct;
     elseif isfield(config.eeg, 'chanloc')
-        if isfield(config.eeg, 'chanloc_newname')
+        try
             elec = ft_read_sens(config.eeg.chanloc);
-            elec.label = config.eeg.chanloc_newname; 
-            eegcfg.elec = elec; 
-        else
-            eegcfg.elec                         = config.eeg.chanloc;
+        catch
+            error(['Could not read electrode locations from file "' config.eeg.chanloc '"'])
+        end
+        eegcfg.elec = elec; 
+        if isfield(config.eeg, 'chanloc_newname')
+            eegcfg.elec.label = config.eeg.chanloc_newname; 
         end
     end
     
