@@ -241,7 +241,7 @@ for iM = 1:numel(motionIn)
         
         % concatenate the converted data
         objectData         = [orientationInEuler; position; otherData];
-        dataPost           = [dataPost; objectData];
+        dataPost           = [dataPost; double(objectData)];
         
         % enter channel information
         for ei = 1:size(orientationInEuler,1)
