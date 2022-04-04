@@ -658,6 +658,10 @@ function [outEEG] = resampleToTime(EEG, newSRate, newTimes, offset)
 % save old times
 oldTimes                = EEG.times; 
 
+% save old nan beginning and end
+nanbegin = oldTimes(find(~any(isnan(EEG.data)),1,'first'));
+nanend = oldTimes(find(~any(isnan(EEG.data)),1,'last'));
+
 % Note that in fieldtrip time is in seconds
 newTimesFT                = newTimes/1000;
 
@@ -688,6 +692,10 @@ EEG.setname = EEG.filename(1:end-8);
 
 % checkset
 outEEG = eeg_checkset(EEG, 'makeur');
+
+% replace extrapolated values with nan (it shouldnt do it but for some reason it does...)
+EEG.data(:,1:find(EEG.times>nanbegin,1,'first')-1) = deal(nan);
+EEG.data(:,find(EEG.times<nanend,1,'last')+1:end) = deal(nan);
 
 end
 
