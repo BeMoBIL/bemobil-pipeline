@@ -1,4 +1,18 @@
 function elec = bemobil_create_elec(EEG)
+% creates an elec matlab struct from a loaded EEG data set that can be stored as .mat file and used during import in the
+% bemobil_xdf2bids function.
+%
+% example:
+%   elec_struct_loaded            = load(['P:\situation_awareness\data\0_raw-data\s' num2str(subject) '\s' num2str(subject) '_elec_struct.mat']);
+%   config.eeg.elec_struct        = elec_struct_loaded.elec;
+%
+% see also:
+% bemobil_bids2set
+
+if nargin == 0
+    help bemobil_create_elec
+    return
+end
 
 chanpos = [];
 chanpos(:,1) = [EEG.chanlocs.X];
