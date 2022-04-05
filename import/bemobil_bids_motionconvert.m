@@ -291,6 +291,10 @@ for iM = 1:numel(motionIn)
     
 end
 
+if isempty(motionStreamAll{iM})
+  error('Motion stream not found with the specified tracked point. Check config.motion.streams')
+end
+
 %--------------------------------------------------------------------------
 % find the one with the highest sampling rate 
 % & check if there are multiple streams in a single tracking system 
