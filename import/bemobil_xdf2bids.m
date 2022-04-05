@@ -367,7 +367,7 @@ if exist('subjectInfo','var')
     % attempt to find matching rows in subject info
     pRowInd          = find(cell2mat(subjectInfo.data(:,nrColInd)) == config.subject,1);
     if isempty(pRowInd)
-        warning(['Participant ' num2str(numericalIDs(Pi)) ' info not given : filling with n/a'])
+        warning(['Participant info not given : filling with n/a'])
         emptyRow         = {config.subject};
         [emptyRow{2:size(subjectInfo.data,2)}] = deal('n/a');
         newPInfo   = emptyRow;
@@ -720,19 +720,21 @@ if importMotion
         
         streamInds = [];
         for Fi = 1:numel(ftmotion)
-           if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames))
-               streamInds(end+1) = Fi; 
-           end
+            if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames))
+                streamInds(end+1)    = Fi;
+            end
         end
         
         % select tracking system configuration 
         trackSysConfig = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
         
         % stream configuration 
-        streamsConfig = config.motion.streams;
+        streamConfigNames    = cellfun(@(x) x.name, config.motion.streams, 'UniformOutput', 0)';
+        streamConfigInds     = find(strcmp(streamConfigNames, motionStreamNames)); % find the index of stream specified in the config
+        streamsConfig        = config.motion.streams(streamConfigInds);
          
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig(streamInds));
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig);
         
         % channel metadata 
         %------------------------------------------------------------------
