@@ -743,20 +743,21 @@ if importMotion
             ri = 1;
         end
         
-        streamInds = [];
+        streamInds          = []; % store indices of streams in this tracksys, within .xdf data
+        streamConfigInds    = []; % store indices of streams in this tracksys, within config.motion.streams field  
+        streamConfigNames    = cellfun(@(x) x.name, config.motion.streams, 'UniformOutput', 0)'; % stream names in config.motion.streams
         for Fi = 1:numel(ftmotion)
-            if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames))
-                streamInds(end+1)    = Fi;
+            for MSNi = 1:numel(motionStreamNames)
+                if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames{MSNi}))
+                    streamInds(end+1)       = Fi;
+                    streamConfigInds(end+1) = find(strcmp(streamConfigNames, motionStreamNames{MSNi})); % find the index of stream specified in the config
+                end
             end
         end
         
-        % select tracking system configuration 
-        trackSysConfig = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
-        
-        % stream configuration 
-        streamConfigNames    = cellfun(@(x) x.name, config.motion.streams, 'UniformOutput', 0)';
-        streamConfigInds     = find(strcmp(streamConfigNames, motionStreamNames)); % find the index of stream specified in the config
-        streamsConfig        = config.motion.streams(streamConfigInds);
+        % select tracking system and stream configuration 
+        trackSysConfig      = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
+        streamsConfig       = config.motion.streams(streamConfigInds);
          
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
         motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig);
