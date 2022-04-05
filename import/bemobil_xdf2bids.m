@@ -25,12 +25,16 @@ function bemobil_xdf2bids(config, varargin)
 %   
 % MOTION parameters
 %--------------------------------------------------------------------------
-% The following example shows a situation where there are two tracking
-% systems ('PhaseSpace' and 'HTCVive').
-% Tracking system 'PhaseSpace' consists of one xdf stream ('stream1') that 
+% The following example shows a situation where there are three tracking
+% systems ('PhaseSpace','HTCViveLeftArm', 'HTCRightArm'), corresponding to 
+% three xdf streams ('PhaseSpaceRigidBody', 'HTCRigidBody1', 'HTCRigidBody2').
+%
+% Tracking system 'PhaseSpace' corresponds to xdf stream 'PhaseSpaceRigidBody' that 
 % contains 3 tracked points ('torso', 'leftLeg', 'rightLeg')
-% Tracking system 'HTCVive' consists of two xdf streams ('stream2', 'stream3')
-% which contains one tracked point each ('leftArm', 'rightArm')
+%
+% Tracking system 'HTCViveLeftArm' corresponds to xdf stream 'HTCRigidBody1' which contains tracked point 'leftArm'
+%
+% Tracking system 'HTCViveRightArm' corresponds to xdf stream 'HTCRigidBody2' which contains tracked point 'rightArm'
 %
 % How to describe tracking systems in your data :  
 %
@@ -50,18 +54,18 @@ function bemobil_xdf2bids(config, varargin)
 %       
 % How to describe xdf streams in your data and assign them to tracking systems : 
 %
-%       config.motion.streams{1}.name                     = 'stream1';      % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
+%       config.motion.streams{1}.name                     = 'PhaseSpaceRigidbody'; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
 %       config.motion.streams{1}.tracksys                 = 'PhaseSpace';   % required, match with one of the values in "motion.tracksys{}.name"
 %       config.motion.streams{1}.tracked_points           = {'torso','leftLeg', 'rightLeg'}; %  keyword in channel names, indicating which object (tracked point) is included in the stream
 %                                                                            % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
 %                                                                            % required to be unique in a single tracking system
 %       config.motion.streams{1}.tracked_points_anat      = {'back center', 'left knee', 'right knee'}; % optional, anatomical description of placing of the trackers in case human body motion is being tracked
 %
-%       config.motion.streams{2}.name                     = 'stream2';
+%       config.motion.streams{2}.name                     = 'HTCRigidbody1';
 %       config.motion.streams{2}.tracksys                 = 'HTCViveLeftArm';
 %       config.motion.streams{2}.tracked_points           = 'leftArm'; 
 % 
-%       config.motion.streams{3}.name                     = 'stream3'; 
+%       config.motion.streams{3}.name                     = 'HTCRigidbody2'; 
 %       config.motion.streams{3}.tracksys                 = 'HTCViveRightArm'; 
 %       config.motion.streams{3}.tracked_points           = 'rightArm'; 
 %
@@ -370,7 +374,7 @@ if exist('subjectInfo','var') && ~isempty(subjectInfo)
     % attempt to find matching rows in subject info
     pRowInd          = find(cell2mat(subjectInfo.data(:,nrColInd)) == config.subject,1);
     if isempty(pRowInd)
-        warning(['Participant ' num2str(numericalIDs(Pi)) ' info not given : filling with n/a'])
+        warning(['Participant info not given : filling with n/a'])
         emptyRow         = {config.subject};
         [emptyRow{2:size(subjectInfo.data,2)}] = deal('n/a');
         newPInfo   = emptyRow;
@@ -741,19 +745,21 @@ if importMotion
         
         streamInds = [];
         for Fi = 1:numel(ftmotion)
-           if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames))
-               streamInds(end+1) = Fi; 
-           end
+            if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames))
+                streamInds(end+1)    = Fi;
+            end
         end
         
         % select tracking system configuration 
         trackSysConfig = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})}; 
         
         % stream configuration 
-        streamsConfig = config.motion.streams;
+        streamConfigNames    = cellfun(@(x) x.name, config.motion.streams, 'UniformOutput', 0)';
+        streamConfigInds     = find(strcmp(streamConfigNames, motionStreamNames)); % find the index of stream specified in the config
+        streamsConfig        = config.motion.streams(streamConfigInds);
          
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig(streamInds));
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig);
         
         % channel metadata 
         %------------------------------------------------------------------
