@@ -67,7 +67,7 @@ end
 
 if ~isempty(lowerPassbandEdge)
    
-    figure;
+    f = figure;
     [EEG, ~, b] = pop_eegfiltnew(EEG, lowerPassbandEdge, 0, highPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
     
@@ -97,6 +97,7 @@ if ~isempty(lowerPassbandEdge)
     EEG.etc.filter.highpass.passband = highpass_passband;
     EEG.etc.filter.highpass.order = highpass_order;
     close;
+    close(f);
 else
     
     if ~isfield(EEG.etc.filter,'highpass')
@@ -122,7 +123,7 @@ if ~isempty(higherPassbandEdge)
     disp(['Now continuing with highest possible frequency: ' num2str(higherPassbandEdge)]);
     end
    
-    figure;
+    f = figure;
     [EEG, ~, b] = pop_eegfiltnew(EEG, 0, higherPassbandEdge, lowPassFilterOrder, 0, [], 1);
     EEG = eeg_checkset( EEG );
     if save_file_on_disk; saveas(gcf,fullfile(out_filepath, 'filter_response_lowpass')); end
@@ -152,6 +153,7 @@ if ~isempty(higherPassbandEdge)
     EEG.etc.filter.lowpass.passband = lowpass_passband;
     EEG.etc.filter.lowpass.order = lowpass_order;
     close;
+    close(f);
 else
     
     if ~isfield(EEG.etc.filter,'lowpass')
