@@ -38,7 +38,7 @@ catch ME
 end
 
 % clean euler angle data
-EEG = bemobil_motion_clean_euler(EEG,20);
+EEG = bemobil_clean_motion(EEG,20);
 
 % empty EEGLAB entries
 ALLEEG = []; CURRENTSET=[];
