@@ -18,6 +18,8 @@
 
 function bemobil_config = bemobil_check_config(bemobil_config)
 
+return %for now!
+
 if nargin == 0
     help bemobil_check_config
     return
