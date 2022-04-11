@@ -559,6 +559,7 @@ for iSub = 1:numel(subDirList)
             % MOTION and other data
             %--------------------------------------------------------------
             motionsets = {};
+            motionsets_tracksys = {};
             for iType = 1:numel(otherDataTypes)
                 
                 if isempty(trackingSystemsInData)
@@ -632,6 +633,7 @@ for iSub = 1:numel(subDirList)
                     if strcmpi(otherDataTypes{iType}, 'MOTION')
                         % store motion sets separately and merge all into one below
                         [~, motionsets{end+1}, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA));
+                        motionsets_tracksys{end+1} = trackingSystemsInData{TSi};
                     else
                         [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_' upper(otherDataTypes{iType}) '.set'], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     end
@@ -639,6 +641,10 @@ for iSub = 1:numel(subDirList)
             end
             if ~isempty(motionsets)
                 % motion sets were found and now need to be merged over trackick systems
+                
+                [~, sorting_idx] = sort(motionsets_tracksys);
+                motionsets = motionsets(sorting_idx);
+                
                 mergedmotion = motionsets{1};
                 
                 for i = 2:length(motionsets)
