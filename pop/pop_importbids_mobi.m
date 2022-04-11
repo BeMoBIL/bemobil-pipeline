@@ -456,6 +456,8 @@ for iSubject = 2:size(bids.participants,1)
                         
                         if isfield(bids.data(iFold),'EEGReference') && ~isempty(bids.data(iFold).EEGReference)
                             specified_ref = bids.data.EEGReference;
+                        else
+                            specified_ref = 'n/a';
                         end
                         
                         % scan elecData and set aside other elocs that are
