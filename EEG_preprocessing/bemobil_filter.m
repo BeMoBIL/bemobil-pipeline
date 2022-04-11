@@ -97,7 +97,7 @@ if ~isempty(lowerPassbandEdge)
     EEG.etc.filter.highpass.passband = highpass_passband;
     EEG.etc.filter.highpass.order = highpass_order;
     close;
-    close(f);
+    try close(f); end
 else
     
     if ~isfield(EEG.etc.filter,'highpass')
@@ -153,7 +153,7 @@ if ~isempty(higherPassbandEdge)
     EEG.etc.filter.lowpass.passband = lowpass_passband;
     EEG.etc.filter.lowpass.order = lowpass_order;
     close;
-    close(f);
+    try close(f); end
 else
     
     if ~isfield(EEG.etc.filter,'lowpass')
