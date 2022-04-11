@@ -51,7 +51,7 @@ config = checkfield(config, 'session_names', 'required', '');
 % default values  
 config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]); 
 config = checkfield(config, 'filename_prefix', 'sub-', 'sub-'); 
-config = checkfield(config, 'merged_filename', 'merged.set', 'merged.set'); 
+config = checkfield(config, 'merged_filename', 'merged', 'merged'); 
 config = checkfield(config, 'other_data_types', {}, '{}'); 
 config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
 config = checkfield(config, 'overwrite', 'off', 'off'); 
@@ -554,10 +554,11 @@ for iSub = 1:numel(subDirList)
                 EEG         = pop_loadset('filepath',outPath,'filename',outName);
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
-            [~, ~, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [config.filename_prefix, num2str(subjectNr), '_EEG_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+            [~, ~, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_EEG.set'], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
             
             % MOTION and other data
             %--------------------------------------------------------------
+            motionsets = {};
             for iType = 1:numel(otherDataTypes)
                 
                 if isempty(trackingSystemsInData)
@@ -629,11 +630,26 @@ for iSub = 1:numel(subDirList)
                         end
                     end
                     if strcmpi(otherDataTypes{iType}, 'MOTION')
-                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                        % store motion sets separately and merge all into one below
+                        [~, motionsets{end+1}, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA));
                     else
-                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' upper(otherDataTypes{iType}) '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_' upper(otherDataTypes{iType}) '.set'], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     end
                 end
+            end
+            if ~isempty(motionsets)
+                % motion sets were found and now need to be merged over trackick systems
+                mergedmotion = motionsets{1};
+                
+                for i = 2:length(motionsets)
+                    mergedmotion.nbchan = mergedmotion.nbchan + motionsets{i}.nbchan;
+                    mergedmotion.chanlocs = [mergedmotion.chanlocs motionsets{i}.chanlocs];
+                    mergedmotion.data = [mergedmotion.data; motionsets{i}.data];
+                end
+                
+                pop_saveset(mergedmotion, 'filepath', fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]),...
+                    'filename', [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_MOTION.set']);
+                
             end
         end
     end
