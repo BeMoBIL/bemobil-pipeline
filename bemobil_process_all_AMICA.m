@@ -274,6 +274,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     starttime = EEG_preprocessed_and_ICA.times(end)/7*1;
     vis_artifacts(EEG_preprocessed_and_ICA,EEG_preprocessed_and_ICA,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -289,6 +290,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     starttime = EEG_preprocessed_and_ICA.times(end)/7*2;
     vis_artifacts(EEG_preprocessed_and_ICA,EEG_preprocessed_and_ICA,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -304,6 +306,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     starttime = EEG_preprocessed_and_ICA.times(end)/7*3;
     vis_artifacts(EEG_preprocessed_and_ICA,EEG_preprocessed_and_ICA,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -319,6 +322,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     starttime = EEG_preprocessed_and_ICA.times(end)/7*4;
     vis_artifacts(EEG_preprocessed_and_ICA,EEG_preprocessed_and_ICA,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -334,6 +338,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     starttime = EEG_preprocessed_and_ICA.times(end)/7*5;
     vis_artifacts(EEG_preprocessed_and_ICA,EEG_preprocessed_and_ICA,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -349,6 +354,7 @@ if ~exist('EEG_preprocessed_and_ICA','var')
     starttime = EEG_preprocessed_and_ICA.times(end)/7*6;
     vis_artifacts(EEG_preprocessed_and_ICA,EEG_preprocessed_and_ICA,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);

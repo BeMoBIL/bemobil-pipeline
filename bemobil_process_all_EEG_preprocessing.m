@@ -108,6 +108,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*1;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -123,6 +124,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*2;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -138,6 +140,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*3;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -153,6 +156,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*4;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -168,6 +172,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*5;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -183,6 +188,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*6;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -271,6 +277,7 @@ ax6 = subplot(236);
 starttime = EEG.times(end)/7*1;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -286,6 +293,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*2;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -301,6 +309,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*3;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -316,6 +325,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*4;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -331,6 +341,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*5;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -346,6 +357,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*6;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
