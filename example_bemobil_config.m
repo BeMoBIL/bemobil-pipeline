@@ -2,7 +2,7 @@ clear bemobil_config
 
 %% General Setup
 bemobil_config.study_folder = ['path_to_study_folder' filesep 'data' filesep]; %(NEEDS to have a filesep at the end, sorry!) 
-bemobil_config.filename_prefix = 'sub_';
+bemobil_config.filename_prefix = 'sub-';
 
 % foldernames (NEED to have a filesep at the end, sorry!) 
 bemobil_config.source_data_folder = ['0_source-data' filesep];

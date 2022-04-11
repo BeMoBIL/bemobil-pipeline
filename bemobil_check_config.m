@@ -26,7 +26,7 @@ end
 
 all_config_fields = {
     'study_folder', []
-    'filename_prefix', 'sub_'
+    'filename_prefix', 'sub-'
     'source_data_folder', ['0_source-data' filesep]
     'bids_data_folder', ['1_BIDS-data' filesep]
     'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep]
