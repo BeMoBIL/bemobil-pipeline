@@ -124,7 +124,7 @@ for iM = 1:numel(motionIn)
     motionStream.hdr.chantype     = [];
     motionStream.hdr.chanunit     = [];
     
-    dataPre                 = motionStream.trial{1};
+    dataPre                 = double(motionStream.trial{1});
     dataPost                = [];
     oi                      = 0;
     
@@ -241,7 +241,7 @@ for iM = 1:numel(motionIn)
         
         % concatenate the converted data
         objectData         = [orientationInEuler; position; otherData];
-        dataPost           = [dataPost; double(objectData)];
+        dataPost           = [dataPost; objectData];
         
         % enter channel information
         for ei = 1:size(orientationInEuler,1)

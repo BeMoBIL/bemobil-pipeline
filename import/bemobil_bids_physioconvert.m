@@ -12,7 +12,7 @@ for iP = 1:numel(physioIn)
     physioStream                  = physioIn{iP};
     labelsPre                     = [physioStream.hdr.orig.name];
     
-    dataPre                 = physioStream.trial{1};
+    dataPre                 = double(physioStream.trial{1});
     dataPost                = [];
     oi                      = 0;
     
