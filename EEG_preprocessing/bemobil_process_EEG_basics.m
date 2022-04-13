@@ -161,7 +161,7 @@ if exist('ref_channel','var') && ~isempty(ref_channel)
     if isfield(EEG.etc, 'extralocs')
         if ~isempty(EEG.etc.extralocs)
             for Ri = 1:size(EEG.etc.extralocs,1)
-                if strcmpi('ref', EEG.etc.extralocs{Ri,1})
+                if strcmpi('ref', EEG.etc.extralocs{Ri,1}) || strcmpi(ref_channel, EEG.etc.extralocs{Ri,1})
                     EEG.chanlocs(end).type  =  EEG.chanlocs(end-1).type;
                     EEG.chanlocs(end).unit  = EEG.chanlocs(end-1).unit;
                     EEG.chanlocs(end).status =  EEG.chanlocs(end-1).status;
@@ -184,13 +184,14 @@ end
 
 % 1c) import chanlocs and copy to urchanlocs
 if ~isempty(channel_locations_filepath) % chanlocs are read in here
+    disp('Importing channel locations from file.');
     EEG = pop_chanedit(EEG, 'load',...
         {channel_locations_filepath 'filetype' 'autodetect'});
-    disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
 elseif all(~cellfun(@isempty,{EEG.chanlocs.X}))
-    disp('All chanlocs have X coordinates - assume channel location has been imported'); 
+    disp('All chanlocs have X coordinates - assuming channel location have been imported.'); 
 else % no chanlocs present, use default chanlocs
+    disp('No chanlocs were provided as path and none were found in the EEG set - looking up standard locs.')
     standard_channel_locations_path =...
         fullfile(fileparts(which('dipfitdefs')),'standard_BESA','standard-10-5-cap385.elp');
     

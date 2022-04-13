@@ -454,8 +454,8 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
                         
-                        if isfield(bids.data(iFold),'EEGReference') && ~isempty(bids.data(iFold).EEGReference)
-                            specified_ref = bids.data.EEGReference;
+                        if isfield(bids.data(iSubject-1,iFold,iFile),'EEGReference') && ~isempty(bids.data(iSubject-1,iFold,iFile).EEGReference)
+                            specified_ref = bids.data(iSubject-1,iFold,iFile).EEGReference;
                         else
                             specified_ref = 'n/a';
                         end
