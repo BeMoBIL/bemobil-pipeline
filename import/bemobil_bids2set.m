@@ -106,6 +106,13 @@ end
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
+
+try 
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!'); 
+end
+
 pop_importbids_mobi(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs, 'matchchanlocs', config.match_electrodes_channels);
 
 % Restructure and rename the output of the import function

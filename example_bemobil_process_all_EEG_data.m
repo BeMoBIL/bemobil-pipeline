@@ -1,5 +1,5 @@
 % initialize EEGLAB 
-if ~exist('ALLEEG','var')
+if ~exist('ALLCOM','var')
 	eeglab;
 end
 
@@ -47,7 +47,7 @@ for subject = subjects
     % make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
     % used but data is processed locally, and two files are used for storing sets (.set and .fdt)
 	try 
-        pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1);
+        pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
     catch
         warning('Could NOT edit EEGLAB memory options!!'); 
     end
