@@ -7,7 +7,7 @@ end
 example_bemobil_config;
 
 % enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
-subjects = 1; 
+subjects = 1:2; 
 
 % set to 1 if all files should be computed, independently of whether they are present on disk or not
 force_recompute = 0; 
@@ -67,7 +67,12 @@ for subject = subjects
     idx_startpause = find(contains(lower(allevents),'start:pause'));
     idx_stoppause = find(contains(lower(allevents),'stop:pause'));
     
-    assert(length(idx_startpause) == length(idx_stoppause))
+    if (length(idx_startpause) ~= length(idx_stoppause))
+        if (length(idx_startpause) == length(idx_stoppause)+1) && (idx_startpause(end) > idx_stoppause(end))
+            warning('Last stop pause missing, removing last start pause!')
+            idx_startpause(end) = [];
+        end
+    end
     
     removeindices = [0 EEG.event(1).latency-EEG.srate];
     
