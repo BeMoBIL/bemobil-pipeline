@@ -423,7 +423,7 @@ for iSub = 1:numel(subDirList)
                     end
                 end
                 trackingSystemsInSession = unique(trackingSystemsInSession);
-                trackingSystemsInData   = [trackingSystemsInData trackingSystemsInSession];
+                trackingSystemsInData   = unique([trackingSystemsInData trackingSystemsInSession]);
             else 
                 trackingSystemsInSession = {''}; 
             end
