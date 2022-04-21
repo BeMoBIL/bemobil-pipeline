@@ -81,4 +81,7 @@ else
     EEG.etc.bemobil_reref_exclude = [];
 end
 
+% set old REF channel type to EEG now that it is average referenced
+[EEG.chanlocs(find(strcmp({EEG.chanlocs.type},'REF'))).type] = deal('EEG');
+
 disp('Rereferencing done.');

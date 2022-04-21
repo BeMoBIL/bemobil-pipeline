@@ -37,13 +37,12 @@ bemobil_config = bemobil_check_config(bemobil_config);
 
 %% basic setup
 
-% get rid of memory mapped object storage and make sure double spacing and matlab save version 7 is used (for files
-% larger than 2gb)
-% mobilab uses memory mapped files which is why this needs to be set several times throughout the processing
-try
-    pop_editoptions( 'option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0);
+% make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
+% used but data is processed locally, and two files are used for storing sets (.set and .fdt)
+try 
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
 catch
-    warning('Could NOT edit EEGLAB memory options!!');
+    warning('Could NOT edit EEGLAB memory options!!'); 
 end
 
 if ~exist('force_recompute','var') || isempty(force_recompute)
@@ -109,6 +108,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*1;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -124,6 +124,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*2;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -139,6 +140,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*3;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -154,6 +156,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*4;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -169,6 +172,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*5;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -184,6 +188,7 @@ if ~exist('EEG_basic','var')
     starttime = EEG.times(end)/7*6;
     vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
         round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+    drawnow
     axeshandle = gca;
     fighandle = gcf;
     axcp = copyobj(axeshandle, plotfigure);
@@ -225,15 +230,17 @@ end
 clear EEG_to_process
 
 %% detect bad channels
-
-[chans_to_interp, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG_basic, ALLEEG, CURRENTSET,...
+[chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG_basic, ALLEEG, CURRENTSET,...
     bemobil_config.chancorr_crit,bemobil_config.chan_max_broken_time, bemobil_config.chan_detect_num_iter,...
-    bemobil_config.chan_detected_fraction_threshold,bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
+    bemobil_config.chan_detected_fraction_threshold,bemobil_config.num_chan_rej_max_target, bemobil_config.flatline_crit,bemobil_config.line_noise_crit);
 
 if length(chans_to_interp) > EEG_basic.nbchan/5
     warndlg(['In subject ' num2str(subject) ', ' num2str(length(chans_to_interp)) ' of ' num2str(EEG_basic.nbchan)...
         ' channels were rejected, which is more than 1/5th!'])
 end
+
+EEG_basic.etc.channel_rejection.detection_threshold = chan_detected_fraction_threshold;
+EEG_basic.etc.channel_rejection.bad_channel_detection = detected_bad_channels;
 
 %% save fig of bad channels
 
@@ -270,6 +277,7 @@ ax6 = subplot(236);
 starttime = EEG.times(end)/7*1;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -285,6 +293,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*2;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -300,6 +309,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*3;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -315,6 +325,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*4;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -330,6 +341,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*5;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);
@@ -345,6 +357,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*6;
 vis_artifacts(EEG,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000)); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, plotfigure);

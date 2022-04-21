@@ -454,6 +454,12 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
                         
+                        if isfield(bids.data(iSubject-1,iFold,iFile),'EEGReference') && ~isempty(bids.data(iSubject-1,iFold,iFile).EEGReference)
+                            specified_ref = bids.data(iSubject-1,iFold,iFile).EEGReference;
+                        else
+                            specified_ref = 'n/a';
+                        end
+                        
                         % scan elecData and set aside other elocs that are
                         % not present in EEG data 
                         if ~isempty(elecData)
@@ -461,6 +467,8 @@ for iSubject = 2:size(bids.participants,1)
                             otherLocInd      = [];
                             for iE = 2:size(elecData,1)
                                 switch  cell2mat(lower(elecData(iE,nameCol)))
+                                    case lower(specified_ref)
+                                        otherLocInd = [otherLocInd iE];
                                     case 'ref'
                                         otherLocInd = [otherLocInd iE];
                                     case 'nasion'
@@ -693,7 +701,7 @@ for iSubject = 2:size(bids.participants,1)
                         importChan = true;
                         channelData = {'name', 'type', 'units'}; 
                         for Ci = 1:numel(infoData.Columns)
-                            channelData{end + 1,1} = ['test_' char(infoData.Columns{Ci})] ;
+                            channelData{end + 1,1} = [char(infoData.Columns{Ci})] ;
                         end
                         
                         % coordinate file (none)
@@ -770,10 +778,21 @@ for iSubject = 2:size(bids.participants,1)
                             useLatency = 0;
                             if strcmp(datatype,'motion')
                                 % check if the tracking system comes with latency
-                                latencyInd      = intersect(find(strcmp(channelData(:,strcmp(channelData(1,:),'tracking_system')), tracksys)),find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency')));
-                                latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
-                                latencyRowInData = find(strcmp(headers, latencyHeader));
+                                latencyInd      = intersect(find(strcmp(channelData(:,strcmp(channelData(1,:),'tracking_system')), tracksys)),...
+                                    find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency')));
                                 useLatency = ~isempty(latencyInd);
+                                if useLatency
+                                    latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
+                                    latencyRowInData = find(strcmp(headers, latencyHeader));
+                                end
+                            elseif strcmp(datatype,'physio')
+                                % check if the tracking system comes with latency
+                                latencyInd      = find(contains(channelData(:,strcmp(channelData(1,:),'name')), 'latency'));
+                                useLatency = ~isempty(latencyInd);
+                                if useLatency
+                                    latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
+                                    latencyRowInData = find(strcmp(headers, latencyHeader));
+                                end
                             end
                             
                             % reconstruct time : use scans.tsv for synching
@@ -796,7 +815,7 @@ for iSubject = 2:size(bids.participants,1)
                                     runString = ''; 
                                     trackSysString = ''; 
                                     
-                                    if exist(tracksys, 'var')
+                                    if exist('tracksys', 'var') && ~isempty(tracksys)
                                         trackSysString = tracksys; 
                                     end
                                         
@@ -812,9 +831,13 @@ for iSubject = 2:size(bids.participants,1)
                                     
                                     [~,rawName] = fileparts(otherFileRaw);  
                                     % find files that matches in session, task, tracking system (in case it is motion data), and run
-                                    if contains(scansData{Rowi,fNameColi}, 'eeg.') && contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString)&& contains(scansData(Rowi,fNameColi), runString) contains(scansData(Rowi,fNameColi), trackSysString)
+                                    if contains(scansData{Rowi,fNameColi}, 'eeg.') &&...
+                                            contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString) &&...
+                                            contains(scansData(Rowi,fNameColi), runString)
                                         eegAcqTime      = scansData(Rowi,acqTimeColi); 
-                                    elseif contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString)&& contains(scansData(Rowi,fNameColi), runString)
+                                    elseif contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString) &&...
+                                           contains(scansData(Rowi,fNameColi), runString) && contains(scansData(Rowi,fNameColi), trackSysString) &&...
+                                           contains(scansData(Rowi,fNameColi), datatype)
                                         otherAcqTime    = scansData(Rowi,acqTimeColi); 
                                     end
                                 end
@@ -842,7 +865,7 @@ for iSubject = 2:size(bids.participants,1)
                                 DATA.data(latencyRowInData,:)   = [];
                             else
                                 if isfield(infoData, 'TrackingSystems')
-                                    % tsi should have been defined ábove when srate was being read in
+                                    % tsi should have been defined above when srate was being read in
                                     DATA.times  = (0:1000/infoData.TrackingSystems(tsi).SamplingFrequencyEffective:infoData.TrackingSystems(tsi).RecordingDuration*1000); % time is in ms
                                 elseif isfield(infoData, 'RecordingDuration')
                                     DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms

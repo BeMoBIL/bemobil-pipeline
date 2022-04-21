@@ -5,13 +5,14 @@ function bemobil_xdf2bids(config, varargin)
 % Inputs :
 %   config [struct, with required fields filename, bids_target_folder, subject, eeg.stream_keywords
 %
-%       config.filename               = 'P:\...SPOT_rotation\0_source-data\vp-1'\vp-1_control_body.xdf'; % required
-%       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';                               % required
-%       config.subject                = 1;                                  % required
-%       config.session                = 'VR';                               % optional 
-%       config.run                    = 1;                                  % optional
-%       config.task                   = 'rotation';                         % optional 
-%       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
+%       config.filename               = 'P:\...SPOT_rotation\0_source-data\vp-1'\vp-1_control_body.xdf';    % required
+%       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';                                  % required
+%       config.subject                = 1;                                                                  % required
+%       config.session                = 'VR';                                                               % optional 
+%       config.run                    = 1;                                                                  % optional
+%       config.task                   = 'rotation';                                                         % optional 
+%       config.acquisition_time       = [2021,9,30,18,14,0.00];                                             % optional ([YYYY,MM,DD,HH,MM,SS]) 
+%       config.load_xdf_flags         = {'Verbose',0}                                                       % optional
 %
 % EEG parameters 
 %--------------------------------------------------------------------------
@@ -19,6 +20,8 @@ function bemobil_xdf2bids(config, varargin)
 %       config.eeg.chanloc            = 'P:\...SPOT_rotation\0_raw-data\vp-1'\vp-1.elc'; % optional
 %       config.eeg.elec_struct        = elecStruct;                         % optional, alternative to config.eeg.chanloc. Output struct of ft_read_sens 
 %       config.eeg.chanloc_newname    = {'chan1', 'chan2'};                 % optional, cell array of size nchan X 1,  containing new chanloc labels in case you want to rename them 
+%       config.eeg.channel_labels     = {'x','y','z',...}                   % optional, completely replace the channel labels that are in the xdf file
+%       
 %   
 % MOTION parameters
 %--------------------------------------------------------------------------
@@ -42,7 +45,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.tracksys{1}.euler_components        = {'x','y','z'};  % optional, your euler components - the rotation order of the output of quat2eul will be reversed 
 %       config.motion.tracksys{1}.cartesian_coordinates   = {'x','y','z'};  % optional, your cartesian coordinates for position data
 %       config.motion.tracksys{1}.keep_timestamps         = 'on';           % optional, 'on' by default, 'off' will lead to interpolation for making intersample intervals regular 
-%       config.motion.tracksys{1}.missing_values          = 'NaN';          % optional, how missing samples are represented in the stream. takes one of the values from 'NaN', '0';   
+%       config.motion.tracksys{1}.missing_values          = 'NaN';          % optional, how missing samples are represented in the stream. takes one of the values from 'NaN', '0', default = NaN;   
 %       config.motion.tracksys{1}.POS.unit                = 'vm';           % optional, in case you want to use custom unit
 %       
 %       config.motion.tracksys{2}.name                    = 'HTCViveLeftArm';
@@ -68,7 +71,7 @@ function bemobil_xdf2bids(config, varargin)
 %
 % PHYSIO parameters
 %--------------------------------------------------------------------------
-%       config.phys.streams{1}.stream_name          = {'force1'};           % optional
+%       config.phys.streams{1}.stream_name          = 'force1';           % optional
 %       config.phys.skip_interp                     = 1;                    % optional, logical. Set as 1 if you wish to not correct intersample intervals by interpolation for physio data 
 %
 %--------------------------------------------------------------------------
@@ -120,6 +123,7 @@ config = checkfield(config, 'acquisition_time', [1800,12,31,5,5,5.000], 'default
 % assign default values to optional fields
 %--------------------------------------------------------------------------
 config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
+config = checkfield(config, 'load_xdf_flags',{'Verbose',1},'{''Verbose'',1}');
 
 % validate file name parts 
 %--------------------------------------------------------------------------
@@ -155,6 +159,9 @@ if importMotion
     for Ti = 1:numel(config.motion.tracksys)
         config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'name', 'required', '');
         config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'keep_timestamps', 'on', 'on');
+        if contains(config.motion.tracksys{Ti}.name,pat)
+            error('Tracking system name MUST NOT contain space or underscore. Please change tracking system name.')
+        end
         tracksysNames{end+1} = config.motion.tracksys{Ti}.name;  
     end
     
@@ -355,7 +362,7 @@ end
 %%
 % check if numerical IDs match subject info, if this was specified
 %--------------------------------------------------------------------------
-if exist('subjectInfo','var')
+if exist('subjectInfo','var') && ~isempty(subjectInfo)
     
     nrColInd                = find(strcmp(subjectInfo.cols, 'nr'));
     
@@ -395,7 +402,7 @@ else
 end
 
 % participant information
-if exist('subjectInfo', 'var')
+if exist('subjectInfo', 'var') && ~isempty(subjectInfo)
     
     allColumns      = subjectInfo.cols;
     
@@ -423,7 +430,7 @@ end
 % load and assign streams (parts taken from xdf2fieldtrip)
 %--------------------------------------------------------------------------
 disp('Loading .xdf streams ...')
-streams                  = load_xdf(cfg.dataset);
+streams                  = load_xdf(cfg.dataset,config.load_xdf_flags{:});
 
 % initialize an array of booleans indicating whether the streams are continuous
 iscontinuous = false(size(streams));
@@ -552,20 +559,6 @@ if importEEG % This loop is always executed in current version
         end
     end
     
-    % try to use information from preprocessing config
-    if isfield(config.eeg, 'ref_channel')
-        eegcfg.eeg.EEGReference                 = config.ref_channel; % field name comes from bemobil preprocessing pipeline
-    end
-    
-    if isfield(config.eeg, 'linefreqs')
-        if numel(config.linefreqs) == 1
-            eegcfg.eeg.PowerLineFrequency           = config.linefreqs; % field name comes from bemobil preprocessing pipeline
-        elseif numel(config.linefreqs) > 1
-            eegcfg.eeg.PowerLineFrequency           = config.linefreqs(1);
-            warning('Only the first value specified in config.eeg.linefreqs entered in eeg.json')
-        end
-    end
-    
     % try to use metadata provided by the user - if provided, will overwrite values from config. 
     if exist('eegInfo','var')
         if isfield(eegInfo, 'eeg')
@@ -574,6 +567,26 @@ if importEEG % This loop is always executed in current version
         if isfield(eegInfo, 'coordsystem')
             eegcfg.coordsystem  = eegInfo.coordsystem;
         end
+    end
+    
+    % try to use information from preprocessing config
+    if isfield(config.eeg, 'ref_channel')
+        eegcfg.eeg.EEGReference                 = config.eeg.ref_channel; % field name comes from bemobil preprocessing pipeline
+    end
+    if isfield(config.eeg, 'srate')
+        eegcfg.eeg.SamplingFrequency                 = config.eeg.srate; % field name comes from bemobil preprocessing pipeline
+    end    
+    if isfield(config.eeg, 'linefreq')
+        if numel(config.eeg.linefreq) == 1
+            eegcfg.eeg.PowerLineFrequency           = config.eeg.linefreq; % field name comes from bemobil preprocessing pipeline
+        elseif numel(config.eeg.linefreq) > 1
+            eegcfg.eeg.PowerLineFrequency           = config.eeg.linefreq(1);
+            warning('Only the first value specified in config.eeg.linefreq entered in eeg.json')
+        end
+    end
+    % if specified, replace labels of the read eeg stream
+    if isfield(config.eeg, 'channel_labels')
+        eeg.label = config.eeg.channel_labels;
     end
     
     % check if mandatory fields are specified and if not, fill with default values
@@ -585,8 +598,18 @@ if importEEG % This loop is always executed in current version
         eegcfg.eeg.EEGReference = 'REF';
         eegcfg.eeg.PowerLineFrequency = 'n/a';
         eegcfg.eeg.SoftwareFilters = 'n/a';
-
     end
+    
+    % check if sampling frequency was specified, if it was not, use nominal srate from the stream
+    if ~isfield(eegcfg.eeg,'SamplingFrequency') || isempty(eegcfg.eeg.SamplingFrequency) || strcmp(eegcfg.eeg.SamplingFrequency,'n/a')
+        warning('EEG sampling frequency was not specified. Using nominal srate taken from xdf!')
+        eegcfg.eeg.SamplingFrequency = str2num(xdfeeg{1}.info.nominal_srate);
+    elseif ~isnumeric(eegcfg.eeg.SamplingFrequency) || eegcfg.eeg.SamplingFrequency < 0
+        warning('EEG sampling freq is:')
+        disp(eegcfg.eeg.SamplingFrequency)
+        error('Specified EEG sampling frequency is not supported. Must be empty, ''n/a'', or numeric greater 0.')
+    end
+    disp(['EEG sampling frequency is ' num2str(eegcfg.eeg.SamplingFrequency) 'Hz.'])
     
     % read in the event stream (synched to the EEG stream)
     if ~isempty(xdfmarkers)
@@ -615,12 +638,14 @@ if importEEG % This loop is always executed in current version
     if isfield(config.eeg, 'elec_struct')
         eegcfg.elec                         = config.eeg.elec_struct;
     elseif isfield(config.eeg, 'chanloc')
-        if isfield(config.eeg, 'chanloc_newname')
+        try
             elec = ft_read_sens(config.eeg.chanloc);
-            elec.label = config.eeg.chanloc_newname; 
-            eegcfg.elec = elec; 
-        else
-            eegcfg.elec                         = config.eeg.chanloc;
+        catch
+            error(['Could not read electrode locations from file "' config.eeg.chanloc '"'])
+        end
+        eegcfg.elec = elec; 
+        if isfield(config.eeg, 'chanloc_newname')
+            eegcfg.elec.label = config.eeg.chanloc_newname; 
         end
     end
     
@@ -826,7 +851,7 @@ if importPhys
     end
     
     % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
-    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri, interpPhys);
+    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri, ~config.phys.skip_interp);
     
     % construct physio metadata
     physiocfg               = cfg;                                           % copy general fields
@@ -865,7 +890,7 @@ end
 %--------------------------------------------------------------------------
 ft_hastoolbox('jsonlab', 1);
 
-if exist('subjectInfo', 'var')
+if exist('subjectInfo', 'var') && ~isempty(subjectInfo)
     % participant.json
     pJSONName       = fullfile(cfg.bidsroot, 'participants.json');
     pfid            = fopen(pJSONName, 'wt');
@@ -969,6 +994,22 @@ outEvents = [];
 for Si = 1:numel(inStreams)
     if iscell(inStreams{Si}.time_series)
         eventsInStream              = cell2struct(inStreams{Si}.time_series, 'value')';
+        
+        % remove linebreaks
+        for i_event = find(contains(inStreams{Si}.time_series,char(10)))
+            eventsInStream(i_event).value = strrep(eventsInStream(i_event).value,char(10),' ');
+        end
+        
+        % remove tabs
+        for i_event = find(contains(inStreams{Si}.time_series,char(9)))
+            eventsInStream(i_event).value = strrep(eventsInStream(i_event).value,char(9),' ');
+        end
+        
+        % remove other kinds of linebreaks
+        for i_event = find(contains(inStreams{Si}.time_series,char(13)))
+            eventsInStream(i_event).value = strrep(eventsInStream(i_event).value,char(13),' ');
+        end
+        
         [eventsInStream.type]       = deal(inStreams{Si}.info.type);
         times                       = num2cell(inStreams{Si}.time_stamps);
         [eventsInStream.timestamp]  = times{:};
@@ -1014,4 +1055,5 @@ for i = 1:num
         end
     end
 end
+
 end
