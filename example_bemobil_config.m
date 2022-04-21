@@ -2,7 +2,7 @@ clear bemobil_config
 
 %% General Setup
 bemobil_config.study_folder = ['path_to_study_folder' filesep 'data' filesep]; %(NEEDS to have a filesep at the end, sorry!) 
-bemobil_config.filename_prefix = 'sub_';
+bemobil_config.filename_prefix = 'sub-';
 
 % foldernames (NEED to have a filesep at the end, sorry!) 
 bemobil_config.source_data_folder = ['0_source-data' filesep];
@@ -24,60 +24,6 @@ bemobil_config.dipfitted_filename = 'dipfitted.set';
 bemobil_config.preprocessed_and_ICA_filename = 'preprocessed_and_ICA.set';
 bemobil_config.single_subject_cleaned_ICA_filename = 'cleaned_with_ICA.set';
 bemobil_config.processed_motion_filename = 'motion_processed.set';
-
-%% Import Settings 
-% Fields below do not have default values or important for data reading
-% configuration is necessary
-%--------------------------------------------------------------------------
-
-% scripts will find files containing respective string, sort them incrementally 
-% and output files merged within and between sessions. 
-% _ or - character not recommended (incompatible with bids, potentially breaks parsing)
-bemobil_config.session_names = {'sessionA', 'sessionB'};
-
-% name of the task that is common to all sessions - only relevant for data in BIDS
-bemobil_config.bids_task_label = 'taskname'; 
-
-% a keyword contained in the EEG stream that is unique to EEG. 
-% Non-continuous (marker) streams will not be mixed up even if it contains this string.
-bemobil_config.bids_eeg_keyword = 'EEG';
-
-% [motion] keywords in stream names in .xdf file that contain motion data
-bemobil_config.rigidbody_streams = {'RigidBodyKeyword1', 'RigidBodyKeyword2', 'RigidbodyKeyword3'};
-
-% [motion] which rigidbody streams are present in which sessions
-% array of logicals number of sessios X number of rigidbody streams
-% in this example, all 3 rigidbodies are present in first session [1,1,1]
-% but only the first is present in the second session [1,0,0]
-bemobil_config.bids_rb_in_sessions = logical([1,1,1;1,0,0]);
-
-% Fields below have default values and can be optinally configured
-% most of these are used to either be saved as channel information in BIDS
-% or to be provided as entries in metadata files
-% (simply not creating the fields will leave you with default values)
-%--------------------------------------------------------------------------
-
-% other data types present
-% default value {'motion'}, if importing only EEG, enter {} 
-bemobil_config.other_data_types         = {'motion'}; 
-
-% [motion] simple, human readable labels of the motion streams
-% default values are taken from field rigidbody_streams
-bemobil_config.rigidbody_names          =  {'Head', 'LeftThigh', 'LeftLowerLeg'};
-
-% [motion] if more detailed anatomical description or coordinates are present, specify here
-% default values are taken from field rigidbody_names
-bemobil_config.rigidbody_anat           =  {'central forehead', 'left vastus lateralis', 'left tibialis anterior'};
-
-% [motion] for unisession, just use a string. If multisession, cell array of size 1 x session number
-bemobil_config.bids_motion_position_units      = {'m','vm'};                       
-bemobil_config.bids_motion_orientation_units   = {'rad','rad'};                     % if multisession, cell array of size 1 x session number
-
-% [motion] custom function names - customization recommended for data sets that have
-%                                  an 'unconventional' naming scheme for motion channels
-bemobil_config.bids_motionconvert_custom    = 'bids_motionconvert_mobiworkshop';
-bemobil_config.bids_parsemarkers_custom     = 'bids_parsemarkers_mobiworkshop';
-
 
 %% Preprocessing
 
@@ -196,12 +142,20 @@ bemobil_config.number_of_dipoles = 1;
 bemobil_config.iclabel_classifier = 'lite';
 
 % 'Brain', 'Muscle', 'Eye', 'Heart', 'Line Noise', 'Channel Noise', 'Other'
-bemobil_config.iclabel_classes = [1];
+% bemobil_config.iclabel_classes = [1]; % this setting removes everything that is not brain
+% bemobil_config.iclabel_classes = [1 7]; % this setting removes everything that is classified as an artifact IC, but not brain, and not "other"
+bemobil_config.iclabel_classes = [1 2 4 5 6 7]; % this setting only removes eye components
 
 % if the threshold is set to -1, the popularity classifier is used (i.e. every IC gets the class with the highest
 % probability), if it is set to a value, the summed score of the iclabel_classes must be higher than this threshold to
 % keep an IC. Must be in the [0 1] range!
 bemobil_config.iclabel_threshold = -1; 
+
+%% finalization
+
+% filtering the final dataset
+bemobil_config.final_filter_lower_edge = 0.2; % this should not lead to any issues downstream but remove all very slow drifts
+bemobil_config.final_filter_higher_edge = [];
 
 %% Motion Processing Parameters
 
@@ -214,7 +168,7 @@ bemobil_config.lowpass_motion_after_derivative = 18;
 % make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
 % used but data is processed locally, and two files are used for storing sets (.set and .fdt)
 try 
-    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1);
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
 catch
     warning('Could NOT edit EEGLAB memory options!!'); 
 end

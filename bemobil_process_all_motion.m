@@ -35,7 +35,7 @@ bemobil_config = bemobil_check_config(bemobil_config);
 % make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
 % used but data is processed locally, and two files are used for storing sets (.set and .fdt)
 try 
-    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1);
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
 catch
     warning('Could NOT edit EEGLAB memory options!!'); 
 end
@@ -84,7 +84,7 @@ if ~exist('EEG_motion_out','var')
         disp('-----------------------------------------------------------------')
         
         idx_this_rb = find(contains(all_tracked_points,all_rigidbody{i_rigidbody}));
-        assert(length(idx_this_rb)==6||length(idx_this_rb)==7,'Rigidbody does not contain 6 (Euler) or 7 (quaternions) channels!')
+%         assert(length(idx_this_rb)==6||length(idx_this_rb)==7,'Rigidbody does not contain 6 (Euler) or 7 (quaternions) channels!')
         EEG_single_rbs = pop_select( EEG_motion_in, 'channel',idx_this_rb);
         
         EEG_single_rbs = bemobil_motion_process_rigidbody_data(EEG_single_rbs,bemobil_config.lowpass_motion,bemobil_config.lowpass_motion_after_derivative);

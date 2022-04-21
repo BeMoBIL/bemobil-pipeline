@@ -174,10 +174,19 @@ ax4 = subplot(234);
 ax5 = subplot(235);
 ax6 = subplot(236);
 
+titletext = [];
+for i = 1:length(chans_to_interp)
+    titletext = [titletext EEG.chanlocs(chans_to_interp(i)).labels ' (' num2str(chans_to_interp(i)) '), '];
+end
+titletext = titletext(1:end-2);
+
+h = textsc(['Detected: ' titletext], 'title');
+set(h, 'fontsize',16)
 
 starttime = EEG.times(end)/7*1;
 vis_artifacts(EEG_chan_removed,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000),'equalize_channel_scaling',1); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, rejected_chan_plot_handle);
@@ -193,6 +202,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*2;
 vis_artifacts(EEG_chan_removed,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000),'equalize_channel_scaling',1); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, rejected_chan_plot_handle);
@@ -208,6 +218,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*3;
 vis_artifacts(EEG_chan_removed,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000),'equalize_channel_scaling',1); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, rejected_chan_plot_handle);
@@ -223,6 +234,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*4;
 vis_artifacts(EEG_chan_removed,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000),'equalize_channel_scaling',1); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, rejected_chan_plot_handle);
@@ -238,6 +250,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*5;
 vis_artifacts(EEG_chan_removed,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000),'equalize_channel_scaling',1); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, rejected_chan_plot_handle);
@@ -253,6 +266,7 @@ close(fighandle)
 starttime = EEG.times(end)/7*6;
 vis_artifacts(EEG_chan_removed,EEG,'show_events',1,'time_subset',...
     round([starttime starttime+10000]/1000),'equalize_channel_scaling',1); % plot 10s at the first quarter
+drawnow
 axeshandle = gca;
 fighandle = gcf;
 axcp = copyobj(axeshandle, rejected_chan_plot_handle);

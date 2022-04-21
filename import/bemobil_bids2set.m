@@ -21,7 +21,11 @@ function bemobil_bids2set(config)
 %                                                                             Resulting chanloc will take labels from eloc file. 
 %                                                                             Use empty string for a missing chanloc 
 %                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
-%       config.other_data_types        = {};                                % optional, default value {'motion'}   
+%       config.other_data_types        = {'motion','physio'};                % optional, default value is {}, required
+%                                                                               if you want to load non-EEG data. Only
+%                                                                               add the data type you have in oyur BIDS
+%                                                                               data.
+%       
 %
 % Out
 %       none
@@ -47,11 +51,12 @@ config = checkfield(config, 'session_names', 'required', '');
 % default values  
 config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]); 
 config = checkfield(config, 'filename_prefix', 'sub-', 'sub-'); 
-config = checkfield(config, 'merged_filename', 'merged.set', 'merged.set'); 
-config = checkfield(config, 'other_data_types', {'motion'}, 'motion'); 
+config = checkfield(config, 'merged_filename', 'merged', 'merged'); 
+config = checkfield(config, 'other_data_types', {}, '{}'); 
 config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
 config = checkfield(config, 'overwrite', 'off', 'off'); 
 config = checkfield(config, 'match_electrodes_channels', {}, 'none');
+config = checkfield(config, 'use_nominal_srate', {}, 'none');
 
 % check session input
 if ~iscell(config.session_names)
@@ -101,6 +106,13 @@ end
 
 % Import data set saved in BIDS, using a modified version of eeglab plugin 
 %--------------------------------------------------------------------------
+
+try 
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!'); 
+end
+
 pop_importbids_mobi(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs, 'matchchanlocs', config.match_electrodes_channels);
 
 % Restructure and rename the output of the import function
@@ -311,7 +323,7 @@ for iSub = 1:numel(subDirList)
         end
         
         % initializa a matrix storing EEG first and last time stamps (this is used to synch other streams)
-        eegTimes = NaN(2,numel(eegFiles)); 
+        eegTimes = {}; 
         
         % initialize an empty cell array to store EEG events 
         eegEvents = {}; 
@@ -327,35 +339,50 @@ for iSub = 1:numel(subDirList)
             % loop over runs 
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
-                EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
-                eegTimes(:,Ri)      = [EEG.times(1); EEG.times(end)];
+                EEG                     = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
+                EEG.etc.effective_srate = EEG.srate;
                 
-                % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
-                % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
-                % parts at end/beginning
-                EEG                 = interpToTime(EEG, round(EEG.srate), EEG.times(1), EEG.times(end), 0); 
-                EEG                 = pop_resample(EEG, newSRate); % resample
-            
-                % store events to be added in DATA later
-                eegEvents{end +1} = EEG.event; 
+                % set srate to nominal srate
+                if isfield(EEG.etc,'nominal_srate')
+                    disp(['Setting EEG srate to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                    EEG.srate = EEG.etc.nominal_srate;
+                end
+                
+                EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
+%                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+                eegTimes{Ri}        = EEG.times;
+                
+                % round event times to have usable indices
+                for i_event = 1:length(EEG.event)
+                    EEG.event(i_event).latency = round(EEG.event(i_event).latency);
+                end
+                
+                eegEvents{end +1}   = EEG.event;
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
             [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
             EEG                = EEGMerged;
 
         elseif numel(eegFiles) == 1
-            EEGSessionFileName  = eegFiles{1};
-            EEG                 = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
-            eegTimes(:,1)       = [EEG.times(1); EEG.times(end)]; 
+            EEGSessionFileName      = eegFiles{1};
+            EEG                     = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
+            EEG.etc.effective_srate = EEG.srate;
             
-            % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
-            % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
-            % parts at end/beginning
-            EEG                 = interpToTime(EEG, round(EEG.srate), EEG.times(1), EEG.times(end), 0); 
-            EEG                 = pop_resample(EEG, newSRate); % resample
+            % set srate to nominal srate
+            if isfield(EEG.etc,'nominal_srate')
+                disp(['Setting EEG srate to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                EEG.srate = EEG.etc.nominal_srate;
+            end
             
-            % store events to be added in DATA later
-            eegEvents{end +1} = EEG.event; 
+            EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
+%             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+            eegTimes            = EEG.times;
+            
+            % round event times to have usable indices
+            for i_event = 1:length(EEG.event)
+                EEG.event(i_event).latency = round(EEG.event(i_event).latency);
+            end
+            eegEvents{end +1}   = EEG.event;
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
         end
@@ -396,7 +423,7 @@ for iSub = 1:numel(subDirList)
                     end
                 end
                 trackingSystemsInSession = unique(trackingSystemsInSession);
-                trackingSystemsInData   = [trackingSystemsInData trackingSystemsInSession];
+                trackingSystemsInData   = unique([trackingSystemsInData trackingSystemsInSession]);
             else 
                 trackingSystemsInSession = {''}; 
             end
@@ -406,7 +433,12 @@ for iSub = 1:numel(subDirList)
                 dataFiles = modalityFiles(contains(modalityFiles, trackingSystemsInSession{TSi})); 
                 
                 if numel(eegFiles) ~= numel(dataFiles)
-                    warning('Number of EEG and other data files do not match within a session')
+                    warning(['Number of EEG files and data files of type ' bemobilModality ' do not match within session ''' config.session_names{iSes} ''''])
+                end
+                
+                if numel(dataFiles) == 0
+                    warning(['No data file of type ' bemobilModality ' found in session ''' config.session_names{iSes} '''. Skipping....'])
+                    continue
                 end
                 
                 if numel(dataFiles) > 1
@@ -419,39 +451,38 @@ for iSub = 1:numel(subDirList)
                     % loop over runs
                     ALLDATA = []; CURRENTSET = [];
                     for Ri = 1:numel(dataFiles)
-                        DATA         = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
-                        DATA         = unwrapAngles(DATA); % unwrap angles before resampling
-                        
-                        % start time has to be buffered before data can be synched to EEG
-                        DATA.times   = DATA.times + DATA.etc.starttime*1000;
-                        
-                        if DATA.srate > newSRate
-                            % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
-                            % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
-                            % parts at end/beginning
-                            DATA                = interpToTime(DATA, round(DATA.srate), eegTimes(1,Ri), eegTimes(2,Ri), DATA.etc.starttime); 
-                            DATA                = pop_resample(DATA, newSRate); % downsample
-                            
+                        DATA                        = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
+                        DATA.etc.effective_srate    = DATA.srate;
+                        DATA                        = unwrapAngles(DATA); % unwrap angles before resampling
+                        if ~contains(lower(dataFiles{Ri}),lower(config.use_nominal_srate))
+                            [DATA]      = resampleToTime(DATA, newSRate, eegTimes{Ri}, DATA.etc.starttime);
                         else
-                            % this has to happen even if srate is equal for trimming and adding NaNs
-                            DATA                = interpToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);                         
+                            disp(['Data file ' dataFiles{Ri} config.use_nominal_srate ' using nominal srate!'])
+                            assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{Ri} config.use_nominal_srate ' was specified to use nominal srate, but none was found!'])
+                            DATA.srate  = DATA.etc.nominal_srate;
+                            DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
+                            
+                            % check beginning of data
+                            sampleshift = round(DATA.etc.starttime*1000/(1/newSRate*1000));
+                            if sampleshift < 0 % negative shift = need to cut data in the beginning
+                                DATA.data   = DATA.data(:,1-sampleshift:end);
+                            elseif sampleshift > 0 % positive shift = need to add nans
+                                DATA.data   = [nan(DATA.nbchan,sampleshift) DATA.data];
+                            end % shift of 0 means nothing needs to be changed
+
+                            % check end of data
+                            if size(DATA.data,2) > length(eegTimes{Ri}) % need to cut data short
+                                DATA.data   = DATA.data(:,1:length(eegTimes{Ri}));
+                            elseif size(DATA.data,2) < length(eegTimes{Ri}) % need to add nans
+                                DATA.data   = [DATA.data nan(DATA.nbchan,length(eegTimes{Ri})-size(DATA.data,2))];
+                            end % if length is perfect and shift is 0, nothing needs to be changed
+
+                            % fix metadata
+                            DATA.times  = eegTimes{Ri};
+                            DATA.pnts   = length(eegTimes{Ri});
+                            DATA.xmax   = DATA.times(end)/1000;
+                            DATA.xmin   = 0;
                         end
-                        
-                        % just in case the resampling leads to a few shifted samples
-                        if DATA.pnts > EEG.pnts
-                            warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and will be trimmed!'])
-                            DATA = eeg_eegrej( DATA, [DATA.pnts+1 EEG.pnts] );
-                        elseif EEG.pnts > DATA.pnts
-                            warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and NaN values will be added!'])
-                            DATA.data(:,end:EEG.pnts) = deal(NaN);
-                        end
-                        assert(DATA.pnts==EEG.pnts,'EEG and DATA number of samples are incorrect after adjustment!')
-                        
-                        % make sure the full timings are identical
-                        DATA.pnts = EEG.pnts;
-                        DATA.xmin = EEG.xmin;
-                        DATA.xmax = EEG.xmax;
-                        DATA.times = EEG.times;
                         DATA         = wrapAngles(DATA);
                         DATA.event   = eegEvents{Ri}; 
                         [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
@@ -460,39 +491,38 @@ for iSub = 1:numel(subDirList)
                     DATA             = DATAMerged;
                 elseif numel(dataFiles) == 1
                     DATASessionFileName  = dataFiles{1};
-                    DATA             = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
-                    DATA             = unwrapAngles(DATA);
-                    
-                    % start time has to be buffered before data can be synched to EEG
-                    DATA.times   = DATA.times;
-                    
-                    if DATA.srate > newSRate
-                        % interpolate to closest integer to make sure eeglab resampling works, as it can fail for numbers with many valid digits
-                        % this also adds an offset to the datasets as needed to keep them synched and NaNs if there are missing
-                        % parts at end/beginning
-                        DATA                = interpToTime(DATA, round(DATA.srate), eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime); 
-                        DATA                = pop_resample(DATA, newSRate); % downsample
+                    DATA                        = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
+                    DATA.etc.effective_srate    = DATA.srate;
+                    DATA                        = unwrapAngles(DATA);
+                    if ~contains(lower(dataFiles{1}),lower(config.use_nominal_srate))
+                        [DATA]       = resampleToTime(DATA, newSRate, eegTimes, DATA.etc.starttime);
                     else
-                        % this has to happen even if srate is equal for trimming and adding NaNs
-                        DATA                = interpToTime(DATA, newSRate, eegTimes(1,1), eegTimes(2,1), DATA.etc.starttime);                         
-                    end
-                    assert(DATA.pnts==EEG.pnts,'EEG and DATA number of samples are incorrect after adjustment!')
-                    
-                    % just in case the resampling leads to a few shifted samples
-                    if DATA.pnts > EEG.pnts
-                        warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and will be trimmed!'])
-                        DATA = eeg_eegrej( DATA, [DATA.pnts+1 EEG.pnts] );
-                    elseif EEG.pnts > DATA.pnts
-                        warning(['EEG has ' num2str(EEG.pnts) 'samples after resampling, DATA has ' num2str(DATA.pnts) ' and NaN values will be added!'])
-                        DATA.data(:,end:EEG.pnts) = deal(NaN);
-                    end
-
-                    % make sure the full timings are identical
-                    DATA.pnts = EEG.pnts;
-                    DATA.xmin = EEG.xmin;
-                    DATA.xmax = EEG.xmax;
-                    DATA.times = EEG.times;
+                        disp(['Data file ' dataFiles{1} ' using nominal srate!'])
+                        assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{1} ' was specified to use nominal srate, but none was found!'])
+                        DATA.srate  = DATA.etc.nominal_srate;
+                        DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
                         
+                        % check beginning of data
+                        sampleshift = round(DATA.etc.starttime*1000/(1/newSRate*1000));
+                        if sampleshift < 0 % negative shift = need to cut data in the beginning
+                            DATA.data   = DATA.data(:,1-sampleshift:end);
+                        elseif sampleshift > 0 % positive shift = need to add nans
+                            DATA.data   = [nan(DATA.nbchan,sampleshift) DATA.data];
+                        end % shift of 0 means nothing needs to be changed
+                        
+                        % check end of data
+                        if size(DATA.data,2) > length(eegTimes) % need to cut data short
+                            DATA.data   = DATA.data(:,1:length(eegTimes));
+                        elseif size(DATA.data,2) < length(eegTimes) % need to add nans
+                            DATA.data   = [DATA.data nan(DATA.nbchan,length(eegTimes)-size(DATA.data,2))];
+                        end % if length is perfect and shift is 0, nothing needs to be changed
+                        
+                        % fix metadata
+                        DATA.times  = eegTimes;
+                        DATA.pnts   = length(eegTimes);
+                        DATA.xmax   = DATA.times(end)/1000;
+                        DATA.xmin   = 0;
+                    end
                     DATA             = wrapAngles(DATA);
                     DATA.event       = eegEvents{1}; 
                 else
@@ -531,10 +561,12 @@ for iSub = 1:numel(subDirList)
                 EEG         = pop_loadset('filepath',outPath,'filename',outName);
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
             end
-            [~, ~, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [config.filename_prefix, num2str(subjectNr), '_EEG_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+            [~, ~, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_EEG.set'], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
             
             % MOTION and other data
             %--------------------------------------------------------------
+            motionsets = {};
+            motionsets_tracksys = {};
             for iType = 1:numel(otherDataTypes)
                 
                 if isempty(trackingSystemsInData)
@@ -606,11 +638,31 @@ for iSub = 1:numel(subDirList)
                         end
                     end
                     if strcmpi(otherDataTypes{iType}, 'MOTION')
-                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_MOTION_' trackingSystemsInData{TSi} '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                        % store motion sets separately and merge all into one below
+                        [~, motionsets{end+1}, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA));
+                        motionsets_tracksys{end+1} = trackingSystemsInData{TSi};
                     else
-                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' upper(otherDataTypes{iType}) '_' config.merged_filename], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
+                        [~, ~, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_' upper(otherDataTypes{iType}) '.set'], fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     end
                 end
+            end
+            if ~isempty(motionsets)
+                % motion sets were found and now need to be merged over trackick systems
+                
+                [~, sorting_idx] = sort(motionsets_tracksys);
+                motionsets = motionsets(sorting_idx);
+                
+                mergedmotion = motionsets{1};
+                
+                for i = 2:length(motionsets)
+                    mergedmotion.nbchan = mergedmotion.nbchan + motionsets{i}.nbchan;
+                    mergedmotion.chanlocs = [mergedmotion.chanlocs motionsets{i}.chanlocs];
+                    mergedmotion.data = [mergedmotion.data; motionsets{i}.data];
+                end
+                
+                pop_saveset(mergedmotion, 'filepath', fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]),...
+                    'filename', [config.filename_prefix, num2str(subjectNr), '_' config.merged_filename '_MOTION.set']);
+                
             end
         end
     end
@@ -628,32 +680,23 @@ outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)
 
 end
 
-function [outEEG] = interpToTime(EEG, newSRate, tFirst, tLast, offset)
+function [outEEG] = resampleToTime(EEG, newSRate, newTimes, offset)
 % offset is in seconds 
 %--------------------------------------------------------------------------
-
-% check if any row is all zeros - use nearest interp if so
-hasNonZero = zeros(size(EEG.data,1));
-
-for iRow = 1:size(EEG.data,1)
-   hasNonZero(iRow) = any(EEG.data(iRow,:));
-end
-
-if any(hasNonZero == 0)
-    resampleMethod = 'nearest'; 
-else
-    resampleMethod = 'pchip'; 
-end
 
 % save old times
 oldTimes                = EEG.times; 
 
-% Note that in fieldtrip time is in seconds
-newTimes                = (tFirst:1000/newSRate:tLast)/1000;
+% save old nan beginning and end
+nanbegin = oldTimes(find(~any(isnan(EEG.data)),1,'first'));
+nanend = oldTimes(find(~any(isnan(EEG.data)),1,'last'));
 
-resamplecfg.time        = {newTimes};
+% Note that in fieldtrip time is in seconds
+newTimesFT                = newTimes/1000;
+
+resamplecfg.time        = {newTimesFT};
 resamplecfg.detrend     = 'no';
-resamplecfg.method      = resampleMethod; 
+resamplecfg.method      = 'pchip'; 
 resamplecfg.extrapval   = nan; 
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
@@ -661,7 +704,7 @@ ftData.time{1}          = oldTimes/1000 + offset;
 resampledData           = ft_resampledata(resamplecfg, ftData);
 EEG.data                = resampledData.trial{1};
 EEG.srate               = newSRate;
-EEG.times               = newTimes*1000; % convert back to miliseconds
+EEG.times               = newTimes; % convert back to miliseconds
 EEG.pnts                = size(EEG.data,2);
 EEG.urevent             = EEG.event;
 
@@ -676,6 +719,10 @@ end
 
 EEG.setname = EEG.filename(1:end-8);
 
+% replace extrapolated values with nan (it shouldnt do it but for some reason it does...)
+EEG.data(:,1:find(EEG.times>nanbegin,1,'first')-1) = deal(nan);
+EEG.data(:,find(EEG.times<nanend,1,'last')+1:end) = deal(nan);
+
 % checkset
 outEEG = eeg_checkset(EEG, 'makeur');
 
@@ -687,8 +734,8 @@ function [DATA] = unwrapAngles(DATA)
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
     if ischar(DATA.chanlocs(Ci).units)
-        if  contains(DATA.chanlocs(Ci).units, 'rad')
-            angleind =  [angleind Ci];
+        if  contains(lower(DATA.chanlocs(Ci).units), 'rad') || contains(lower(DATA.chanlocs(Ci).units), 'deg')
+            angleind = [angleind Ci];
         end
     end
 end
@@ -704,8 +751,8 @@ function [DATA] = wrapAngles(DATA)
 angleind = [];
 for Ci = 1:numel(DATA.chanlocs)
     if ~isempty(DATA.chanlocs(Ci).units)
-        if  contains(DATA.chanlocs(Ci).units, 'rad')
-            angleind =  [angleind Ci];
+        if  contains(lower(DATA.chanlocs(Ci).units), 'rad') || contains(lower(DATA.chanlocs(Ci).units), 'deg')
+            angleind = [angleind Ci];
         end
     end
 end
