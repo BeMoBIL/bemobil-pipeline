@@ -312,11 +312,6 @@ if importMotion
         % default tracking system information
         motionInfo.motion.TrackingSystems = defaultTrackingSystems;
         
-        % coordinate system
-        motionInfo.coordsystem.MotionCoordinateSystem      = 'RUF';
-        motionInfo.coordsystem.MotionRotationRule          = 'left-hand';
-        motionInfo.coordsystem.MotionRotationOrder         = 'ZXY';
-        
     else
         if isfield(motionInfo, 'motion')
             if isfield(motionInfo.motion, 'TrackingSystems')
@@ -788,11 +783,6 @@ if importMotion
     
     % data type
     motioncfg.datatype                                = 'motion';
-    
-    % coordinate system
-    motioncfg.coordsystem.MotionCoordinateSystem      = motionInfo.coordsystem.MotionCoordinateSystem;
-    motioncfg.coordsystem.MotionRotationRule          = motionInfo.coordsystem.MotionRotationRule;
-    motioncfg.coordsystem.MotionRotationOrder         = motionInfo.coordsystem.MotionRotationOrder;
     motioncfg.TrackingSystemCount                     = numel(trackSysInData);
 
     % construct fieldtrip data
