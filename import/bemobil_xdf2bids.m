@@ -552,14 +552,16 @@ end
 raw_fig = figure('color','w','position',[1 1 1920 1080]);
 sgtitle(['Raw data from ' cfg.dataset],'interpreter','none')
 
-subplot(211); hold on; grid on
+subplot(211); hold on; grid on; grid(gca,'minor')
 title(strjoin(['First event: "' xdfmarkers{1}.time_series(1) '"']),'interpreter','none')
 yticks(-1)
 yticklabels('')
+plot([times_stamp_1 times_stamp_1], [-1 100], 'k')
 
 for i=1:length(xdfeeg)
     my_yticks = yticks;
-    plot(xdfeeg{i}.time_stamps(eeg_times_1(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_1(i,:)),'range',[my_yticks(end)+1 my_yticks(end)+2]))
+    plot(xdfeeg{i}.time_stamps(eeg_times_1(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_1(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfeeg{1}.info.name ' ' xdfeeg{1}.info.desc.channels.channel{1}.label],'_', ' ')]);
@@ -574,34 +576,41 @@ xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
 xlabel('seconds')
 
 for i=1:length(xdfmotion)
+    allchans = [xdfmotion{i}.info.desc.channels.channel{:}];
+    idx = find(~contains({allchans.label},'eul') & ~contains({allchans.label},'quat') &...
+        ~contains({allchans.label},'ori'),1,'first');
     my_yticks = yticks;
-    plot(xdfmotion{i}.time_stamps(motion_times_1(i,:)),normalize(xdfmotion{i}.time_series(1,motion_times_1(i,:)),'range',[my_yticks(end)+1 my_yticks(end)+2]))
+    plot(xdfmotion{i}.time_stamps(motion_times_1(i,:)),normalize(xdfmotion{i}.time_series(idx,motion_times_1(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
-        strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
+        strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{idx}.label],'_', ' ')]);
     ylim([-0.5 my_yticks(end)+2.5])
 end
 
 for i=1:length(xdfphysio)
     my_yticks = yticks;
-    plot(xdfphysio{i}.time_stamps(physio_times_1(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_1(i,:)),'range',[my_yticks(end)+1 my_yticks(end)+2]))
+    plot(xdfphysio{i}.time_stamps(physio_times_1(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_1(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfphysio{i}.info.name ' ' xdfphysio{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
     ylim([-0.5 my_yticks(end)+2.5])
 end
 
-plot([times_stamp_1 times_stamp_1], ylim, 'k')
+ax = gca;
+ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
 
-
-subplot(212); hold on; grid on
+subplot(212); hold on; grid on; grid(gca,'minor')
 title(strjoin(['Last event: "' xdfmarkers{1}.time_series(end) '"']),'interpreter','none')
 yticks(-1)
 yticklabels('')
+plot([times_stamp_2 times_stamp_2], [-1 100], 'k')
 
 for i=1:length(xdfeeg)
     my_yticks = yticks;
-    plot(xdfeeg{i}.time_stamps(eeg_times_2(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_2(i,:)),'range',[my_yticks(end)+1 my_yticks(end)+2]))
+    plot(xdfeeg{i}.time_stamps(eeg_times_2(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_2(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfeeg{1}.info.name ' ' xdfeeg{1}.info.desc.channels.channel{1}.label],'_', ' ')]);
@@ -617,7 +626,8 @@ xlabel('seconds')
 
 for i=1:length(xdfmotion)
     my_yticks = yticks;
-    plot(xdfmotion{i}.time_stamps(motion_times_2(i,:)),normalize(xdfmotion{i}.time_series(1,motion_times_2(i,:)),'range',[my_yticks(end)+1 my_yticks(end)+2]))
+    plot(xdfmotion{i}.time_stamps(motion_times_2(i,:)),normalize(xdfmotion{i}.time_series(1,motion_times_2(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
@@ -626,14 +636,16 @@ end
 
 for i=1:length(xdfphysio)
     my_yticks = yticks;
-    plot(xdfphysio{i}.time_stamps(physio_times_2(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_2(i,:)),'range',[my_yticks(end)+1 my_yticks(end)+2]))
+    plot(xdfphysio{i}.time_stamps(physio_times_2(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_2(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfphysio{i}.info.name ' ' xdfphysio{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
     ylim([-0.5 my_yticks(end)+2.5])
 end
 
-plot([times_stamp_2 times_stamp_2], ylim, 'k')
+ax = gca;
+ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
 
 [filepath,name,~] = fileparts(cfg.dataset);
 savefig(raw_fig,fullfile(filepath,[name '_raw-data']))
