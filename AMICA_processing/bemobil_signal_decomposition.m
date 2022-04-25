@@ -73,7 +73,7 @@ if amica
 		AMICA_n_rej = 5;
     end
     
-    if ~exist('AMICA_n_rej', 'var')
+    if ~exist('AMICA_reject_sigma_threshold', 'var')
 		AMICA_reject_sigma_threshold = 3;
     end
     

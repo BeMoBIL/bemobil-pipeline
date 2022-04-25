@@ -489,6 +489,7 @@ for i=1:numel(streams)
     end
 end
 
+xdfeeg = {};
 if importEEG
     eegStreamName = config.eeg.stream_name; 
     xdfeeg        = streams(contains(lower(names),lower(eegStreamName)) & iscontinuous);
@@ -500,6 +501,7 @@ if importEEG
     end
 end
 
+xdfmotion = {};
 if importMotion
     
     for Si = 1:numel(config.motion.streams) 
@@ -514,6 +516,7 @@ if importMotion
 
 end
 
+xdfphysio = {};
 if importPhys
     for Si = 1:numel(config.phys.streams)
         physioStreamNames{Si}   = config.phys.streams{Si}.stream_name;
@@ -526,6 +529,128 @@ if importPhys
 end
 
 xdfmarkers  = streams(~iscontinuous);
+
+%% plot raw data
+times_stamp_1 = xdfmarkers{1}.time_stamps(1);
+times_stamp_2 = xdfmarkers{1}.time_stamps(end);
+
+for i=1:length(xdfeeg)
+    eeg_times_1(i,:) = find(xdfeeg{i}.time_stamps > times_stamp_1-1 & xdfeeg{i}.time_stamps < times_stamp_1+2);
+    eeg_times_2(i,:) = find(xdfeeg{i}.time_stamps > times_stamp_2-1 & xdfeeg{i}.time_stamps < times_stamp_2+2);
+end
+
+for i=1:length(xdfmotion)
+    motion_times_1(i,:) = find(xdfmotion{i}.time_stamps > times_stamp_1-1 & xdfmotion{i}.time_stamps < times_stamp_1+2);
+    motion_times_2(i,:) = find(xdfmotion{i}.time_stamps > times_stamp_2-1 & xdfmotion{i}.time_stamps < times_stamp_2+2);
+end
+
+for i=1:length(xdfphysio)
+    physio_times_1(i,:) = find(xdfphysio{i}.time_stamps > times_stamp_1-1 & xdfphysio{i}.time_stamps < times_stamp_1+2);
+    physio_times_2(i,:) = find(xdfphysio{i}.time_stamps > times_stamp_2-1 & xdfphysio{i}.time_stamps < times_stamp_2+2);
+end
+
+raw_fig = figure('color','w','position',[1 1 1920 1080]);
+sgtitle(['Raw data from ' cfg.dataset],'interpreter','none')
+
+subplot(211); hold on; grid on; grid(gca,'minor')
+title(strjoin(['First event: "' xdfmarkers{1}.time_series(1) '"']),'interpreter','none')
+yticks(-1)
+yticklabels('')
+plot([times_stamp_1 times_stamp_1], [-1 100], 'k')
+
+for i=1:length(xdfeeg)
+    my_yticks = yticks;
+    plot(xdfeeg{i}.time_stamps(eeg_times_1(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_1(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+    yticks([yticks my_yticks(end)+1.5])
+    yticklabels([yticklabels
+        strrep([xdfeeg{1}.info.name ' ' xdfeeg{1}.info.desc.channels.channel{1}.label],'_', ' ')]);
+    xlim([xdfeeg{i}.time_stamps(eeg_times_1(i,1)) xdfeeg{i}.time_stamps(eeg_times_1(i,end))])
+    ylim([-0.5 my_yticks(end)+2.5])
+end
+xticks(xdfeeg{1}.time_stamps(eeg_times_1(1,[1 round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6) ...
+    round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*2 round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*3 ...
+    round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*4 round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*5 ...
+    round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:))))])))
+xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
+xlabel('seconds')
+
+for i=1:length(xdfmotion)
+    allchans = [xdfmotion{i}.info.desc.channels.channel{:}];
+    idx = find(~contains({allchans.label},'eul') & ~contains({allchans.label},'quat') &...
+        ~contains({allchans.label},'ori'),1,'first');
+    my_yticks = yticks;
+    plot(xdfmotion{i}.time_stamps(motion_times_1(i,:)),normalize(xdfmotion{i}.time_series(idx,motion_times_1(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+    yticks([yticks my_yticks(end)+1.5])
+    yticklabels([yticklabels
+        strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{idx}.label],'_', ' ')]);
+    ylim([-0.5 my_yticks(end)+2.5])
+end
+
+for i=1:length(xdfphysio)
+    my_yticks = yticks;
+    plot(xdfphysio{i}.time_stamps(physio_times_1(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_1(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+    yticks([yticks my_yticks(end)+1.5])
+    yticklabels([yticklabels
+        strrep([xdfphysio{i}.info.name ' ' xdfphysio{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
+    ylim([-0.5 my_yticks(end)+2.5])
+end
+
+ax = gca;
+ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+
+subplot(212); hold on; grid on; grid(gca,'minor')
+title(strjoin(['Last event: "' xdfmarkers{1}.time_series(end) '"']),'interpreter','none')
+yticks(-1)
+yticklabels('')
+plot([times_stamp_2 times_stamp_2], [-1 100], 'k')
+
+for i=1:length(xdfeeg)
+    my_yticks = yticks;
+    plot(xdfeeg{i}.time_stamps(eeg_times_2(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_2(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+    yticks([yticks my_yticks(end)+1.5])
+    yticklabels([yticklabels
+        strrep([xdfeeg{1}.info.name ' ' xdfeeg{1}.info.desc.channels.channel{1}.label],'_', ' ')]);
+    xlim([xdfeeg{i}.time_stamps(eeg_times_2(i,1)) xdfeeg{i}.time_stamps(eeg_times_2(i,end))])
+    ylim([-0.5 my_yticks(end)+2.5])
+end
+xticks(xdfeeg{1}.time_stamps(eeg_times_2(1,[1 round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6) ...
+    round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*2 round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*3 ...
+    round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*4 round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*5 ...
+    round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:))))])))
+xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
+xlabel('seconds')
+
+for i=1:length(xdfmotion)
+    my_yticks = yticks;
+    plot(xdfmotion{i}.time_stamps(motion_times_2(i,:)),normalize(xdfmotion{i}.time_series(1,motion_times_2(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+    yticks([yticks my_yticks(end)+1.5])
+    yticklabels([yticklabels
+        strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
+    ylim([-0.5 my_yticks(end)+2.5])
+end
+
+for i=1:length(xdfphysio)
+    my_yticks = yticks;
+    plot(xdfphysio{i}.time_stamps(physio_times_2(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_2(i,:)),...
+        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+    yticks([yticks my_yticks(end)+1.5])
+    yticklabels([yticklabels
+        strrep([xdfphysio{i}.info.name ' ' xdfphysio{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
+    ylim([-0.5 my_yticks(end)+2.5])
+end
+
+ax = gca;
+ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+
+[filepath,name,~] = fileparts(cfg.dataset);
+savefig(raw_fig,fullfile(filepath,[name '_raw-data']))
+print(raw_fig,fullfile(filepath,[name '_raw-data']),'-dpng')
+close(raw_fig)
 
 %%
 if importEEG % This loop is always executed in current version

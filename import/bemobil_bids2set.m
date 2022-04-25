@@ -1,31 +1,31 @@
 function bemobil_bids2set(config)
-% This function reads in BIDS datasets using the eeglab plugin 
-% "bids-matlab-tools" and reorganizes the output to be compatible with 
-% BeMoBIL pipeline. 
+% This function reads in BIDS datasets using the eeglab plugin
+% "bids-matlab-tools" and reorganizes the output to be compatible with
+% BeMoBIL pipeline.
 %
 % Usage
-%       bemobil_bids2set(config); 
+%       bemobil_bids2set(config);
 %
 % In
 %       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';  % required
 %       config.study_folder           = 'P:\...SPOT_rotation\2_EEGlab-basic';  % required
 %       config.subject                = 1;                                  % required, can also be an array in case importing a whole data set (e.g., config.subject = [1:10]; )
-%       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set  
-%       config.overwrite              = 'on';                               % optional, default value 'off' 
-%       config.filename_prefix        = 'sub-';                             % optional, default value 'sub-' 
+%       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set
+%       config.overwrite              = 'on';                               % optional, default value 'off'
+%       config.filename_prefix        = 'sub-';                             % optional, default value 'sub-'
 %       config.resample_freq          = 500;                                % optional, default is 250 Hz
-%       config.match_electrodes_channels = {'g1', 'G01'; 'g2', 'G02';...};  % optional, 2x NChan (number of channels in EEG data) array of strings, in case electrode names 
+%       config.match_electrodes_channels = {'g1', 'G01'; 'g2', 'G02';...};  % optional, 2x NChan (number of channels in EEG data) array of strings, in case electrode names
 %                                                                             in electrodes.tsv and channels.tsv do not match with
 %                                                                             each other. First column contains labels in electrodes.tsv
-%                                                                             and the second column contains lables in channels.tsv. 
-%                                                                             Resulting chanloc will take labels from eloc file. 
-%                                                                             Use empty string for a missing chanloc 
+%                                                                             and the second column contains lables in channels.tsv.
+%                                                                             Resulting chanloc will take labels from eloc file.
+%                                                                             Use empty string for a missing chanloc
 %                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
 %       config.other_data_types        = {'motion','physio'};                % optional, default value is {}, required
 %                                                                               if you want to load non-EEG data. Only
 %                                                                               add the data type you have in oyur BIDS
 %                                                                               data.
-%       
+%
 %
 % Out
 %       none
@@ -40,21 +40,21 @@ function bemobil_bids2set(config)
 % author : seinjeung@gmail.com
 %--------------------------------------------------------------------------
 
-% input check and default value assignment 
+% input check and default value assignment
 %--------------------------------------------------------------------------
 % required fields
-config = checkfield(config, 'bids_target_folder', 'required', '');          
-config = checkfield(config, 'study_folder', 'required', ''); 
-config = checkfield(config, 'subject', 'required', ''); 
-config = checkfield(config, 'session_names', 'required', ''); 
+config = checkfield(config, 'bids_target_folder', 'required', '');
+config = checkfield(config, 'study_folder', 'required', '');
+config = checkfield(config, 'subject', 'required', '');
+config = checkfield(config, 'session_names', 'required', '');
 
-% default values  
-config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]); 
-config = checkfield(config, 'filename_prefix', 'sub-', 'sub-'); 
-config = checkfield(config, 'merged_filename', 'merged', 'merged'); 
-config = checkfield(config, 'other_data_types', {}, '{}'); 
-config = checkfield(config, 'resample_freq', 250, '250 Hz'); 
-config = checkfield(config, 'overwrite', 'off', 'off'); 
+% default values
+config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]);
+config = checkfield(config, 'filename_prefix', 'sub-', 'sub-');
+config = checkfield(config, 'merged_filename', 'merged', 'merged');
+config = checkfield(config, 'other_data_types', {}, '{}');
+config = checkfield(config, 'resample_freq', 250, '250 Hz');
+config = checkfield(config, 'overwrite', 'off', 'off');
 config = checkfield(config, 'match_electrodes_channels', {}, 'none');
 config = checkfield(config, 'use_nominal_srate', {}, 'none');
 
@@ -64,21 +64,21 @@ if ~iscell(config.session_names)
 end
 
 % other data types than eeg (use BIDS suffix)
-otherDataTypes  = config.other_data_types; 
+otherDataTypes  = config.other_data_types;
 
-% construct the bids data directory 
+% construct the bids data directory
 bidsDir         = fullfile(config.bids_target_folder);
 
-% all runs and sessions are merged by default 
-targetDir       = fullfile(config.study_folder, config.raw_EEGLAB_data_folder); 
-tempDir         = fullfile(targetDir, 'temp_bids'); 
+% all runs and sessions are merged by default
+targetDir       = fullfile(config.study_folder, config.raw_EEGLAB_data_folder);
+tempDir         = fullfile(targetDir, 'temp_bids');
 
 if isfolder(tempDir)
     warning('Previous import seems to have been interrupted - removing temp_bids folder')
     rmdir(tempDir, 's')
 end
 
-numericalIDs        = config.subject; 
+numericalIDs        = config.subject;
 
 if strcmp(config.overwrite, 'off')
     
@@ -99,18 +99,18 @@ if strcmp(config.overwrite, 'off')
         disp('All participant data had already been converted from BIDS to .set');
         return;
     end
-
+    
 elseif ~strcmp(config.overwrite, 'on')
-    warning('Undefined option for field config.overwrite - assume overwriting is on');  
+    warning('Undefined option for field config.overwrite - assume overwriting is on');
 end
 
-% Import data set saved in BIDS, using a modified version of eeglab plugin 
+% Import data set saved in BIDS, using a modified version of eeglab plugin
 %--------------------------------------------------------------------------
 
-try 
+try
     pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
 catch
-    warning('Could NOT edit EEGLAB memory options!!'); 
+    warning('Could NOT edit EEGLAB memory options!!');
 end
 
 pop_importbids_mobi(bidsDir,'datatypes',otherDataTypes,'outputdir', tempDir, 'participants', numericalIDs, 'matchchanlocs', config.match_electrodes_channels);
@@ -146,9 +146,9 @@ for iSub = 1:numel(subDirList)
         allFiles        = [];
         for iSes = 1:numel(sesDirList)
             sesDir          = sesDirList(iSes);
-            sesEEGDir       = fullfile(tempDir, subjectDir, sesDir.name, 'eeg'); 
-            sesBEHDir       = fullfile(tempDir, subjectDir, sesDir.name, 'beh'); 
-            sesMOTIONDir       = fullfile(tempDir, subjectDir, sesDir.name, 'motion'); 
+            sesEEGDir       = fullfile(tempDir, subjectDir, sesDir.name, 'eeg');
+            sesBEHDir       = fullfile(tempDir, subjectDir, sesDir.name, 'beh');
+            sesMOTIONDir       = fullfile(tempDir, subjectDir, sesDir.name, 'motion');
             sesFilesEEG     = dir(sesEEGDir)';
             sesFilesBEH     = dir(sesBEHDir)';
             sesFilesMOTION  = dir(sesMOTIONDir)';
@@ -158,7 +158,7 @@ for iSub = 1:numel(subDirList)
     else
         
         % for unisession, simply find all files in EEG folder
-        eegDir          = fullfile(tempDir, subjectDir, 'eeg'); 
+        eegDir          = fullfile(tempDir, subjectDir, 'eeg');
         behDir          = fullfile(tempDir, subjectDir, 'beh');
         motionDir       = fullfile(tempDir, subjectDir, 'motion');
         allFiles        = [dir(eegDir); dir(behDir); dir(motionDir)] ;
@@ -182,23 +182,23 @@ for iSub = 1:numel(subDirList)
         end
         
         if find(strncmp(bidsNameSplit,'tracksys',8))
-           isMultiTrackSys     = true;
-           tracksysName        = bidsNameSplit{strncmp(bidsNameSplit,'tracksys',8)}(10:end);
+            isMultiTrackSys     = true;
+            tracksysName        = bidsNameSplit{strncmp(bidsNameSplit,'tracksys',8)}(10:end);
         else
-           isMultiTrackSys     = false; 
+            isMultiTrackSys     = false;
         end
         
         if find(strncmp(bidsNameSplit, 'run',3))
             isMultiRun          = true;
             runIndex            = bidsNameSplit{strncmp(bidsNameSplit, 'run',3)}(5:end);
         else
-            isMultiRun          = false; 
+            isMultiRun          = false;
         end
         
         switch bidsModality
             case 'eeg'
                 bemobilModality = upper(bidsModality);                      % use string 'EEG' for eeg data
-                bidsFolderName  = 'eeg'; 
+                bidsFolderName  = 'eeg';
             case 'motion'
                 bemobilModality = 'MOTION';
                 bidsFolderName = 'motion';
@@ -263,12 +263,12 @@ for iSub = 1:numel(subDirList)
                     bemobilName     = [config.filename_prefix, num2str(subjectNr), '_' config.session_names{1} '_' bemobilModality '_old', extension];
                 end
             end
-           
+            
             data    = pop_loadset('filepath', dataDir, 'filename', bidsName);
-            pop_saveset(data, 'filepath', newDir, 'filename', bemobilName); 
+            pop_saveset(data, 'filepath', newDir, 'filename', bemobilName);
             
         end
-    end 
+    end
 end
 
 % delete the temporary directory
@@ -278,22 +278,22 @@ rmdir(tempDir, 's')
 % now synchronize and merge the streams
 %--------------------------------------------------------------------------
 % list all subject directories
-subDirList      = dir(targetDir); 
+subDirList      = dir(targetDir);
 nameArray       = {subDirList.name};
 nameFlagArray   = ~contains(nameArray, '.'); % this is to exclude . and .. folders
-nameArray       = nameArray(nameFlagArray); 
+nameArray       = nameArray(nameFlagArray);
 subDirList      = subDirList(nameFlagArray);
 
 % select participant data to process
-subFlagArray    = true(size(nameArray)); 
+subFlagArray    = true(size(nameArray));
 if ~isempty(numericalIDs)
     for iN = 1:numel(nameArray)
         subjectNr = str2double(nameArray{iN}(numel(config.filename_prefix) + 1:end));
         if ~ismember(subjectNr,numericalIDs)
-            subFlagArray(iN) = false; 
+            subFlagArray(iN) = false;
         end
     end
-    subDirList = subDirList(subFlagArray); 
+    subDirList = subDirList(subFlagArray);
 end
 
 % merge all the run files if needed
@@ -308,10 +308,10 @@ for iSub = 1:numel(subDirList)
     
     % iterate over sessions
     for iSes = 1:numel(config.session_names)
-         
+        
         % find all EEG data
         eegFiles = {subjectFiles(contains({subjectFiles.name}, [config.session_names{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
-        eegFiles = natsortfiles(eegFiles); 
+        eegFiles = natsortfiles(eegFiles);
         
         % resample and merge EEG
         %------------------------------------------------------------------
@@ -323,20 +323,20 @@ for iSub = 1:numel(subDirList)
         end
         
         % initializa a matrix storing EEG first and last time stamps (this is used to synch other streams)
-        eegTimes = {}; 
+        eegTimes = {};
         
-        % initialize an empty cell array to store EEG events 
-        eegEvents = {}; 
+        % initialize an empty cell array to store EEG events
+        eegEvents = {};
         
         if numel(eegFiles) > 1
-
-            % multi-run case 
+            
+            % multi-run case
             EEGFileNameWithRun  = eegFiles{1};
             nameSplit           = regexp(EEGFileNameWithRun,'_', 'split'); % remove _rec entity
             nameJoined          = join(nameSplit(1:end-2),'_');
             EEGSessionFileName  = [nameJoined{1} '_old.set'];
             
-            % loop over runs 
+            % loop over runs
             ALLEEG = []; CURRENTSET = [];
             for Ri = 1:numel(eegFiles)
                 EEG                     = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{Ri});
@@ -344,12 +344,14 @@ for iSub = 1:numel(subDirList)
                 
                 % set srate to nominal srate
                 if isfield(EEG.etc,'nominal_srate')
-                    disp(['Setting EEG srate to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                    srate_ratios(iSes,Ri) = EEG.etc.nominal_srate/EEG.srate;
+                    disp(['Setting EEG srate from effective srate of ' num2str(EEG.srate) ' to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                    assert(srate_ratios(iSes,1)>0.9 & srate_ratios(iSes,1)<1.1,'EEG effective and nominal srates are too different!')
                     EEG.srate = EEG.etc.nominal_srate;
                 end
                 
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
-%                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+                %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 eegTimes{Ri}        = EEG.times;
                 
                 % round event times to have usable indices
@@ -359,10 +361,63 @@ for iSub = 1:numel(subDirList)
                 
                 eegEvents{end +1}   = EEG.event;
                 [ALLEEG,EEG,CURRENTSET]  = pop_newset(ALLEEG, EEG, CURRENTSET, 'study',0);
+                
+                % plot
+                importfigs(Ri) = figure('color','w','position',[1 1 1920 1080]);
+                
+                sgtitle(['Imported data from ' fullfile(EEG.filepath,erase(EEG.filename,'_old'))],'interpreter','none')
+                
+                latencies_1 = EEG.event(1).latency;
+                latencies_2 = EEG.event(end).latency;
+                
+                subplot(211); hold on; grid on; grid(gca,'minor')
+                title(['First event: "' EEG.event(1).type '"'],'interpreter','none')
+                yticks(-1)
+                yticklabels('')
+                xlim([-EEG.srate 2*EEG.srate])
+                xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
+                xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
+                xlabel('seconds')
+                
+                plot([0 0],[-1 100],'k')
+                
+                my_yticks = yticks;
+                plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_1-EEG.srate:latencies_1+2*EEG.srate),...
+                    'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+                yticks([yticks my_yticks(end)+1.5])
+                yticklabels([yticklabels
+                    strrep(['EEG ' EEG.chanlocs(1).labels],'_', ' ')]);
+                ylim([-0.5 my_yticks(end)+2.5])
+                
+                ax = gca;
+                ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+                
+                subplot(212); hold on; grid on; grid(gca,'minor')
+                title(['Last event: "' EEG.event(end).type '"'],'interpreter','none')
+                yticks(-1)
+                yticklabels('')
+                xlim([-EEG.srate 2*EEG.srate])
+                xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
+                xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
+                xlabel('seconds')
+                
+                plot([0 0],[-1 100],'k')
+                
+                my_yticks = yticks;
+                plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_2-EEG.srate:latencies_2+2*EEG.srate),...
+                    'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+                yticks([yticks my_yticks(end)+1.5])
+                yticklabels([yticklabels
+                    strrep(['EEG ' EEG.chanlocs(1).labels],'_', ' ')]);
+                ylim([-0.5 my_yticks(end)+2.5])
+                
+                ax = gca;
+                ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+                
             end
             [~, EEGMerged, ~]  = bemobil_merge(ALLEEG, EEG, CURRENTSET, 1:length(ALLEEG), EEGSessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
             EEG                = EEGMerged;
-
+            
         elseif numel(eegFiles) == 1
             EEGSessionFileName      = eegFiles{1};
             EEG                     = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', eegFiles{1});
@@ -370,12 +425,14 @@ for iSub = 1:numel(subDirList)
             
             % set srate to nominal srate
             if isfield(EEG.etc,'nominal_srate')
-                disp(['Setting EEG srate to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                srate_ratios(iSes,1) = EEG.etc.nominal_srate/EEG.srate;
+                disp(['Setting EEG srate from effective srate of ' num2str(EEG.srate) ' to nominal srate of ' num2str(EEG.etc.nominal_srate) ' Hz'])
+                assert(srate_ratios(iSes,1)>0.9 & srate_ratios(iSes,1)<1.1,'EEG effective and nominal srates are too different!')
                 EEG.srate = EEG.etc.nominal_srate;
             end
             
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
-%             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
+            %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
             eegTimes            = EEG.times;
             
             % round event times to have usable indices
@@ -383,11 +440,64 @@ for iSub = 1:numel(subDirList)
                 EEG.event(i_event).latency = round(EEG.event(i_event).latency);
             end
             eegEvents{end +1}   = EEG.event;
+            
+            % plot
+            importfigs = figure('color','w','position',[1 1 1920 1080]);
+            
+            sgtitle(['Imported data from ' fullfile(EEG.filepath,erase(EEG.filename,'_old'))],'interpreter','none')
+            
+            latencies_1 = EEG.event(1).latency;
+            latencies_2 = EEG.event(end).latency;
+            
+            subplot(211); hold on; grid on; grid(gca,'minor')
+            title(['First event: "' EEG.event(1).type '"'],'interpreter','none')
+            yticks(-1)
+            yticklabels('')
+            xlim([-EEG.srate 2*EEG.srate])
+            xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
+            xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
+            xlabel('seconds')
+            
+            plot([0 0],[-1 100],'k')
+            
+            my_yticks = yticks;
+            plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_1-EEG.srate:latencies_1+2*EEG.srate),...
+                'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+            yticks([yticks my_yticks(end)+1.5])
+            yticklabels([yticklabels
+                strrep(['EEG ' EEG.chanlocs(1).labels],'_', ' ')]);
+            ylim([-0.5 my_yticks(end)+2.5])
+            
+            ax = gca;
+            ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+            
+            subplot(212); hold on; grid on; grid(gca,'minor')
+            title(['Last event: "' EEG.event(end).type '"'],'interpreter','none')
+            yticks(-1)
+            yticklabels('')
+            xlim([-EEG.srate 2*EEG.srate])
+            xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
+            xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
+            xlabel('seconds')
+            
+            plot([0 0],[-1 100],'k')
+            
+            my_yticks = yticks;
+            plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_2-EEG.srate:latencies_2+2*EEG.srate),...
+                'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+            yticks([yticks my_yticks(end)+1.5])
+            yticklabels([yticklabels
+                strrep(['EEG ' EEG.chanlocs(1).labels],'_', ' ')]);
+            ylim([-0.5 my_yticks(end)+2.5])
+            
+            ax = gca;
+            ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+            
         else
             warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
         end
         
-        EEG = eeg_checkset(EEG, 'makeur'); 
+        EEG = eeg_checkset(EEG, 'makeur');
         
         % save merged EEG file for the session
         EEG = pop_saveset(EEG, 'filename',[EEGSessionFileName(1:end-8) EEGSessionFileName(end-3:end)],'filepath',fullfile(targetDir, subDirList(iSub).name));
@@ -398,7 +508,7 @@ for iSub = 1:numel(subDirList)
         for iType = 1:numel(otherDataTypes)
             
             bemobilModality =  upper(otherDataTypes{iType});
-       
+            
             % resample and merge DATA
             %--------------------------------------------------------------
             if isempty(config.resample_freq)
@@ -424,13 +534,13 @@ for iSub = 1:numel(subDirList)
                 end
                 trackingSystemsInSession = unique(trackingSystemsInSession);
                 trackingSystemsInData   = unique([trackingSystemsInData trackingSystemsInSession]);
-            else 
-                trackingSystemsInSession = {''}; 
+            else
+                trackingSystemsInSession = {''};
             end
             
             for TSi = 1:numel(trackingSystemsInSession)
                 
-                dataFiles = modalityFiles(contains(modalityFiles, trackingSystemsInSession{TSi})); 
+                dataFiles = modalityFiles(contains(modalityFiles, trackingSystemsInSession{TSi}));
                 
                 if numel(eegFiles) ~= numel(dataFiles)
                     warning(['Number of EEG files and data files of type ' bemobilModality ' do not match within session ''' config.session_names{iSes} ''''])
@@ -454,6 +564,7 @@ for iSub = 1:numel(subDirList)
                         DATA                        = pop_loadset('filepath',fullfile(targetDir, subDirList(iSub).name),'filename', dataFiles{Ri});
                         DATA.etc.effective_srate    = DATA.srate;
                         DATA                        = unwrapAngles(DATA); % unwrap angles before resampling
+                        DATA.times                  = DATA.times/srate_ratios(iSes,Ri); % adjust for the slight imprecision in the EEG srate
                         if ~contains(lower(dataFiles{Ri}),lower(config.use_nominal_srate))
                             [DATA]      = resampleToTime(DATA, newSRate, eegTimes{Ri}, DATA.etc.starttime);
                         else
@@ -469,14 +580,14 @@ for iSub = 1:numel(subDirList)
                             elseif sampleshift > 0 % positive shift = need to add nans
                                 DATA.data   = [nan(DATA.nbchan,sampleshift) DATA.data];
                             end % shift of 0 means nothing needs to be changed
-
+                            
                             % check end of data
                             if size(DATA.data,2) > length(eegTimes{Ri}) % need to cut data short
                                 DATA.data   = DATA.data(:,1:length(eegTimes{Ri}));
                             elseif size(DATA.data,2) < length(eegTimes{Ri}) % need to add nans
                                 DATA.data   = [DATA.data nan(DATA.nbchan,length(eegTimes{Ri})-size(DATA.data,2))];
                             end % if length is perfect and shift is 0, nothing needs to be changed
-
+                            
                             % fix metadata
                             DATA.times  = eegTimes{Ri};
                             DATA.pnts   = length(eegTimes{Ri});
@@ -484,8 +595,44 @@ for iSub = 1:numel(subDirList)
                             DATA.xmin   = 0;
                         end
                         DATA         = wrapAngles(DATA);
-                        DATA.event   = eegEvents{Ri}; 
+                        DATA.event   = eegEvents{Ri};
                         [ALLDATA,DATA,CURRENTSET]  = pop_newset(ALLDATA, DATA, CURRENTSET, 'study',0);
+                        
+                        % plot
+                        figure(importfigs(Ri))
+                        
+                        latencies_1 = DATA.event(1).latency;
+                        latencies_2 = DATA.event(end).latency;
+                        
+                        idx = find(~contains({DATA.chanlocs.labels},'eul') & ~contains({DATA.chanlocs.labels},'quat') &...
+                            ~contains({DATA.chanlocs.labels},'ori'),1,'first');
+                        
+                        subplot(211);
+                        
+                        my_yticks = yticks;
+                        plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_1-DATA.srate:latencies_1+2*DATA.srate),...
+                            'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+                        yticks([yticks my_yticks(end)+1.5])
+                        yticklabels([yticklabels
+                            strrep(['DATA ' DATA.chanlocs(idx).labels],'_', ' ')]);
+                        ylim([-0.5 my_yticks(end)+2.5])
+                        
+                        ax = gca;
+                        ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+                        
+                        subplot(212);
+                        
+                        my_yticks = yticks;
+                        plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_2-DATA.srate:latencies_2+2*DATA.srate),...
+                            'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+                        yticks([yticks my_yticks(end)+1.5])
+                        yticklabels([yticklabels
+                            strrep(['DATA ' DATA.chanlocs(idx).labels],'_', ' ')]);
+                        ylim([-0.5 my_yticks(end)+2.5])
+                        
+                        ax = gca;
+                        ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+                        
                     end
                     [~, DATAMerged, ~]  = bemobil_merge(ALLDATA, DATA, CURRENTSET, 1:length(ALLDATA), DATASessionFileName, fullfile(targetDir, [config.filename_prefix, num2str(subjectNr)]));
                     DATA             = DATAMerged;
@@ -494,6 +641,7 @@ for iSub = 1:numel(subDirList)
                     DATA                        = pop_loadset('filepath', fullfile(targetDir, subDirList(iSub).name), 'filename', dataFiles{1});
                     DATA.etc.effective_srate    = DATA.srate;
                     DATA                        = unwrapAngles(DATA);
+                    DATA.times                  = DATA.times/srate_ratios(iSes); % adjust for the slight imprecision in the EEG srate
                     if ~contains(lower(dataFiles{1}),lower(config.use_nominal_srate))
                         [DATA]       = resampleToTime(DATA, newSRate, eegTimes, DATA.etc.starttime);
                     else
@@ -524,12 +672,48 @@ for iSub = 1:numel(subDirList)
                         DATA.xmin   = 0;
                     end
                     DATA             = wrapAngles(DATA);
-                    DATA.event       = eegEvents{1}; 
+                    DATA.event       = eegEvents{1};
+                    
+                    % plot
+                    figure(importfigs)
+                    
+                    latencies_1 = DATA.event(1).latency;
+                    latencies_2 = DATA.event(end).latency;
+                    
+                    idx = find(~contains({DATA.chanlocs.labels},'eul') & ~contains({DATA.chanlocs.labels},'quat') &...
+                        ~contains({DATA.chanlocs.labels},'ori'),1,'first');
+                    
+                    subplot(211);
+                    
+                    my_yticks = yticks;
+                    plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_1-DATA.srate:latencies_1+2*DATA.srate),...
+                        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+                    yticks([yticks my_yticks(end)+1.5])
+                    yticklabels([yticklabels
+                        strrep(['DATA ' DATA.chanlocs(idx).labels],'_', ' ')]);
+                    ylim([-0.5 my_yticks(end)+2.5])
+                    
+                    ax = gca;
+                    ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+                    
+                    subplot(212);
+                    
+                    my_yticks = yticks;
+                    plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_2-DATA.srate:latencies_2+2*DATA.srate),...
+                        'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
+                    yticks([yticks my_yticks(end)+1.5])
+                    yticklabels([yticklabels
+                        strrep(['DATA ' DATA.chanlocs(idx).labels],'_', ' ')]);
+                    ylim([-0.5 my_yticks(end)+2.5])
+                    
+                    ax = gca;
+                    ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
+                    
                 else
                     warning(['No file of modality ' bemobilModality ' found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
                 end
                 
-                % create urevents 
+                % create urevents
                 DATA             = eeg_checkset(DATA, 'makeur');
                 
                 % save merged data file for the session
@@ -538,6 +722,16 @@ for iSub = 1:numel(subDirList)
                 
             end
         end
+        
+        % save fig
+        for i = 1:length(importfigs)
+            savefig(importfigs(i),...
+                fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']))
+            print(importfigs(i),...
+                fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']),'-dpng')
+            close(importfigs(i))
+        end
+        
     end
     
     % remove unnecessary files prior to merging
@@ -570,12 +764,12 @@ for iSub = 1:numel(subDirList)
             for iType = 1:numel(otherDataTypes)
                 
                 if isempty(trackingSystemsInData)
-                    trackingSystemsInData = {''}; 
+                    trackingSystemsInData = {''};
                 end
                 
                 for TSi = 1:numel(trackingSystemsInData)
                     
-                    fillIndices = zeros(1,numel(config.session_names)); 
+                    fillIndices = zeros(1,numel(config.session_names));
                     
                     for Si = 1:numel(config.session_names)
                         if strcmpi(otherDataTypes{iType}, 'MOTION')
@@ -588,13 +782,13 @@ for iSub = 1:numel(subDirList)
                         if exist(fullfile(outPath, outName), 'file')
                             DATA         = pop_loadset('filepath',outPath,'filename',outName);
                         else
-                            fillIndices(Si) = 1; 
-                            disp(['File ' outName ' does not exist - filling with NaNs for merging over sessions']); 
+                            fillIndices(Si) = 1;
+                            disp(['File ' outName ' does not exist - filling with NaNs for merging over sessions']);
                         end
                     end
                     
                     % fill with NaNs for merging across sessions, if necessary
-                    fillDataArray = {}; 
+                    fillDataArray = {};
                     if isempty(DATA)
                         if isempty(trackingSystemsInData{1})
                             warning(['No ' upper(otherDataTypes{iType}) ' files found for any session, unable to merge over sessions'])
@@ -603,24 +797,24 @@ for iSub = 1:numel(subDirList)
                         end
                     else
                         for Si = 1:numel(config.session_names)
-                            if fillIndices(Si) % if data needs filling 
-                                % load again the EEG data in order to check the length and srate 
+                            if fillIndices(Si) % if data needs filling
+                                % load again the EEG data in order to check the length and srate
                                 [outPath, outName] = sessionfilename(targetDir,'EEG', config, Si, subjectNr);
                                 fillData    = pop_loadset('filepath',outPath,'filename',outName);
                                 
-                                % take any loaded data in order to check the channel information 
+                                % take any loaded data in order to check the channel information
                                 fillData.nbchan     = DATA.nbchan;
-                                fillData.data       = NaN(fillData.nbchan, size(fillData.data,2)); 
-                                fillData.chanlocs   = DATA.chanlocs; 
-                                fillData.setname    = []; 
+                                fillData.data       = NaN(fillData.nbchan, size(fillData.data,2));
+                                fillData.chanlocs   = DATA.chanlocs;
+                                fillData.setname    = [];
                                 fillData.filename   = [];
-                                fillData            = eeg_checkset(fillData); 
-                                fillDataArray{Si}   = fillData; 
+                                fillData            = eeg_checkset(fillData);
+                                fillDataArray{Si}   = fillData;
                             end
                         end
                     end
                     
-                     ALLDATA = []; CURRENTSET = []; DATA = []; 
+                    ALLDATA = []; CURRENTSET = []; DATA = [];
                     for Si = 1:numel(config.session_names)
                         if strcmpi(otherDataTypes{iType}, 'MOTION')
                             [outPath, outName] = sessionfilename(targetDir,['MOTION_' trackingSystemsInData{TSi}], config, Si, subjectNr);
@@ -666,7 +860,7 @@ for iSub = 1:numel(subDirList)
             end
         end
     end
-
+    
 end
 
 disp('BIDS to .set conversion finished')
@@ -676,16 +870,16 @@ end
 function [outPath, outName] = sessionfilename(targetDir, modality, bemobil_config, sesnr, subnr)
 
 outName     = [bemobil_config.filename_prefix, num2str(subnr), '_', bemobil_config.session_names{sesnr} '_' modality '.set'];
-outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)]); 
+outPath     = fullfile(targetDir,[bemobil_config.filename_prefix, num2str(subnr)]);
 
 end
 
 function [outEEG] = resampleToTime(EEG, newSRate, newTimes, offset)
-% offset is in seconds 
+% offset is in seconds
 %--------------------------------------------------------------------------
 
 % save old times
-oldTimes                = EEG.times; 
+oldTimes                = EEG.times;
 
 % save old nan beginning and end
 nanbegin = oldTimes(find(~any(isnan(EEG.data)),1,'first'));
@@ -696,11 +890,11 @@ newTimesFT                = newTimes/1000;
 
 resamplecfg.time        = {newTimesFT};
 resamplecfg.detrend     = 'no';
-resamplecfg.method      = 'pchip'; 
-resamplecfg.extrapval   = nan; 
+resamplecfg.method      = 'pchip';
+resamplecfg.extrapval   = nan;
 EEG.group = 1; EEG.condition = 1;
 ftData                  = eeglab2fieldtrip( EEG, 'raw', 'none' );
-ftData.time{1}          = oldTimes/1000 + offset; 
+ftData.time{1}          = oldTimes/1000 + offset;
 resampledData           = ft_resampledata(resamplecfg, ftData);
 EEG.data                = resampledData.trial{1};
 EEG.srate               = newSRate;
@@ -764,8 +958,8 @@ end
 
 %--------------------------------------------------------------------------
 function [newconfig] =  checkfield(oldconfig, fieldName, defaultValue, defaultValueText)
-% This function checks for existence of required fields 
-% for optional fields that have default values, assign them 
+% This function checks for existence of required fields
+% for optional fields that have default values, assign them
 
 % throw an error if a required field has not been specified
 if strcmp(defaultValue, 'required')
@@ -774,7 +968,7 @@ if strcmp(defaultValue, 'required')
     end
 end
 
-% assign default value to an optional field 
+% assign default value to an optional field
 newconfig   = oldconfig;
 
 if ~isfield(oldconfig, fieldName)
