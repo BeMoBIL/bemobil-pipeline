@@ -13,6 +13,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.task                   = 'rotation';                                                         % optional 
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];                                             % optional ([YYYY,MM,DD,HH,MM,SS]) 
 %       config.load_xdf_flags         = {'Verbose',0}                                                       % optional
+%       config.exclude_markerstreams  = {'markerstream to exclude 1', 'markerstream to exclude 2'}          % optional
 %
 % EEG parameters 
 %--------------------------------------------------------------------------
@@ -124,6 +125,7 @@ config = checkfield(config, 'acquisition_time', [1800,12,31,5,5,5.000], 'default
 %--------------------------------------------------------------------------
 config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
 config = checkfield(config, 'load_xdf_flags',{'Verbose',1},'{''Verbose'',1}');
+config = checkfield(config, 'exclude_markerstreams',{},'{}');
 
 % validate file name parts 
 %--------------------------------------------------------------------------
@@ -495,9 +497,25 @@ if importEEG
     xdfeeg        = streams(contains(lower(names),lower(eegStreamName)) & iscontinuous);
     
     if isempty(xdfeeg)
-        error('No eeg streams found - check whether stream_name match the names of streams in .xdf')
-    elseif numel(xdfeeg) > 1
-        error('Multiple eeg streams found - usage not supported')
+        
+        error('No EEG streams found - check whether stream_name match the names of streams in .xdf')
+        
+    elseif numel(xdfeeg) > 1 && (~isfield(config,'eeg_index') || isempty(config.eeg_index))
+        
+        warning('Multiple eeg streams found - displaying them for inspection')
+        
+        for i=1:length(xdfeeg)
+            xdfeeg{i}.info
+        end
+        
+        warning('You can add a field "eeg_index" to the config and work around this issue by choosing only one EEG file.')
+        error('Multiple EEG streams found - usage not supported!')
+        
+    elseif numel(xdfeeg) > 1 && isfield(config,'eeg_index') && ~isempty(config.eeg_index)
+        
+        warning('Multiple EEG streams found - choosing only the specified one to import!')
+        xdfeeg = xdfeeg(config.eeg_index);
+        
     end
 end
 
@@ -529,24 +547,33 @@ if importPhys
 end
 
 xdfmarkers  = streams(~iscontinuous);
+idx_exclude = [];
+for i = 1:length(xdfmarkers)
+    idx_exclude(i) = isempty(xdfmarkers{i}.time_series) || contains(xdfmarkers{i}.info.name,config.exclude_markerstreams,'IgnoreCase',true);
+    
+    if idx_exclude(i)
+        warning(['Removing marker stream ' xdfmarkers{i}.info.name ' containing ' num2str(length(xdfmarkers{i}.time_series)) ' markers!'])
+    end
+end
+xdfmarkers(logical(idx_exclude)) = [];
 
 %% plot raw data
 times_stamp_1 = xdfmarkers{1}.time_stamps(1);
 times_stamp_2 = xdfmarkers{1}.time_stamps(end);
 
 for i=1:length(xdfeeg)
-    eeg_times_1(i,:) = find(xdfeeg{i}.time_stamps > times_stamp_1-1 & xdfeeg{i}.time_stamps < times_stamp_1+2);
-    eeg_times_2(i,:) = find(xdfeeg{i}.time_stamps > times_stamp_2-1 & xdfeeg{i}.time_stamps < times_stamp_2+2);
+    eeg_times_1{i} = find(xdfeeg{i}.time_stamps > times_stamp_1-1 & xdfeeg{i}.time_stamps < times_stamp_1+2);
+    eeg_times_2{i} = find(xdfeeg{i}.time_stamps > times_stamp_2-1 & xdfeeg{i}.time_stamps < times_stamp_2+2);
 end
 
 for i=1:length(xdfmotion)
-    motion_times_1(i,:) = find(xdfmotion{i}.time_stamps > times_stamp_1-1 & xdfmotion{i}.time_stamps < times_stamp_1+2);
-    motion_times_2(i,:) = find(xdfmotion{i}.time_stamps > times_stamp_2-1 & xdfmotion{i}.time_stamps < times_stamp_2+2);
+    motion_times_1{i} = find(xdfmotion{i}.time_stamps > times_stamp_1-1 & xdfmotion{i}.time_stamps < times_stamp_1+2);
+    motion_times_2{i} = find(xdfmotion{i}.time_stamps > times_stamp_2-1 & xdfmotion{i}.time_stamps < times_stamp_2+2);
 end
 
 for i=1:length(xdfphysio)
-    physio_times_1(i,:) = find(xdfphysio{i}.time_stamps > times_stamp_1-1 & xdfphysio{i}.time_stamps < times_stamp_1+2);
-    physio_times_2(i,:) = find(xdfphysio{i}.time_stamps > times_stamp_2-1 & xdfphysio{i}.time_stamps < times_stamp_2+2);
+    physio_times_1{i} = find(xdfphysio{i}.time_stamps > times_stamp_1-1 & xdfphysio{i}.time_stamps < times_stamp_1+2);
+    physio_times_2{i} = find(xdfphysio{i}.time_stamps > times_stamp_2-1 & xdfphysio{i}.time_stamps < times_stamp_2+2);
 end
 
 raw_fig = figure('color','w','position',[1 1 1920 1080]);
@@ -556,23 +583,20 @@ subplot(211); hold on; grid on; grid(gca,'minor')
 title(strjoin(['First event: "' xdfmarkers{1}.time_series(1) '"']),'interpreter','none')
 yticks(-1)
 yticklabels('')
-plot([times_stamp_1 times_stamp_1], [-1 100], 'k')
+plot([times_stamp_1 times_stamp_1]-times_stamp_1, [-1 100], 'k')
+
+xaxistimes = eeg_times_1{1};
+xlim([xdfeeg{1}.time_stamps(xaxistimes(1))  xdfeeg{1}.time_stamps(xaxistimes(end)) ]-times_stamp_1)
 
 for i=1:length(xdfeeg)
     my_yticks = yticks;
-    plot(xdfeeg{i}.time_stamps(eeg_times_1(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_1(i,:)),...
+    plot(xdfeeg{i}.time_stamps(xaxistimes)-times_stamp_1 ,normalize(xdfeeg{i}.time_series(1,xaxistimes),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfeeg{1}.info.name ' ' xdfeeg{1}.info.desc.channels.channel{1}.label],'_', ' ')]);
-    xlim([xdfeeg{i}.time_stamps(eeg_times_1(i,1)) xdfeeg{i}.time_stamps(eeg_times_1(i,end))])
     ylim([-0.5 my_yticks(end)+2.5])
 end
-xticks(xdfeeg{1}.time_stamps(eeg_times_1(1,[1 round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6) ...
-    round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*2 round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*3 ...
-    round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*4 round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:)))/6)*5 ...
-    round(length(xdfeeg{1}.time_stamps(eeg_times_1(1,:))))])))
-xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
 xlabel('seconds')
 
 for i=1:length(xdfmotion)
@@ -580,7 +604,7 @@ for i=1:length(xdfmotion)
     idx = find(~contains({allchans.label},'eul') & ~contains({allchans.label},'quat') &...
         ~contains({allchans.label},'ori'),1,'first');
     my_yticks = yticks;
-    plot(xdfmotion{i}.time_stamps(motion_times_1(i,:)),normalize(xdfmotion{i}.time_series(idx,motion_times_1(i,:)),...
+    plot(xdfmotion{i}.time_stamps(motion_times_1{i})-times_stamp_1 ,normalize(xdfmotion{i}.time_series(idx,motion_times_1{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
@@ -590,7 +614,7 @@ end
 
 for i=1:length(xdfphysio)
     my_yticks = yticks;
-    plot(xdfphysio{i}.time_stamps(physio_times_1(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_1(i,:)),...
+    plot(xdfphysio{i}.time_stamps(physio_times_1{i})-times_stamp_1 ,normalize(xdfphysio{i}.time_series(1,physio_times_1{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
@@ -605,38 +629,38 @@ subplot(212); hold on; grid on; grid(gca,'minor')
 title(strjoin(['Last event: "' xdfmarkers{1}.time_series(end) '"']),'interpreter','none')
 yticks(-1)
 yticklabels('')
-plot([times_stamp_2 times_stamp_2], [-1 100], 'k')
+plot([times_stamp_2 times_stamp_2]-times_stamp_2, [-1 100], 'k')
+
+xaxistimes = eeg_times_2{1};
+xlim([xdfeeg{1}.time_stamps(xaxistimes(1))  xdfeeg{1}.time_stamps(xaxistimes(end)) ]-times_stamp_2)
 
 for i=1:length(xdfeeg)
     my_yticks = yticks;
-    plot(xdfeeg{i}.time_stamps(eeg_times_2(i,:)),normalize(xdfeeg{i}.time_series(1,eeg_times_2(i,:)),...
+    plot(xdfeeg{i}.time_stamps(xaxistimes)-times_stamp_2 ,normalize(xdfeeg{i}.time_series(1,xaxistimes),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
         strrep([xdfeeg{1}.info.name ' ' xdfeeg{1}.info.desc.channels.channel{1}.label],'_', ' ')]);
-    xlim([xdfeeg{i}.time_stamps(eeg_times_2(i,1)) xdfeeg{i}.time_stamps(eeg_times_2(i,end))])
     ylim([-0.5 my_yticks(end)+2.5])
 end
-xticks(xdfeeg{1}.time_stamps(eeg_times_2(1,[1 round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6) ...
-    round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*2 round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*3 ...
-    round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*4 round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:)))/6)*5 ...
-    round(length(xdfeeg{1}.time_stamps(eeg_times_2(1,:))))])))
-xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
 xlabel('seconds')
 
 for i=1:length(xdfmotion)
+    allchans = [xdfmotion{i}.info.desc.channels.channel{:}];
+    idx = find(~contains({allchans.label},'eul') & ~contains({allchans.label},'quat') &...
+        ~contains({allchans.label},'ori'),1,'first');
     my_yticks = yticks;
-    plot(xdfmotion{i}.time_stamps(motion_times_2(i,:)),normalize(xdfmotion{i}.time_series(1,motion_times_2(i,:)),...
+    plot(xdfmotion{i}.time_stamps(motion_times_2{i})-times_stamp_2 ,normalize(xdfmotion{i}.time_series(idx,motion_times_2{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
-        strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{1}.label],'_', ' ')]);
+        strrep([xdfmotion{i}.info.name ' ' xdfmotion{i}.info.desc.channels.channel{idx}.label],'_', ' ')]);
     ylim([-0.5 my_yticks(end)+2.5])
 end
 
 for i=1:length(xdfphysio)
     my_yticks = yticks;
-    plot(xdfphysio{i}.time_stamps(physio_times_2(i,:)),normalize(xdfphysio{i}.time_series(1,physio_times_2(i,:)),...
+    plot(xdfphysio{i}.time_stamps(physio_times_2{i})-times_stamp_2 ,normalize(xdfphysio{i}.time_series(1,physio_times_2{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
@@ -1051,7 +1075,7 @@ newconfig   = oldconfig;
 
 if ~isfield(oldconfig, fieldName)
     newconfig.(fieldName) = defaultValue;
-    warning(['Config field ' fieldName ' not specified- using default value: ' defaultValueText])
+    warning(['Config field ' fieldName ' not specified - using default value: ' defaultValueText])
 end
 
 

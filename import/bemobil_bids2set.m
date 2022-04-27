@@ -370,19 +370,23 @@ for iSub = 1:numel(subDirList)
                 latencies_1 = EEG.event(1).latency;
                 latencies_2 = EEG.event(end).latency;
                 
+                latenciesToPlot_1 = latencies_1-EEG.srate:latencies_1+2*EEG.srate;
+                latenciesToPlot_1(latenciesToPlot_1<1) = [];
+                latenciesToPlot_2 = latencies_2-EEG.srate:latencies_2+2*EEG.srate;
+                latenciesToPlot_2(latenciesToPlot_2<1) = [];
+                
                 subplot(211); hold on; grid on; grid(gca,'minor')
                 title(['First event: "' EEG.event(1).type '"'],'interpreter','none')
                 yticks(-1)
                 yticklabels('')
-                xlim([-EEG.srate 2*EEG.srate])
-                xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
-                xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
                 xlabel('seconds')
+                xlim([EEG.times(latenciesToPlot_1(1)) EEG.times(latenciesToPlot_1(end))]/1000-EEG.times(latencies_1)/1000)
                 
                 plot([0 0],[-1 100],'k')
                 
                 my_yticks = yticks;
-                plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_1-EEG.srate:latencies_1+2*EEG.srate),...
+                plot(EEG.times(latenciesToPlot_1)/1000-EEG.times(latencies_1)/1000,...
+                    normalize(EEG.data(1,latenciesToPlot_1),...
                     'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
                 yticks([yticks my_yticks(end)+1.5])
                 yticklabels([yticklabels
@@ -396,15 +400,14 @@ for iSub = 1:numel(subDirList)
                 title(['Last event: "' EEG.event(end).type '"'],'interpreter','none')
                 yticks(-1)
                 yticklabels('')
-                xlim([-EEG.srate 2*EEG.srate])
-                xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
-                xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
                 xlabel('seconds')
+                xlim([EEG.times(latencies_2-EEG.srate) EEG.times(latencies_2+2*EEG.srate)]/1000-EEG.times(latencies_2)/1000)
                 
-                plot([0 0],[-1 100],'k')
+                plot([EEG.times(latencies_2) EEG.times(latencies_2)]/1000-EEG.times(latencies_2)/1000,[-1 100],'k')
                 
                 my_yticks = yticks;
-                plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_2-EEG.srate:latencies_2+2*EEG.srate),...
+                plot(EEG.times(latenciesToPlot_2)/1000-EEG.times(latencies_2)/1000,...
+                    normalize(EEG.data(1,latenciesToPlot_2),...
                     'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
                 yticks([yticks my_yticks(end)+1.5])
                 yticklabels([yticklabels
@@ -449,19 +452,23 @@ for iSub = 1:numel(subDirList)
             latencies_1 = EEG.event(1).latency;
             latencies_2 = EEG.event(end).latency;
             
+            latenciesToPlot_1 = latencies_1-EEG.srate:latencies_1+2*EEG.srate;
+            latenciesToPlot_1(latenciesToPlot_1<1) = [];
+            latenciesToPlot_2 = latencies_2-EEG.srate:latencies_2+2*EEG.srate;
+            latenciesToPlot_2(latenciesToPlot_2<1) = [];
+            
             subplot(211); hold on; grid on; grid(gca,'minor')
             title(['First event: "' EEG.event(1).type '"'],'interpreter','none')
             yticks(-1)
             yticklabels('')
-            xlim([-EEG.srate 2*EEG.srate])
-            xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
-            xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
             xlabel('seconds')
+            xlim([EEG.times(latenciesToPlot_1(1)) EEG.times(latenciesToPlot_1(end))]/1000-EEG.times(latencies_1)/1000)
             
             plot([0 0],[-1 100],'k')
             
             my_yticks = yticks;
-            plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_1-EEG.srate:latencies_1+2*EEG.srate),...
+            plot(EEG.times(latenciesToPlot_1)/1000-EEG.times(latencies_1)/1000,...
+                normalize(EEG.data(1,latenciesToPlot_1),...
                 'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
             yticks([yticks my_yticks(end)+1.5])
             yticklabels([yticklabels
@@ -475,15 +482,14 @@ for iSub = 1:numel(subDirList)
             title(['Last event: "' EEG.event(end).type '"'],'interpreter','none')
             yticks(-1)
             yticklabels('')
-            xlim([-EEG.srate 2*EEG.srate])
-            xticks([-EEG.srate -round(EEG.srate/2) 0 round(EEG.srate/2) EEG.srate round(EEG.srate*3/2) 2*EEG.srate])
-            xticklabels([-1 -0.5 0 0.5 1 1.5 2 2.5 3])
             xlabel('seconds')
+            xlim([EEG.times(latencies_2-EEG.srate) EEG.times(latencies_2+2*EEG.srate)]/1000-EEG.times(latencies_2)/1000)
             
-            plot([0 0],[-1 100],'k')
+            plot([EEG.times(latencies_2) EEG.times(latencies_2)]/1000-EEG.times(latencies_2)/1000,[-1 100],'k')
             
             my_yticks = yticks;
-            plot(-EEG.srate:2*EEG.srate,normalize(EEG.data(1,latencies_2-EEG.srate:latencies_2+2*EEG.srate),...
+            plot(EEG.times(latenciesToPlot_2)/1000-EEG.times(latencies_2)/1000,...
+                normalize(EEG.data(1,latenciesToPlot_2),...
                 'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
             yticks([yticks my_yticks(end)+1.5])
             yticklabels([yticklabels
@@ -604,13 +610,19 @@ for iSub = 1:numel(subDirList)
                         latencies_1 = DATA.event(1).latency;
                         latencies_2 = DATA.event(end).latency;
                         
+                        latenciesToPlot_1 = latenciesToPlot_1;
+                        latenciesToPlot_1(latenciesToPlot_1<1) = [];
+                        latenciesToPlot_2 = latenciesToPlot_2;
+                        latenciesToPlot_2(latenciesToPlot_2<1) = [];
+                        
                         idx = find(~contains({DATA.chanlocs.labels},'eul') & ~contains({DATA.chanlocs.labels},'quat') &...
                             ~contains({DATA.chanlocs.labels},'ori'),1,'first');
                         
                         subplot(211);
                         
                         my_yticks = yticks;
-                        plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_1-DATA.srate:latencies_1+2*DATA.srate),...
+                        plot(DATA.times(latenciesToPlot_1)/1000-DATA.times(latencies_1)/1000,...
+                            normalize(DATA.data(idx,latenciesToPlot_1),...
                             'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
                         yticks([yticks my_yticks(end)+1.5])
                         yticklabels([yticklabels
@@ -623,7 +635,8 @@ for iSub = 1:numel(subDirList)
                         subplot(212);
                         
                         my_yticks = yticks;
-                        plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_2-DATA.srate:latencies_2+2*DATA.srate),...
+                        plot(DATA.times(latenciesToPlot_2)/1000-DATA.times(latencies_2)/1000,...
+                            normalize(DATA.data(idx,latenciesToPlot_2),...
                             'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
                         yticks([yticks my_yticks(end)+1.5])
                         yticklabels([yticklabels
@@ -680,13 +693,19 @@ for iSub = 1:numel(subDirList)
                     latencies_1 = DATA.event(1).latency;
                     latencies_2 = DATA.event(end).latency;
                     
+                    latenciesToPlot_1 = latenciesToPlot_1;
+                    latenciesToPlot_1(latenciesToPlot_1<1) = [];
+                    latenciesToPlot_2 = latenciesToPlot_2;
+                    latenciesToPlot_2(latenciesToPlot_2<1) = [];
+                    
                     idx = find(~contains({DATA.chanlocs.labels},'eul') & ~contains({DATA.chanlocs.labels},'quat') &...
                         ~contains({DATA.chanlocs.labels},'ori'),1,'first');
                     
                     subplot(211);
                     
                     my_yticks = yticks;
-                    plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_1-DATA.srate:latencies_1+2*DATA.srate),...
+                    plot(DATA.times(latenciesToPlot_1)/1000-DATA.times(latencies_1)/1000,...
+                        normalize(DATA.data(idx,latenciesToPlot_1),...
                         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
                     yticks([yticks my_yticks(end)+1.5])
                     yticklabels([yticklabels
@@ -699,7 +718,8 @@ for iSub = 1:numel(subDirList)
                     subplot(212);
                     
                     my_yticks = yticks;
-                    plot(-DATA.srate:2*DATA.srate,normalize(DATA.data(idx,latencies_2-DATA.srate:latencies_2+2*DATA.srate),...
+                    plot(DATA.times(latenciesToPlot_2)/1000-DATA.times(latencies_2)/1000,...
+                        normalize(DATA.data(idx,latenciesToPlot_2),...
                         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
                     yticks([yticks my_yticks(end)+1.5])
                     yticklabels([yticklabels
