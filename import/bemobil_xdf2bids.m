@@ -600,9 +600,15 @@ end
 xlabel('seconds')
 
 for i=1:length(xdfmotion)
-    allchans = [xdfmotion{i}.info.desc.channels.channel{:}];
-    idx = find(~contains({allchans.label},'eul') & ~contains({allchans.label},'quat') &...
-        ~contains({allchans.label},'ori'),1,'first');
+    
+    allchanlabels = {};
+    for i_chan = 1:length(xdfmotion{i}.info.desc.channels.channel)
+        allchanlabels{end+1} = xdfmotion{i}.info.desc.channels.channel{i_chan}.label;
+    end
+    
+    idx = find(~contains(allchanlabels,'eul') & ~contains(allchanlabels,'quat') &...
+        ~contains(allchanlabels,'ori'),1,'first');
+    
     my_yticks = yticks;
     plot(xdfmotion{i}.time_stamps(motion_times_1{i})-times_stamp_1 ,normalize(xdfmotion{i}.time_series(idx,motion_times_1{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
@@ -646,11 +652,17 @@ end
 xlabel('seconds')
 
 for i=1:length(xdfmotion)
-    allchans = [xdfmotion{i}.info.desc.channels.channel{:}];
-    idx = find(~contains({allchans.label},'eul') & ~contains({allchans.label},'quat') &...
-        ~contains({allchans.label},'ori'),1,'first');
+    
+    allchanlabels = {};
+    for i_chan = 1:length(xdfmotion{i}.info.desc.channels.channel)
+        allchanlabels{end+1} = xdfmotion{i}.info.desc.channels.channel{i_chan}.label;
+    end
+    
+    idx = find(~contains(allchanlabels,'eul') & ~contains(allchanlabels,'quat') &...
+        ~contains(allchanlabels,'ori'),1,'first');
+    
     my_yticks = yticks;
-    plot(xdfmotion{i}.time_stamps(motion_times_2{i})-times_stamp_2 ,normalize(xdfmotion{i}.time_series(idx,motion_times_2{i}),...
+    plot(xdfmotion{i}.time_stamps(motion_times_1{i})-times_stamp_1 ,normalize(xdfmotion{i}.time_series(idx,motion_times_1{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
