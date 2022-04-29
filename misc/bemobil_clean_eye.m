@@ -63,7 +63,7 @@ if ~exist('n','var') || ~isscalar(n)
     disp(['Using ' num2str(n) ' standard deviations to detect blinks.'])
 end
 
-if ~exist('createplots','var') || ~isscalar(n)
+if ~exist('createplots','var') || ~isscalar(createplots)
     createplots = 1;
 end
 plothandles = [];
@@ -107,6 +107,9 @@ EEG_eye.etc.blinkextract.blink_onsets_offsets = blink_onsets_offsets;
 EEG_eye.etc.blinkextract.threshold = threshold;
 EEG_eye.etc.blinkextract.idx_pupil = idx_pupil;
 EEG_eye.etc.blinkextract.idx_clean = idx_clean;
+EEG_eye.etc.blinkextract.ms_search = ms_search;
+EEG_eye.etc.blinkextract.ms_apply = ms_apply;
+EEG_eye.etc.blinkextract.n = n;
 
 %% interpolate blinks
 
