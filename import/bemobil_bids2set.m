@@ -500,7 +500,7 @@ for iSub = 1:numel(subDirList)
             ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
             
         else
-            warning(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
+            error(['No EEG file found in subject dir ' subDirList(iSub).name ', session ' config.session_names{iSes}] )
         end
         
         EEG = eeg_checkset(EEG, 'makeur');
