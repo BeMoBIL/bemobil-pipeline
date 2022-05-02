@@ -14,6 +14,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];                                             % optional ([YYYY,MM,DD,HH,MM,SS]) 
 %       config.load_xdf_flags         = {'Verbose',0}                                                       % optional
 %       config.exclude_markerstreams  = {'markerstream to exclude 1', 'markerstream to exclude 2'}          % optional
+%       config.continuousstreams      = {'streamA' 'streamB'}                                               % optional override automatic detection (by default any stream with srate > 20hz is defined as continuous)
 %
 % EEG parameters 
 %--------------------------------------------------------------------------
@@ -126,6 +127,7 @@ config = checkfield(config, 'acquisition_time', [1800,12,31,5,5,5.000], 'default
 config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
 config = checkfield(config, 'load_xdf_flags',{'Verbose',1},'{''Verbose'',1}');
 config = checkfield(config, 'exclude_markerstreams',{},'{}');
+config = checkfield(config, 'continuousstreams',{},'{}');
 
 % validate file name parts 
 %--------------------------------------------------------------------------
@@ -445,7 +447,7 @@ for i=1:numel(streams)
     names{i}           = streams{i}.info.name;
     
     % if the nominal srate is non-zero, the stream may be considered continuous
-    if ~strcmpi(streams{i}.info.nominal_srate, '0')
+    if ~(str2num(streams{i}.info.nominal_srate) == 0)
         
         num_samples  = numel(streams{i}.time_stamps);
         nominalSRate = str2double(streams{i}.info.nominal_srate); 
@@ -476,7 +478,7 @@ for i=1:numel(streams)
             
             % if sampling rate is higher than 20 Hz,
             % the stream is considered continuous
-            if (num_samples - 1) / duration >= 20 && duration > 1
+            if (((num_samples - 1) / duration >= 20) || contains(lower(streams{i}.info.name),lower(config.continuousstreams))) && duration > 1
                 iscontinuous(i) =  true;
                 if ~isfield(streams{i}.info, 'effective_srate')
                     % in case effective srate field is missing, add one
@@ -542,7 +544,25 @@ if importPhys
     xdfphysio   = streams(contains(lower(names),lower(physioStreamNames)) & iscontinuous);
     
     if isempty(xdfphysio)
+        lower(names)
+        lower(physioStreamNames)
         error('Configuration field physio specified but no streams found - check whether stream_name match the names of streams in .xdf')
+    else
+        for i_phys = 1:length(xdfphysio)
+            
+            idx_thisphys = find(strcmpi(xdfphysio{i_phys}.info.name,physioStreamNames));
+            
+            % if specified, replace labels of the read eeg stream
+            if isfield(config.phys.streams{idx_thisphys}, 'channel_labels')
+                
+                for i_chan = 1:length(config.phys.streams{idx_thisphys}.channel_labels)
+                    
+                    xdfphysio{i_phys}.info.desc.channels.channel{i_chan} = struct('label',config.phys.streams{idx_thisphys}.channel_labels{i_chan},'type','phys','unit','au');
+                    
+                end
+                
+            end
+        end
     end
 end
 
@@ -745,6 +765,7 @@ if importEEG % This loop is always executed in current version
             warning('Only the first value specified in config.eeg.linefreq entered in eeg.json')
         end
     end
+    
     % if specified, replace labels of the read eeg stream
     if isfield(config.eeg, 'channel_labels')
         eeg.label = config.eeg.channel_labels;
@@ -996,6 +1017,7 @@ if importPhys
     
     % construct fieldtrip data
     for iP = 1:numel(xdfphysio)
+        
         ftphysio{iP} = stream2ft(xdfphysio{iP});
     end
     
