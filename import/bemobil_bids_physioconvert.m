@@ -1,5 +1,5 @@
 
-function physioOut = bemobil_bids_physioconvert(physioIn, objects, pi, si, ri, interpPhys)
+function physioOut = bemobil_bids_physioconvert(physioIn, objects, interpPhys)
 % Process generic physiological data 
 % (resampling to the highest sampling rate among all streams of the type)
 
@@ -100,7 +100,7 @@ if numel(physioStreamAll)>1
         keephdr.chantype    = [keephdr.chantype;    physioStreamAll{i}.hdr.chantype];
         keephdr.chanunit    = [keephdr.chanunit;    physioStreamAll{i}.hdr.chanunit];
         
-        if doresample
+        if doResample
             % resample
             %------------------------------------------------------------------
             ft_notice('resampling %s', physioStreamAll{i}.hdr.orig.name);
@@ -109,6 +109,13 @@ if numel(physioStreamAll)>1
             cfg.detrend         = 'no';
             physioStreamAll{i}  = ft_struct2double(physioStreamAll{i});
             physioStreamAll{i}  = ft_resampledata(cfg, physioStreamAll{i});
+            
+            % remove excess latency channel now after resampling, it will crash when appending
+            trial = physioStreamAll{i}.trial{1};
+            trial = trial(1:end-1,:);
+            physioStreamAll{i}.trial = {trial};
+            physioStreamAll{i}.label = physioStreamAll{i}.label(1:end-1);
+            
         end
     end
     
@@ -117,6 +124,13 @@ if numel(physioStreamAll)>1
     
     % modify some fields in the header
     physioOut.hdr = keephdr;
+    
+    % add latency channel for later interpolation
+    physioOut.label = [physioOut.label; 'physio_latency'];
+    trial = physioOut.trial{1};
+    trial = [trial;regularTime{1}];
+    physioOut.trial = {trial};
+    
 else
     % simply return the first and only one
     physioOut = physioStreamAll{1};
