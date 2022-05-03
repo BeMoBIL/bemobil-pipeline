@@ -25,4 +25,7 @@ Here is an example of the final BeMoBIL pipeline output :
 
 ***
 
+The pipeline has more functionalities than this, so don't forget to check out [our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki) with details on the parameters and usage, as well as more info on event creation and other additional options the pipeline has to offer!
+
+***
 If you have any comments, questions, or suggestions, please [open issues on git](https://github.com/BeMoBIL/bemobil-pipeline/issues), join our [discord server](https://discord.gg/xJMru7XVXY), or write an email to marius.s.klug@gmail.com!
