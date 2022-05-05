@@ -372,8 +372,10 @@ for iSub = 1:numel(subDirList)
                 
                 latenciesToPlot_1 = latencies_1-EEG.srate:latencies_1+2*EEG.srate;
                 latenciesToPlot_1(latenciesToPlot_1<1) = [];
+                latenciesToPlot_1(latenciesToPlot_1>EEG.pnts) = [];
                 latenciesToPlot_2 = latencies_2-EEG.srate:latencies_2+2*EEG.srate;
                 latenciesToPlot_2(latenciesToPlot_2<1) = [];
+                latenciesToPlot_2(latenciesToPlot_2>EEG.pnts) = [];
                 
                 subplot(211); hold on; grid on; grid(gca,'minor')
                 title(['First event: "' EEG.event(1).type '"'],'interpreter','none')
@@ -454,8 +456,10 @@ for iSub = 1:numel(subDirList)
             
             latenciesToPlot_1 = latencies_1-EEG.srate:latencies_1+2*EEG.srate;
             latenciesToPlot_1(latenciesToPlot_1<1) = [];
+            latenciesToPlot_1(latenciesToPlot_1>EEG.pnts) = [];
             latenciesToPlot_2 = latencies_2-EEG.srate:latencies_2+2*EEG.srate;
             latenciesToPlot_2(latenciesToPlot_2<1) = [];
+            latenciesToPlot_2(latenciesToPlot_2>EEG.pnts) = [];
             
             subplot(211); hold on; grid on; grid(gca,'minor')
             title(['First event: "' EEG.event(1).type '"'],'interpreter','none')
@@ -610,10 +614,12 @@ for iSub = 1:numel(subDirList)
                         latencies_1 = DATA.event(1).latency;
                         latencies_2 = DATA.event(end).latency;
                         
-                        latenciesToPlot_1 = latenciesToPlot_1;
+                        latenciesToPlot_1 = latencies_1-DATA.srate:latencies_1+2*DATA.srate;
                         latenciesToPlot_1(latenciesToPlot_1<1) = [];
-                        latenciesToPlot_2 = latenciesToPlot_2;
+                        latenciesToPlot_1(latenciesToPlot_1>DATA.pnts) = [];
+                        latenciesToPlot_2 = latencies_2-DATA.srate:latencies_2+2*DATA.srate;
                         latenciesToPlot_2(latenciesToPlot_2<1) = [];
+                        latenciesToPlot_2(latenciesToPlot_2>DATA.pnts) = [];
                         
                         idx = find(~contains({DATA.chanlocs.labels},'eul') & ~contains({DATA.chanlocs.labels},'quat') &...
                             ~contains({DATA.chanlocs.labels},'ori'),1,'first');
@@ -693,10 +699,12 @@ for iSub = 1:numel(subDirList)
                     latencies_1 = DATA.event(1).latency;
                     latencies_2 = DATA.event(end).latency;
                     
-                    latenciesToPlot_1 = latenciesToPlot_1;
+                    latenciesToPlot_1 = latencies_1-DATA.srate:latencies_1+2*DATA.srate;
                     latenciesToPlot_1(latenciesToPlot_1<1) = [];
-                    latenciesToPlot_2 = latenciesToPlot_2;
+                    latenciesToPlot_1(latenciesToPlot_1>DATA.pnts) = [];
+                    latenciesToPlot_2 = latencies_2-DATA.srate:latencies_2+2*DATA.srate;
                     latenciesToPlot_2(latenciesToPlot_2<1) = [];
+                    latenciesToPlot_2(latenciesToPlot_2>DATA.pnts) = [];
                     
                     idx = find(~contains({DATA.chanlocs.labels},'eul') & ~contains({DATA.chanlocs.labels},'quat') &...
                         ~contains({DATA.chanlocs.labels},'ori'),1,'first');

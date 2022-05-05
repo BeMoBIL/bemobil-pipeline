@@ -145,7 +145,6 @@ end
 
 % load participant tsv file
 participantsFile = fullfile(bidsFolder, 'participants.tsv'); 
-exist(participantsFile,'File')
 bids.participants = '';
 if exist(participantsFile,'File')
     bids.participants = importtsv( participantsFile );
