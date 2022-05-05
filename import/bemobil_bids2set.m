@@ -403,7 +403,7 @@ for iSub = 1:numel(subDirList)
                 yticks(-1)
                 yticklabels('')
                 xlabel('seconds')
-                xlim([EEG.times(latencies_2-EEG.srate) EEG.times(latencies_2+2*EEG.srate)]/1000-EEG.times(latencies_2)/1000)
+                xlim([EEG.times(latenciesToPlot_2(1)) EEG.times(latenciesToPlot_2(end))]/1000-EEG.times(latencies_2)/1000)
                 
                 plot([EEG.times(latencies_2) EEG.times(latencies_2)]/1000-EEG.times(latencies_2)/1000,[-1 100],'k')
                 
@@ -487,7 +487,7 @@ for iSub = 1:numel(subDirList)
             yticks(-1)
             yticklabels('')
             xlabel('seconds')
-            xlim([EEG.times(latencies_2-EEG.srate) EEG.times(latencies_2+2*EEG.srate)]/1000-EEG.times(latencies_2)/1000)
+            xlim([EEG.times(latenciesToPlot_2(1)) EEG.times(latenciesToPlot_2(end))]/1000-EEG.times(latencies_2)/1000)
             
             plot([EEG.times(latencies_2) EEG.times(latencies_2)]/1000-EEG.times(latencies_2)/1000,[-1 100],'k')
             
