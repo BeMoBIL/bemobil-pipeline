@@ -57,6 +57,7 @@ config = checkfield(config, 'resample_freq', 250, '250 Hz');
 config = checkfield(config, 'overwrite', 'off', 'off');
 config = checkfield(config, 'match_electrodes_channels', {}, 'none');
 config = checkfield(config, 'use_nominal_srate', {}, 'none');
+config = checkfield(config, 'do_aa_filter', 1, '1');
 
 % check session input
 if ~iscell(config.session_names)
@@ -576,6 +577,13 @@ for iSub = 1:numel(subDirList)
                         DATA                        = unwrapAngles(DATA); % unwrap angles before resampling
                         DATA.times                  = DATA.times/srate_ratios(iSes,Ri); % adjust for the slight imprecision in the EEG srate
                         if ~contains(lower(dataFiles{Ri}),lower(config.use_nominal_srate))
+                            
+                            if DATA.srate > newSRate && config.do_aa_filter
+                                disp('DATA srate is higher than new srate, performing anti-aliasing filter before downsampling.')
+                                warning('IMPORTANT: The filter assumes equidistant samples, so if large sampling irregularities exist, this will be problematic! You can switch this function off with the "do_aa_filter" config entry (on by default).')
+                                DATA = pop_eegfiltnew(DATA, [], newSRate/2*0.8); % low-pass filter such that the stopband edge is the neq nyquist freq
+                            end
+                            
                             [DATA]      = resampleToTime(DATA, newSRate, eegTimes{Ri}, DATA.etc.starttime);
                         else
                             disp(['Data file ' dataFiles{Ri} config.use_nominal_srate ' using nominal srate!'])
@@ -662,7 +670,50 @@ for iSub = 1:numel(subDirList)
                     DATA                        = unwrapAngles(DATA);
                     DATA.times                  = DATA.times/srate_ratios(iSes); % adjust for the slight imprecision in the EEG srate
                     if ~contains(lower(dataFiles{1}),lower(config.use_nominal_srate))
+                        
+                        if DATA.srate > newSRate && config.do_aa_filter
+                            disp('DATA srate is higher than new srate, performing anti-aliasing filter before downsampling.')
+                            warning('IMPORTANT: The filter assumes equidistant samples, so if large sampling irregularities exist, this will be problematic! You can switch this function off with the "do_aa_filter" config entry (on by default).')
+                            DATA = pop_eegfiltnew(DATA, [], newSRate/2*0.8); % low-pass filter such that the stopband edge is the neq nyquist freq
+                        end
+                        
                         [DATA]       = resampleToTime(DATA, newSRate, eegTimes, DATA.etc.starttime);
+%                         nanbegin = DATA.times(find(~any(isnan(DATA.data)),1,'first'));
+%                         nanend = DATA.times(find(~any(isnan(DATA.data)),1,'last'));
+%                         clear y_final
+% 
+%                         for i_chan = 1:DATA.nbchan
+%                             [y, ty] = resample(DATA.data(i_chan,:),DATA.times/1000,250,'pchip');
+%                             ty = ty*1000;
+%                             % replace extrapolated values with nan (it shouldnt do it but for some reason it does...)
+%                             y(1:find(ty>nanbegin,1,'first')-1) = deal(nan);
+%                             y(find(ty<nanend,1,'last')+1:end) = deal(nan);
+%                             y_final(i_chan,:) = y;
+%                         end
+%                         DATA.times = ty;
+%                         DATA.data = y_final;
+%                         
+%                         % check beginning of data
+%                         sampleshift = round(DATA.etc.starttime*1000/(1/newSRate*1000));
+%                         if sampleshift < 0 % negative shift = need to cut data in the beginning
+%                             DATA.data   = DATA.data(:,1-sampleshift:end);
+%                         elseif sampleshift > 0 % positive shift = need to add nans
+%                             DATA.data   = [nan(DATA.nbchan,sampleshift) DATA.data];
+%                         end % shift of 0 means nothing needs to be changed
+%                         
+%                         % check end of data
+%                         if size(DATA.data,2) > length(eegTimes) % need to cut data short
+%                             DATA.data   = DATA.data(:,1:length(eegTimes));
+%                         elseif size(DATA.data,2) < length(eegTimes) % need to add nans
+%                             DATA.data   = [DATA.data nan(DATA.nbchan,length(eegTimes)-size(DATA.data,2))];
+%                         end % if length is perfect and shift is 0, nothing needs to be changed
+%                         
+%                         % fix metadata
+%                         DATA.srate  = newSRate;
+%                         DATA.times  = eegTimes;
+%                         DATA.pnts   = length(eegTimes);
+%                         DATA.xmax   = DATA.times(end)/1000;
+%                         DATA.xmin   = 0;
                     else
                         disp(['Data file ' dataFiles{1} ' using nominal srate!'])
                         assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{1} ' was specified to use nominal srate, but none was found!'])
