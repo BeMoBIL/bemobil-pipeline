@@ -803,12 +803,20 @@ for iSub = 1:numel(subDirList)
         end
         
         % save fig
-        for i = 1:length(importfigs)
-            savefig(importfigs(i),...
+        if length(importfigs) == 1
+            savefig(importfigs,...
                 fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']))
-            print(importfigs(i),...
+            print(importfigs,...
                 fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']),'-dpng')
-            close(importfigs(i))
+            close(importfigs)
+        else
+            for i = 1:length(importfigs)
+                savefig(importfigs(i),...
+                    fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']))
+                print(importfigs(i),...
+                    fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']),'-dpng')
+                close(importfigs(i))
+            end
         end
         
     end

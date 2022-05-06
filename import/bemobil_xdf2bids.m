@@ -578,8 +578,24 @@ end
 xdfmarkers(logical(idx_exclude)) = [];
 
 %% plot raw data
-times_stamp_1 = xdfmarkers{1}.time_stamps(1);
-times_stamp_2 = xdfmarkers{1}.time_stamps(end);
+times_stamp_1 = inf;
+times_stamp_2 = 0;
+
+event_1 = '';
+event_2 = '';
+
+for i_markerstream = 1:length(xdfmarkers)
+    
+    if xdfmarkers{i_markerstream}.time_stamps(1) < times_stamp_1
+        times_stamp_1 = xdfmarkers{i_markerstream}.time_stamps(1);
+        event_1 = xdfmarkers{i_markerstream}.time_series(1);
+    end
+    if xdfmarkers{i_markerstream}.time_stamps(end) > times_stamp_2
+        times_stamp_2 = xdfmarkers{i_markerstream}.time_stamps(end);
+        event_2 = xdfmarkers{i_markerstream}.time_series(end);
+    end
+    
+end
 
 for i=1:length(xdfeeg)
     eeg_times_1{i} = find(xdfeeg{i}.time_stamps > times_stamp_1-1 & xdfeeg{i}.time_stamps < times_stamp_1+2);
@@ -600,7 +616,7 @@ raw_fig = figure('color','w','position',[1 1 1920 1080]);
 sgtitle(['Raw data from ' cfg.dataset],'interpreter','none')
 
 subplot(211); hold on; grid on; grid(gca,'minor')
-title(strjoin(['First event: "' xdfmarkers{1}.time_series(1) '"']),'interpreter','none')
+title(strjoin(['First event: "' event_1 '"']),'interpreter','none')
 yticks(-1)
 yticklabels('')
 plot([times_stamp_1 times_stamp_1]-times_stamp_1, [-1 100], 'k')
@@ -652,7 +668,7 @@ ax = gca;
 ax.YAxis.MinorTickValues = ax.YAxis.Limits(1):0.2:ax.YAxis.Limits(2);
 
 subplot(212); hold on; grid on; grid(gca,'minor')
-title(strjoin(['Last event: "' xdfmarkers{1}.time_series(end) '"']),'interpreter','none')
+title(strjoin(['Last event: "' event_2 '"']),'interpreter','none')
 yticks(-1)
 yticklabels('')
 plot([times_stamp_2 times_stamp_2]-times_stamp_2, [-1 100], 'k')
@@ -682,7 +698,7 @@ for i=1:length(xdfmotion)
         ~contains(allchanlabels,'ori'),1,'first');
     
     my_yticks = yticks;
-    plot(xdfmotion{i}.time_stamps(motion_times_1{i})-times_stamp_1 ,normalize(xdfmotion{i}.time_series(idx,motion_times_1{i}),...
+    plot(xdfmotion{i}.time_stamps(motion_times_2{i})-times_stamp_2 ,normalize(xdfmotion{i}.time_series(idx,motion_times_2{i}),...
         'range',[my_yticks(end)+1 my_yticks(end)+2]), 'color', [78 165 216]/255)
     yticks([yticks my_yticks(end)+1.5])
     yticklabels([yticklabels
