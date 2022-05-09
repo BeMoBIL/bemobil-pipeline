@@ -13,8 +13,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.task                   = 'rotation';                                                         % optional 
 %       config.acquisition_time       = [2021,9,30,18,14,0.00];                                             % optional ([YYYY,MM,DD,HH,MM,SS]) 
 %       config.load_xdf_flags         = {'Verbose',0}                                                       % optional
-%       config.exclude_markerstreams  = {'markerstream to exclude 1', 'markerstream to exclude 2'}          % optional
-%       config.continuousstreams      = {'streamA' 'streamB'}                                               % optional override automatic detection (by default any stream with srate > 20hz is defined as continuous)
+%       config.markerstreams          = {'markerstream 1', 'event stream 2'}                                % optional, by default all streams with the types "event", "events", "marker", "markers" (not case sensitive) containing at least one entry are defined as markerstreams
 %
 % EEG parameters 
 %--------------------------------------------------------------------------
@@ -126,8 +125,7 @@ config = checkfield(config, 'acquisition_time', [1800,12,31,5,5,5.000], 'default
 %--------------------------------------------------------------------------
 config = checkfield(config, 'task', 'DefaultTask', 'DefaultTask');
 config = checkfield(config, 'load_xdf_flags',{'Verbose',1},'{''Verbose'',1}');
-config = checkfield(config, 'exclude_markerstreams',{},'{}');
-config = checkfield(config, 'continuousstreams',{},'{}');
+config = checkfield(config, 'markerstreams',{},'all streams with the types "event", "events", "marker", "markers" (not case sensitive) containing at least one entry are defined as markerstreams');
 
 % validate file name parts 
 %--------------------------------------------------------------------------
@@ -437,7 +435,8 @@ disp('Loading .xdf streams ...')
 streams                  = load_xdf(cfg.dataset,config.load_xdf_flags{:});
 
 % initialize an array of booleans indicating whether the streams are continuous
-iscontinuous = false(size(streams));
+ismarker = false(size(streams));
+emptystream = false(size(streams));
 
 names = {};
 
@@ -446,60 +445,38 @@ for i=1:numel(streams)
     
     names{i}           = streams{i}.info.name;
     
-    % if the nominal srate is non-zero, the stream may be considered continuous
-    if ~(str2num(streams{i}.info.nominal_srate) == 0)
+    num_samples  = numel(streams{i}.time_stamps);
+    
+    emptystream(i) = num_samples == 0;
+    
+    if (~isfield(streams{i}.info, 'effective_srate') || isempty(streams{i}.info.effective_srate)) && num_samples > 1
+        % in case effective srate field value is missing, add it, needs 2 samples to compute effective srate
         
-        num_samples  = numel(streams{i}.time_stamps);
-        nominalSRate = str2double(streams{i}.info.nominal_srate); 
+        t_begin      = streams{i}.time_stamps(1);
+        t_end        = streams{i}.time_stamps(end);
+        duration     = t_end - t_begin;
         
-        if num_samples > 20 && nominalSRate > 0 % assume at least 20 samples in a continuous data stream
-
-            iscontinuous(i) =  true;
-            t_begin      = streams{i}.time_stamps(1);
-            t_end        = streams{i}.time_stamps(end);
-            duration     = t_end - t_begin;
-            
-            if ~isfield(streams{i}.info, 'effective_srate')
-                % in case effective srate field is missing, add one
-                streams{i}.info.effective_srate = (num_samples - 1) / duration;
-            elseif isempty(streams{i}.info.effective_srate)
-                % in case effective srate field value is missing, add one
-                streams{i}.info.effective_srate = (num_samples - 1) / duration;
-            end
-            
-        end
-        
-    else
-        try
-            num_samples  = numel(streams{i}.time_stamps);
-            t_begin      = streams{i}.time_stamps(1);
-            t_end        = streams{i}.time_stamps(end);
-            duration     = t_end - t_begin;
-            
-            % if sampling rate is higher than 20 Hz,
-            % the stream is considered continuous
-            if (((num_samples - 1) / duration >= 20) || contains(lower(streams{i}.info.name),lower(config.continuousstreams))) && duration > 1
-                iscontinuous(i) =  true;
-                if ~isfield(streams{i}.info, 'effective_srate')
-                    % in case effective srate field is missing, add one
-                    streams{i}.info.effective_srate = (num_samples - 1) / duration;
-                elseif isempty(streams{i}.info.effective_srate)
-                    % in case effective srate field value is missing, add one
-                    streams{i}.info.effective_srate = (num_samples - 1) / duration;
-                end
-            end
-        catch
-        end
+        streams{i}.info.effective_srate = (num_samples - 1) / duration;
     end
+    
+    % at least one event must be present for the stream to be considered an event stream
+    ismarker(i) =  contains(streams{i}.info.type,{'marker','markers','event','events'},'IgnoreCase',true) && num_samples > 0;
+         
 end
 
 xdfeeg = {};
 if importEEG
     eegStreamName = config.eeg.stream_name; 
-    xdfeeg        = streams(contains(lower(names),lower(eegStreamName)) & iscontinuous);
+    xdfeeg        = streams(contains(lower(names),lower(eegStreamName)) & ~ismarker & ~emptystream);
+    
+    for i_thisstream = 1:length(xdfeeg)
+        disp(['Found EEG stream: ' xdfeeg{i_thisstream}.info.name])
+    end
     
     if isempty(xdfeeg)
         
+        lower(names)
+        lower(eegStreamName)
         error('No EEG streams found - check whether stream_name match the names of streams in .xdf')
         
     elseif numel(xdfeeg) > 1 && (~isfield(config,'eeg_index') || isempty(config.eeg_index))
@@ -528,9 +505,15 @@ if importMotion
         motionStreamNames{Si}   = config.motion.streams{Si}.name;
     end
     
-    xdfmotion   = streams(contains(lower(names),lower(motionStreamNames)) & iscontinuous);
+    xdfmotion   = streams(contains(lower(names),lower(motionStreamNames)) & ~ismarker & ~emptystream);
+    
+    for i_thisstream = 1:length(xdfmotion)
+        disp(['Found MOTION stream: ' xdfmotion{i_thisstream}.info.name])
+    end
     
     if isempty(xdfmotion)
+        lower(names)
+        lower(motionStreamNames)
         error('Configuration field motion specified but no streams found - check whether stream_name match the names of streams in .xdf')
     end
 
@@ -541,7 +524,11 @@ if importPhys
     for Si = 1:numel(config.phys.streams)
         physioStreamNames{Si}   = config.phys.streams{Si}.stream_name;
     end
-    xdfphysio   = streams(contains(lower(names),lower(physioStreamNames)) & iscontinuous);
+    xdfphysio   = streams(contains(lower(names),lower(physioStreamNames)) & ~ismarker & ~emptystream);
+    
+    for i_thisstream = 1:length(xdfphysio)
+        disp(['Found PHYSIO stream: ' xdfphysio{i_thisstream}.info.name])
+    end
     
     if isempty(xdfphysio)
         lower(names)
@@ -566,16 +553,17 @@ if importPhys
     end
 end
 
-xdfmarkers  = streams(~iscontinuous);
-idx_exclude = [];
-for i = 1:length(xdfmarkers)
-    idx_exclude(i) = isempty(xdfmarkers{i}.time_series) || contains(xdfmarkers{i}.info.name,config.exclude_markerstreams,'IgnoreCase',true);
-    
-    if idx_exclude(i)
-        warning(['Removing marker stream ' xdfmarkers{i}.info.name ' containing ' num2str(length(xdfmarkers{i}.time_series)) ' markers!'])
-    end
+if ~isempty(config.markerstreams)
+    disp('Using defined marker streams:')
+    xdfmarkers   = streams(contains(lower(names),config.markerstreams,'IgnoreCase',true));
+else
+    disp('Using default marker streams according to stream type:')
+    xdfmarkers  = streams(ismarker);
 end
-xdfmarkers(logical(idx_exclude)) = [];
+
+for i_thisstream = 1:length(xdfmarkers)
+    disp(['Found EVENT MARKER stream: ' xdfmarkers{i_thisstream}.info.name])
+end
 
 %% plot raw data
 times_stamp_1 = inf;
