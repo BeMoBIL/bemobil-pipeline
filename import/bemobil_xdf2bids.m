@@ -1093,6 +1093,8 @@ if eventsFound
     fwrite(efid, eString); fclose(efid);
 end
 
+disp('XDF to BIDS conversion finished.')
+
 end
 
 
