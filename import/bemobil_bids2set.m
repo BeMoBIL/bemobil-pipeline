@@ -794,11 +794,13 @@ for iSub = 1:numel(subDirList)
                 close(importfigs)
             else
                 for i = 1:length(importfigs)
-                    savefig(importfigs(i),...
-                        fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']))
-                    print(importfigs(i),...
-                        fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']),'-dpng')
-                    close(importfigs(i))
+                    if ishandle(importfigs(i))
+                        savefig(importfigs(i),...
+                            fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']))
+                        print(importfigs(i),...
+                            fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']),'-dpng')
+                        close(importfigs(i))
+                    end
                 end
             end
         end
