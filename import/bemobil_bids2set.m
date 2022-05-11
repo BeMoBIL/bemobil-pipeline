@@ -310,7 +310,6 @@ for iSub = 1:numel(subDirList)
     % iterate over sessions
     for iSes = 1:numel(config.session_names)
 
-        importfigs
         clear importfigs
         % find all EEG data
         eegFiles = {subjectFiles(contains({subjectFiles.name}, [config.session_names{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
