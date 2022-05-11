@@ -310,6 +310,8 @@ for iSub = 1:numel(subDirList)
     % iterate over sessions
     for iSes = 1:numel(config.session_names)
 
+        importfigs
+        clear importfigs
         % find all EEG data
         eegFiles = {subjectFiles(contains({subjectFiles.name}, [config.session_names{iSes} '_EEG']) & contains({subjectFiles.name}, '_old.set')).name};
         eegFiles = natsortfiles(eegFiles);
@@ -784,19 +786,21 @@ for iSub = 1:numel(subDirList)
         end
 
         % save fig
-        if length(importfigs) == 1
-            savefig(importfigs,...
-                fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']))
-            print(importfigs,...
-                fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']),'-dpng')
-            close(importfigs)
-        else
-            for i = 1:length(importfigs)
-                savefig(importfigs(i),...
-                    fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']))
-                print(importfigs(i),...
-                    fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']),'-dpng')
-                close(importfigs(i))
+        if exist('importfigs','var')
+            if length(importfigs) == 1
+                savefig(importfigs,...
+                    fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']))
+                print(importfigs,...
+                    fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_imported-data']),'-dpng')
+                close(importfigs)
+            else
+                for i = 1:length(importfigs)
+                    savefig(importfigs(i),...
+                        fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']))
+                    print(importfigs(i),...
+                        fullfile(targetDir, subDirList(iSub).name, [subDirList(iSub).name '_' config.session_names{iSes} '_run-' num2str(i) '_imported-data']),'-dpng')
+                    close(importfigs(i))
+                end
             end
         end
 

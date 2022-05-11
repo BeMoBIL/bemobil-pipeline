@@ -812,6 +812,7 @@ if importEEG % This loop is always executed in current version
     disp(['EEG sampling frequency is ' num2str(eegcfg.eeg.SamplingFrequency) 'Hz.'])
     
     % read in the event stream (synched to the EEG stream)
+    eventsFound = 0;
     if ~isempty(xdfmarkers)
         
         if any(cellfun(@(x) ~isempty(x.time_series), xdfmarkers))
