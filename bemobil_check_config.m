@@ -43,6 +43,7 @@ all_config_fields = {
     'dipfitted_filename', {'dipfitted.set'}
     'preprocessed_and_ICA_filename', {'preprocessed_and_ICA.set'}
     'single_subject_cleaned_ICA_filename', {'cleaned_with_ICA.set'}
+    'merged_motion_filename', {'merged_MOTION.set'}
     'processed_motion_filename', {'motion_processed.set'}
     'channels_to_remove',{[]}
     'eog_channels',{[]}
@@ -102,3 +103,9 @@ for i_field = 1:length(all_config_fields)
 end
 
 disp('All fields checked!')
+
+try 
+    pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
+catch
+    warning('Could NOT edit EEGLAB memory options!!'); 
+end

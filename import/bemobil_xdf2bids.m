@@ -549,6 +549,15 @@ if importPhys
                 end
                 
             end
+            
+            % if no entry exists for channels at all
+            if ~isfield(xdfphysio{i_phys}.info.desc,'channels')
+                for i_chan = 1:str2num(xdfphysio{i_phys}.info.channel_count)
+                    xdfphysio{i_phys}.info.desc.channels.channel{i_chan}.label = [xdfphysio{i_phys}.info.name '_' num2str(i_chan)];
+                    xdfphysio{i_phys}.info.desc.channels.channel{i_chan}.type = 'physio';
+                    xdfphysio{i_phys}.info.desc.channels.channel{i_chan}.unit = 'au';
+                end
+            end
         end
     end
 end
@@ -821,16 +830,16 @@ if importEEG % This loop is always executed in current version
         end
     end
     
-    if isfield(config.eeg, 'elec_struct')
+    if isfield(config.eeg, 'elec_struct') && ~isempty(config.eeg.elec_struct)
         eegcfg.elec                         = config.eeg.elec_struct;
-    elseif isfield(config.eeg, 'chanloc')
+    elseif isfield(config.eeg, 'chanloc') && ~isempty(config.eeg.chanloc)
         try
             elec = ft_read_sens(config.eeg.chanloc);
         catch
             error(['Could not read electrode locations from file "' config.eeg.chanloc '"'])
         end
         eegcfg.elec = elec; 
-        if isfield(config.eeg, 'chanloc_newname')
+        if isfield(config.eeg, 'chanloc_newname') && ~isempty(config.eeg.chanloc_newname)
             eegcfg.elec.label = config.eeg.chanloc_newname; 
         end
     end
