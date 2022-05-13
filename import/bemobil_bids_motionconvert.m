@@ -1,9 +1,7 @@
 
-function motionOut = bemobil_bids_motionconvert(motionIn, objects, trackSysConfig, streamsConfig)
+function motionOut = bemobil_bids_motionconvert(motionIn, objects, streamsConfig)
 % This function performs minimal preprocessing and channel sorting for motion data 
 %--------------------------------------------------------------------------
-
-disp(['Coverting motion data from tracking system ' trackSysConfig.name ' to BIDS format'])
 
 newCell = {}; 
 % check if object input is a nested cell
@@ -45,6 +43,10 @@ for iM = 1:numel(motionIn)
     quaternionKeyword       = 'quat';
     quaternionNames         = {};
     eulerComponents         = {'x','y','z'};
+    
+    
+    disp(['Coverting motion data from stream ' streamsConfig{iM}.xdfname ' to BIDS format'])
+
     
     if isfield(streamsConfig{iM}, 'quaternions')
         if isfield(streamsConfig{iM}.quaternions, 'channel_names')
@@ -102,14 +104,14 @@ for iM = 1:numel(motionIn)
     end
     
     % missing value (how tracking loss is represented in the stream)
-    if isfield(trackSysConfig, 'missing_values')
-        switch trackSysConfig.missing_values
+    if isfield(streamsConfig, 'missing_values')
+        switch streamsConfig.missing_values
             case '0'
                 missingval = 0;
             case 'NaN'
                 missingval = NaN;
             otherwise
-                warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.name ': it should be "0" or "NaN" formatted as string.'])
+                warning(['Unrecognized value for field "missing_values" in tracking system ' streamsConfig.bidsname ': it should be "0" or "NaN" formatted as string.'])
                 warning('Taking default value NaN for missing samples.')
                 missingval = NaN;
         end
@@ -276,8 +278,8 @@ for iM = 1:numel(motionIn)
         % construct a latency channel
         latency  = motionStream.time{1};
         dataPost = [dataPost; latency];
-        motionStream.label{end + 1}                 = [objects{ni} '_latency'];
-        motionStream.hdr.label{end + 1}             = [objects{ni} '_latency'];
+        motionStream.label{end + 1}                 = [streamsConfig.bidsname '_latency'];
+        motionStream.hdr.label{end + 1}             = [streamsConfig.bidsname '_latency'];
         motionStream.hdr.chantype{end + 1}          = 'LATENCY';
         motionStream.hdr.chanunit{end + 1}          = 'seconds';
         motionStream.trial{1}     = dataPost;
@@ -305,12 +307,10 @@ end
 if numel(motionStreamAll) == 1
     % if there is one motion stream, check the config field to decide
     % whether to resample or keep timestamps 
-    doResample      = ~strcmp(trackSysConfig.keep_timestamps, 'on'); 
+    doResample      = false; 
 else
     doResample      = true;
-    if strcmp(trackSysConfig.keep_timestamps, 'on') 
-        warning('Config field keep_timestamps was specified as "on", but there are multiple streams in a single tracking system - resampling...')
-    end
+    warning('There are multiple streams in a single tracking system - resampling...')
 end
 
 [~,maxind] = max(motionsrates);

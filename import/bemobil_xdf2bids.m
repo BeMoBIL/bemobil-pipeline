@@ -36,19 +36,10 @@ function bemobil_xdf2bids(config, varargin)
 % Tracking system 'HTCViveLeftArm' corresponds to xdf stream 'HTCRigidBody1' which contains tracked point 'leftArm'
 % Tracking system 'HTCViveRightArm' corresponds to xdf stream 'HTCRigidBody2' which contains tracked point 'rightArm'
 %
-% How to describe tracking systems in your data :
+% How to describe xdf streams in your data : 
 %
-%       config.motion.tracksys{1}.name                    = 'PhaseSpace';   % required, string, name of the tracking system
-%                                                                           % in case motion metadata are provided, match with fieldname in "motionInfo.motion.TrackingSystems.(fieldname)
-%
-%       config.motion.tracksys{2}.name                    = 'HTCViveLeftArm';
-%
-%       config.motion.tracksys{3}.name                    = 'HTCViveRightArm';
-%
-% How to describe xdf streams in your data and assign them to tracking systems :
-%
-%       config.motion.streams{1}.name                   = 'PhaseSpaceRigidbody'; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
-%       config.motion.streams{1}.tracksys               = 'PhaseSpace';          % required, match with one of the values in "motion.tracksys{}.name"
+%       config.motion.streams{1}.xdfname                = 'PhaseSpaceRigidbody'; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
+%       config.motion.streams{1}.bidsname               = 'PhaseSpace';     % optional, name to be assgined in BIDS file name key-value pair as tracking system name  
 %       config.motion.streams{1}.tracked_points         = {'torso','leftLeg', 'rightLeg'}; %  keyword in channel names, indicating which object (tracked point) is included in the stream
 %                                                                                % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
 %                                                                                % required to be unique in a single tracking system
@@ -60,28 +51,29 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{1}.positions.components   = {'x','y','z'};    % optional, your position components in xdf channel names.
 %       config.motion.streams{1}.positions.keyword      = '_pos';           % optional, string, keyword shared in position channel names but
 %                                                                           % not in other channels. If there is no appropriate keyword, use positions.channel_names field instead.
+%       config.motion.streams{1}.missing_values         = 'NaN'             % optional, string, how to represent missing values in the motion stream. Either '0' or 'NaN' are recognized. Default value 'NaN'
 %
-%       config.motion.streams{2}.name                   = 'HTCRigidbody1';
-%       config.motion.streams{2}.tracksys               = 'HTCViveLeftArm';
+%       config.motion.streams{2}.xdfname                = 'HTCRigidbody1';
+%       config.motion.streams{2}.bidsname               = 'HTCViveLeftArm';
 %       config.motion.streams{2}.tracked_points         = 'leftArm'; 
 %       config.motion.streams{2}.positions.channel_names = {'LeftArm_X';'LeftArm_Y'; 'LeftArm_Z' }; % optional, cell array of size (3 X number of tracked points)
 %                                                                            % full names of position channels, in case keyword + components search does not work 
 %       config.motion.streams{2}.quaternions.channel_names  = {'LeftArm_quat_W';'LeftArm_quat_X'; 'LeftArm_quat_Y'; 'LeftArm_quat_Z'}; % optional, cell array of size (4 X number of tracked points)
 %                                                                            % full names of quaternion channels, in case keyword + components search does not work
 % 
-%       config.motion.streams{3}.name                   = 'HTCRigidbody2'; 
-%       config.motion.streams{3}.tracksys               = 'HTCViveRightArm'; 
+%       config.motion.streams{3}.xdfname                = 'HTCRigidbody2'; 
+%       config.motion.streams{3}.bidsname               = 'HTCViveRightArm'; 
 %       config.motion.streams{3}.tracked_points         = 'rightArm'; 
 %
 % How to change units in channels.tsv 
+%
 %       config.motion.POS.unit                         = 'vm';              % optional, in case you want to use custom unit
 %                                                                           % same principle can be applied to 'POS', 'ORNT', 'VEL', 'ANGVEL', 'ACC', 'ANGACC', 'MAGN', 'JNTANG', 'LATENCY'
 %                                                                           % for default units check the section of this script where motion_type variable is defined
 %
 % PHYSIO parameters
 %--------------------------------------------------------------------------
-%       config.phys.streams{1}.stream_name          = 'force1';             % optional
-%       config.phys.skip_interp                     = 1;                    % optional, logical. Set as 1 if you wish to not correct intersample intervals by interpolation for physio data 
+%       config.phys.streams{1}.stream_name             = 'force1';             % optional
 %
 %--------------------------------------------------------------------------
 % Optional Inputs :
@@ -160,29 +152,13 @@ end
 %--------------------------------------------------------------------------
 if importMotion
     
-    config.motion = checkfield(config.motion, 'tracksys', 'required', '');
     config.motion = checkfield(config.motion, 'streams', 'required', '');
-    
-    tracksysNames       = {};
-    
-    % check tracking system fields
-    for Ti = 1:numel(config.motion.tracksys)
-        config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'name', 'required', '');
-        config.motion.tracksys{Ti} = checkfield(config.motion.tracksys{Ti}, 'keep_timestamps', 'on', 'on');
-        if contains(config.motion.tracksys{Ti}.name,pat)
-            error('Tracking system name MUST NOT contain space or underscore. Please change tracking system name.')
-        end
-        tracksysNames{end+1} = config.motion.tracksys{Ti}.name;
-    end
-    
+
     % check stream fields
     for Si = 1:numel(config.motion.streams)
-        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'name', 'required', '');
-        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracksys', 'required', '');
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'xdfname', 'required', '');
+        config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'bidsname', 'required', '');
         config.motion.streams{Si} = checkfield(config.motion.streams{Si}, 'tracked_points', 'required', '');
-        
-        % check if tracksys name fields match
-        assert(ismember(config.motion.streams{Si}.tracksys, tracksysNames))
     end
     
     % default channel types and units
@@ -203,7 +179,6 @@ end
 if importPhys
     
     config.phys = checkfield(config.phys, 'streams', 'required', '');
-    config.phys = checkfield(config.phys, 'skip_interp', 0, '0');
     for Si = 1:numel(config.phys.streams)
         config.phys.streams{Si} = checkfield(config.phys.streams{Si}, 'stream_name', 'required', '');
     end
@@ -276,9 +251,10 @@ if importMotion
     
     % check how many different tracking systems are specified
     for Si = 1:numel(config.motion.streams)
-        streamNames{Si}     = config.motion.streams{Si}.name;
-        trackSysNames{Si}   = config.motion.streams{Si}.tracksys;
-        trackedPointNames{Si} = config.motion.streams{Si}.tracked_points;
+
+        streamNames{Si}     = config.motion.streams{Si}.xdfname;
+        trackSysNames{Si}   = config.motion.streams{Si}.bidsname;
+        trackedPointNames{Si} = config.motion.streams{Si}.tracked_points; 
         
         if isfield(config.motion.streams{Si}, 'tracked_points_anat')
             anatomicalNames{Si} = config.motion.streams{Si}.tracked_points_anat;
@@ -341,7 +317,7 @@ if importMotion
                 end
                 
                 % identify tracking systems in metadata but not in the data
-                [trackSysNoData, indrm] = setdiff(trackSysInMeta, trackSysInData);
+                [~, indrm] = setdiff(trackSysInMeta, trackSysInData);
                 
                 % remove unused tracking systems from metadata struct
                 motionInfo.motion.TrackingSystems(indrm) = [];
@@ -510,7 +486,7 @@ xdfmotion = {};
 if importMotion
     
     for Si = 1:numel(config.motion.streams)
-        motionStreamNames{Si}   = config.motion.streams{Si}.name;
+        motionStreamNames{Si}   = config.motion.streams{Si}.xdfname;
     end
     
     xdfmotion   = streams(contains(lower(names),lower(motionStreamNames)) & ~ismarker & ~emptystream);
@@ -944,8 +920,9 @@ if importMotion
         end
         
         streamInds          = []; % store indices of streams in this tracksys, within .xdf data
-        streamConfigInds    = []; % store indices of streams in this tracksys, within config.motion.streams field
-        streamConfigNames    = cellfun(@(x) x.name, config.motion.streams, 'UniformOutput', 0)'; % stream names in config.motion.streams
+        streamConfigInds    = []; % store indices of streams in this tracksys, within config.motion.streams field  
+        streamConfigNames    = cellfun(@(x) x.xdfname, config.motion.streams, 'UniformOutput', 0)'; % stream names in config.motion.streams
+
         for Fi = 1:numel(ftmotion)
             for MSNi = 1:numel(motionStreamNames)
                 if contains(lower(ftmotion{Fi}.hdr.orig.name),lower(motionStreamNames{MSNi}))
@@ -955,12 +932,11 @@ if importMotion
             end
         end
         
-        % select tracking system and stream configuration
-        trackSysConfig      = config.motion.tracksys{strcmp(tracking_systems, trackSysInData{tsi})};
+        % select stream configuration
         streamsConfig       = config.motion.streams(streamConfigInds);
         
         % quat2eul conversion, unwrapping of angles, resampling, wrapping back to [pi, -pi], and concatenating
-        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, trackSysConfig, streamsConfig);
+        motion = bemobil_bids_motionconvert(ftmotion(streamInds), trackedPointNames, streamsConfig);
         
         % channel metadata
         %------------------------------------------------------------------
@@ -1049,20 +1025,13 @@ if importPhys
         ftphysio{iP} = stream2ft(xdfphysio{iP});
     end
     
-    % check if user wants to skip interpolation
-    if config.phys.skip_interp
-        if numel(ftphysio) > 1
-            warning('"config.phys.skip_interp" is on, but there are multiple physio streams to be concatenated')
-            warning('Streams will still be resampled')
-        else
-            disp('Interpolation for correcting intersample interval will not be applied to generic physio data.')
-            disp('Set "config.phys.skip_interp" to 1 only when you are sure that intersample intervals are regular enough.')
-        end
-    else
+    if numel(ftphysio) > 1
+        warning('"config.phys.skip_interp" is on, but there are multiple physio streams to be concatenated')
+        warning('Streams will still be resampled')
     end
     
     % resample data to match the stream of highest srate (no custom processing supported for physio data yet)
-    physio = feval(physioCustom, ftphysio, physioStreamNames, ~config.phys.skip_interp);
+    physio = feval(physioCustom, ftphysio, physioStreamNames, config.subject, si, ri, 0);
     
     % construct physio metadata
     physiocfg               = cfg;                                           % copy general fields
