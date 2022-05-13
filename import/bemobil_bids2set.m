@@ -21,11 +21,12 @@ function bemobil_bids2set(config)
 %                                                                             Resulting chanloc will take labels from eloc file.
 %                                                                             Use empty string for a missing chanloc
 %                                                                                   example : {'', 'N01'; 'n2', 'N02'; ...}
-%       config.other_data_types        = {'motion','physio'};                % optional, default value is {}, required
+%       config.other_data_types        = {'motion','physio'};               % optional, default value is {}, required
 %                                                                               if you want to load non-EEG data. Only
-%                                                                               add the data type you have in oyur BIDS
+%                                                                               add the data type you have in your BIDS
 %                                                                               data.
-%
+%       config.use_nominal_srate       = {'HTCVive','PhaseSpace'...};       % optional, in case you want to rely on nominal srate rather than time stamps for time synchronization, enter the names of corresponding tracksys names from motion bids files
+%       
 %
 % Out
 %       none
