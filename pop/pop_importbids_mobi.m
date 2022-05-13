@@ -686,8 +686,6 @@ for iSubject = 2:size(bids.participants,1)
                         
                         % coordinate system file (potentially shared with EEG)
                         importCoord 	= false;
-%                         coordFileMotion = searchparent(subjectFolder{iFold}, '*_coordsystem.json');
-%                         coordData       = loadfile(coordFileMotion.name, coordFileMotion);
                         
                     case 'physio'
                         
