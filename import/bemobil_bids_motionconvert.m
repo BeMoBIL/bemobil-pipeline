@@ -25,12 +25,12 @@ for iM = 1:numel(motionIn)
     % Finding quaternion data
     %--------------------------------------------------------------------------
     % method 1 : keyword + components
-    % trackSysConfig.quaternions.keyword              = '_quat';
-    % trackSysConfig.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
+    % streamsConfig.quaternions.keyword              = '_quat';
+    % streamsConfig.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
     %                                                                           % if this rule is violated, use channel_names option
     %
     % method 2 : channel_names
-    % trackSysConfig.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ...
+    % streamsConfig.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ...
     %                                                    'headRigid_rotX', 'rightHand_rotX';, ...
     %                                                    'headRigid_rotY', 'rightHand_rotY';, ...
     %                                                    'headRigid_rotZ', 'rightHand_rotZ'};
@@ -67,11 +67,11 @@ for iM = 1:numel(motionIn)
     % Finding position data
     %--------------------------------------------------------------------------
     % method 1 : keyword + components
-    % trackSysConfig.positions.keyword              = '_pos_';
-    % trackSysConfig.positions.components           = {'x', 'y', 'z'};
+    % streamsConfig.positions.keyword              = '_pos_';
+    % streamsConfig.positions.components           = {'x', 'y', 'z'};
     %
     % method 2 : channel_names
-    % trackSysConfig.positions.channel_names        = {'headRigid_posX', 'rightHandX';, ...
+    % streamsConfig.positions.channel_names        = {'headRigid_posX', 'rightHandX';, ...
     %                                                    'headRigid_posY', 'rightHandY';, ...
     %                                                    'headRigid_posZ', 'rightHandZ'};
     %
@@ -109,7 +109,7 @@ for iM = 1:numel(motionIn)
             case 'NaN'
                 missingval = NaN;
             otherwise
-                warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.TrackingSystemName ': it should be "0" or "NaN" formatted as string.'])
+                warning(['Unrecognized value for field "missing_values" in tracking system ' trackSysConfig.name ': it should be "0" or "NaN" formatted as string.'])
                 warning('Taking default value NaN for missing samples.')
                 missingval = NaN;
         end
@@ -229,7 +229,6 @@ for iM = 1:numel(motionIn)
             position                    = dataPre(cartIndices,:);
             occindices                  = find(position(1,:) == missingval);
             position(:,occindices)      = nan;
-%             position            = fillmissing(position', 'pchip')';
         else
            position     = []; 
            cartIndices  = [];  
