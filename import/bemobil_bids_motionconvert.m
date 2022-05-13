@@ -23,12 +23,12 @@ for iM = 1:numel(motionIn)
     % Finding quaternion data
     %--------------------------------------------------------------------------
     % method 1 : keyword + components
-    % streamsConfig.quaternions.keyword              = '_quat';
-    % streamsConfig.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
+    % streamsConfig{streamIndex}.quaternions.keyword              = '_quat';
+    % streamsConfig{streamIndex}.quaternions.components           = {'w', 'x', 'y', 'z'};   % components are assumed to follow an "_", e.g., "quat_w"
     %                                                                           % if this rule is violated, use channel_names option
     %
     % method 2 : channel_names
-    % streamsConfig.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ...
+    % streamsConfig{streamIndex}.quaternions.channel_names        = {'headRigid_rotW', 'rightHand_rotW';, ...
     %                                                    'headRigid_rotX', 'rightHand_rotX';, ...
     %                                                    'headRigid_rotY', 'rightHand_rotY';, ...
     %                                                    'headRigid_rotZ', 'rightHand_rotZ'};
@@ -69,11 +69,11 @@ for iM = 1:numel(motionIn)
     % Finding position data
     %--------------------------------------------------------------------------
     % method 1 : keyword + components
-    % streamsConfig.positions.keyword              = '_pos_';
-    % streamsConfig.positions.components           = {'x', 'y', 'z'};
+    % streamsConfig{streamIndex}.positions.keyword              = '_pos_';
+    % streamsConfig{streamIndex}.positions.components           = {'x', 'y', 'z'};
     %
     % method 2 : channel_names
-    % streamsConfig.positions.channel_names        = {'headRigid_posX', 'rightHandX';, ...
+    % streamsConfig{streamIndex}.positions.channel_names        = {'headRigid_posX', 'rightHandX';, ...
     %                                                    'headRigid_posY', 'rightHandY';, ...
     %                                                    'headRigid_posZ', 'rightHandZ'};
     %
@@ -104,14 +104,14 @@ for iM = 1:numel(motionIn)
     end
     
     % missing value (how tracking loss is represented in the stream)
-    if isfield(streamsConfig, 'missing_values')
-        switch streamsConfig.missing_values
+    if isfield(streamsConfig{iM}, 'missing_values')
+        switch streamsConfig{iM}.missing_values
             case '0'
                 missingval = 0;
             case 'NaN'
                 missingval = NaN;
             otherwise
-                warning(['Unrecognized value for field "missing_values" in tracking system ' streamsConfig.bidsname ': it should be "0" or "NaN" formatted as string.'])
+                warning(['Unrecognized value for field "missing_values" in tracking system ' streamsConfig{iM}.bidsname ': it should be "0" or "NaN" formatted as string.'])
                 warning('Taking default value NaN for missing samples.')
                 missingval = NaN;
         end
@@ -278,8 +278,8 @@ for iM = 1:numel(motionIn)
         % construct a latency channel
         latency  = motionStream.time{1};
         dataPost = [dataPost; latency];
-        motionStream.label{end + 1}                 = [streamsConfig.bidsname '_latency'];
-        motionStream.hdr.label{end + 1}             = [streamsConfig.bidsname '_latency'];
+        motionStream.label{end + 1}                 = [streamsConfig{iM}.bidsname '_latency'];
+        motionStream.hdr.label{end + 1}             = [streamsConfig{iM}.bidsname '_latency'];
         motionStream.hdr.chantype{end + 1}          = 'LATENCY';
         motionStream.hdr.chanunit{end + 1}          = 'seconds';
         motionStream.trial{1}     = dataPost;
