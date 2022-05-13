@@ -6,7 +6,7 @@
 %   >>  [ ALLEEG EEG CURRENTSET ] = bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET,...
 %    channel_locations_filepath, channels_to_remove, eog_channels, resample_freq,...
 %    out_filename, out_filepath, rename_channels, ref_channel, zaplineConfig)
-% 
+%
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
 %   EEG                     - current EEGLAB EEG structure
@@ -22,7 +22,7 @@
 %   out_filepath            - output filepath OR [] - File will only be saved on disk
 %       if both a name and a path are provided
 %   rename_channels         - cell array of chars, either just one entry, then this entry will be removed from all
-%                               channels (e.g. when they all have a prefix of their xdf stream), or a n x 2 matrix of  
+%                               channels (e.g. when they all have a prefix of their xdf stream), or a n x 2 matrix of
 %                               channel names (from->to)
 %   ref_channel             - label of the reference channel OR [] - if provided a new channel will be created with this
 %                               label and zero values. This means that during resampling the original reference can be
@@ -89,37 +89,37 @@ end
 % artifacts. Neuroimage, 1, 1-13.
 if exist('zaplineConfig','var') && ~isempty(zaplineConfig)
     
-    is_zapline_installed = ~isempty(which('clean_data_with_zapline_plus_eeglab_wrapper'));    
+    is_zapline_installed = ~isempty(which('clean_data_with_zapline_plus_eeglab_wrapper'));
     assert(is_zapline_installed,'Zapline-Plus is missing! Download it from https://github.com/MariusKlug/zapline-plus and add it to your MATLAB path!')
     
     [EEG, plothandles] = clean_data_with_zapline_plus_eeglab_wrapper(EEG, zaplineConfig);
-        
-    if save_file_on_disk 
+    
+    if save_file_on_disk
         disp('Saving ZapLine figures...')
-
-        filenamesplit = strsplit(out_filename,'.set');
-
-        for i_fig = 1:length(plothandles)
         
-            if ~isempty(EEG.etc.zapline.config.noisefreqs(i_fig))
+        filenamesplit = strsplit(out_filename,'.set');
+        
+        if ~isempty(EEG.etc.zapline.config.noisefreqs)
+            for i_fig = 1:length(plothandles)
                 savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
                     '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.fig']))
                 saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
                     '_' matlab.lang.makeValidName(['zapline_' num2str(EEG.etc.zapline.config.noisefreqs(i_fig))]) '.png']))
-            else
-                savefig(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                    '_zapline_nonoise.fig']))
-                saveas(plothandles(i_fig),fullfile(out_filepath,[filenamesplit{1}...
-                    '_zapline_nonoise.png']))
+                close(plothandles(i_fig))
             end
-            close(plothandles(i_fig))
-            
+        else
+            savefig(plothandles,fullfile(out_filepath,[filenamesplit{1}...
+                '_zapline_nonoise.fig']))
+            saveas(plothandles,fullfile(out_filepath,[filenamesplit{1}...
+                '_zapline_nonoise.png']))
+            close(plothandles)
         end
-
-        disp('...done')
+        
     end
     
+    disp('...done')
 end
+
 
 %%
 
@@ -136,15 +136,15 @@ if exist('rename_channels','var') && ~isempty(rename_channels)
     else
         
         for i_pair = 1:size(rename_channels,1)
-
+            
             old_chanidx = find(strcmp({EEG.chanlocs.labels},rename_channels{i_pair,1}));
-
+            
             if ~isempty(old_chanidx)
                 EEG=pop_chanedit(EEG, 'changefield',{old_chanidx 'labels' rename_channels{i_pair,2}});
             else
                 warning(['Did not find channel ' rename_channels{i_pair,1} '. Skipping...'])
             end
-
+            
         end
     end
 end
@@ -157,25 +157,47 @@ if exist('ref_channel','var') && ~isempty(ref_channel)
     EEG.data(end+1,:) = zeros(1, EEG.pnts);
     EEG.chanlocs(end+1).labels = ref_channel;
     
-    EEG = eeg_checkset(EEG);
+    % see if the imported data has extra chanlocs stored and assign it to ref
+    if isfield(EEG.etc, 'extralocs')
+        if ~isempty(EEG.etc.extralocs)
+            for Ri = 1:size(EEG.etc.extralocs,1)
+                if strcmpi('ref', EEG.etc.extralocs{Ri,1}) || strcmpi(ref_channel, EEG.etc.extralocs{Ri,1})
+                    EEG.chanlocs(end).type  =  EEG.chanlocs(end-1).type;
+                    EEG.chanlocs(end).unit  = EEG.chanlocs(end-1).unit;
+                    EEG.chanlocs(end).status =  EEG.chanlocs(end-1).status;
+                    
+                    EEG.chanlocs(end).X =  EEG.etc.extralocs{Ri,2};
+                    EEG.chanlocs(end).Y =  EEG.etc.extralocs{Ri,3};
+                    EEG.chanlocs(end).Z =  EEG.etc.extralocs{Ri,4};
+                    
+                    EEG.chanlocs = convertlocs(EEG.chanlocs, 'cart2all');
+                    EEG.urchanlocs = EEG.chanlocs; 
+                end
+            end
+        end
+    end
     
+    EEG = eeg_checkset(EEG);
     disp('...done.')
     
 end
 
 % 1c) import chanlocs and copy to urchanlocs
-% TODO: check behavior with BIDS loaded datasets that do contain chanlocs
-if ~isempty(channel_locations_filepath)
+if ~isempty(channel_locations_filepath) % chanlocs are read in here
+    disp('Importing channel locations from file.');
     EEG = pop_chanedit(EEG, 'load',...
         {channel_locations_filepath 'filetype' 'autodetect'});
-    disp('Imported channel locations.');
     EEG.urchanlocs = EEG.chanlocs;
-else
+elseif all(~cellfun(@isempty,{EEG.chanlocs.X}))
+    disp('All chanlocs have X coordinates - assuming channel location have been imported.'); 
+else % no chanlocs present, use default chanlocs
+    disp('No chanlocs were provided as path and none were found in the EEG set - looking up standard locs.')
     standard_channel_locations_path =...
         fullfile(fileparts(which('dipfitdefs')),'standard_BESA','standard-10-5-cap385.elp');
     
     EEG = pop_chanedit(EEG,'lookup',standard_channel_locations_path);
 end
+
 
 % this has to happen after loading chanlocs because chanlocs are being completely overwritten in the process
 if exist('ref_channel','var')
