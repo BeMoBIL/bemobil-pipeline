@@ -967,6 +967,12 @@ if importMotion
                 end
             end
             
+            % account for latency channel
+            if contains(lower(motion.hdr.label{ci}), 'latency')
+                motioncfg.channels.tracked_point{end+1}        = 'n/a';
+                motioncfg.channels.placement{end+1}            = 'n/a';
+            end
+            
             motioncfg.channels.component{end+1}    = splitlabel{end};
             
         end
