@@ -1,5 +1,5 @@
-% bemobil_detect_motion_onoffsets detects motion onsets and offsets based on a coars and fine threshold of one or more
-% given channels. If more than one channels are given, the square root of the sum of squares is taken as the detection
+% bemobil_detect_motion_startstops detects motion starts and stops based on a coarse and fine threshold of one or more
+% given channels. If more than one channel is given, the square root of the sum of squares is taken as the detection
 % data. A movement is detected firstly based on a coarse threshold of a given quantile of the data, then a fine
 % threshold is applied afterwards based on the fine threshold quantile in a buffer around the detected coarse movement.
 % Events and used parameters are stored in the EEG.etc struct!
@@ -24,7 +24,7 @@
 %
 
 
-function [EEG_motion, plothandles] = bemobil_detect_motion_onoffsets(EEG_motion,idx_detect,eventlabel,movement_threshold,...
+function [EEG_motion, plothandles] = bemobil_detect_motion_startstops(EEG_motion,idx_detect,eventlabel,movement_threshold,...
     movement_threshold_fine,min_duration,detection_buffer,createplots)
 
 if nargin == 0
@@ -74,7 +74,7 @@ detection_buffer_use = detection_buffer*EEG_motion.srate;
 
 %% apply motion detection algorithm
 
-disp(['Detecting motion onsets and offsets based on channel(s): [' num2str(idx_detect) '], with label(s): ' EEG_motion.chanlocs(idx_detect).labels])
+disp(['Detecting motion starts and stops based on channel(s): [' num2str(idx_detect) '], with label(s): ' strjoin({EEG_motion.chanlocs(idx_detect).labels},', ')])
 disp(' ')
 disp('--------------------------- PLEASE CITE ----------------------------')
 disp(' ')
@@ -86,36 +86,36 @@ disp(' ')
 
 
 durations = [];
-latency_onsets = [];
-latency_offsets = [];
+latency_starts = [];
+latency_stops = [];
 data = EEG_motion.data(idx_detect,:);
 data = sqrt(sum(data.^2,1)); % pythagoras / abs
 
-numberOnsets = 0;
-numberOffsets = 0;
+numberstarts = 0;
+numberstops = 0;
 
 thresholdData = quantile(abs(data),movement_threshold);
 
 movement = false;
 
 timePoint = 1;
-lastOffsetTimePoint = 0;
+laststopTimePoint = 0;
 
 while timePoint <= length(data)-detection_buffer_use
     step = 1;
     if ~movement
         if data(timePoint) > thresholdData
             
-            fineAccThreshold = max(data(max(lastOffsetTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
+            fineAccThreshold = max(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
             
             fineTimePoint = timePoint;
             
-            while data(fineTimePoint) > fineAccThreshold && fineTimePoint > lastOffsetTimePoint + 1
+            while data(fineTimePoint) > fineAccThreshold && fineTimePoint > laststopTimePoint + 1
                 fineTimePoint = fineTimePoint - 1;
             end
             
-            numberOnsets = numberOnsets + 1;
-            latency_onsets(numberOnsets) = fineTimePoint;
+            numberstarts = numberstarts + 1;
+            latency_starts(numberstarts) = fineTimePoint;
             movement = true;
             
             step = fineTimePoint-timePoint+1;
@@ -124,18 +124,18 @@ while timePoint <= length(data)-detection_buffer_use
         end
     else
         if data(timePoint) < fineAccThreshold
-            numberOffsets = numberOffsets + 1;
-            latency_offsets(numberOffsets) = timePoint-1;
+            numberstops = numberstops + 1;
+            latency_stops(numberstops) = timePoint-1;
             movement = false;
-            lastOffsetTimePoint = timePoint;
-            durations(end+1) = (latency_offsets(numberOffsets) - latency_onsets(numberOnsets))/EEG_motion.srate;
+            laststopTimePoint = timePoint;
+            durations(end+1) = (latency_stops(numberstops) - latency_starts(numberstarts))/EEG_motion.srate;
             
             if durations(end) <= min_duration
                 durations(end) = [];
-                latency_onsets(numberOnsets) = [];
-                latency_offsets(numberOffsets) = [];
-                numberOnsets = numberOnsets - 1;
-                numberOffsets = numberOffsets -1;
+                latency_starts(numberstarts) = [];
+                latency_stops(numberstops) = [];
+                numberstarts = numberstarts - 1;
+                numberstops = numberstops -1;
             end
         end
     end
@@ -143,14 +143,16 @@ while timePoint <= length(data)-detection_buffer_use
     timePoint = timePoint + step;
 end
 
-latency_onsets = latency_onsets(1:length(durations));
+latency_starts = latency_starts(1:length(durations));
+
+disp(['Found ' num2str(length(latency_starts)) ' movements!'])
 
 %% plot
 
 if createplots
     disp('Plotting detection data and events')
     clear ax
-    plothandles(1) = figure('color','w');
+    plothandles(1) = figure('color','w','position',[50 100 1500 1000]);
     ax(1) = subplot(length(idx_detect)+1,1,1);
     hold on
     plot(EEG_motion.times/1000,data)
@@ -168,10 +170,8 @@ if createplots
     xlabel('seconds')
     ylabel('detection data')
     
-    for i_onset=1:length(latency_onsets)
-        plot(EEG_motion.times([latency_onsets(i_onset) latency_onsets(i_onset)])/1000,ylim,'g')
-        plot(EEG_motion.times([latency_offsets(i_onset) latency_offsets(i_onset)])/1000,ylim,'r')
-    end
+    plot(EEG_motion.times([latency_starts;latency_starts])/1000,repmat(ylim',1,length(latency_starts)),'g')
+    plot(EEG_motion.times([latency_stops;latency_stops])/1000,repmat(ylim',1,length(latency_stops)),'r')
     drawnow
     
     for i_detect=1:length(idx_detect)
@@ -185,10 +185,8 @@ if createplots
         xlabel('seconds')
         ylabel('channel data')
         
-        for i_onset=1:length(latency_onsets)
-            plot(EEG_motion.times([latency_onsets(i_onset) latency_onsets(i_onset)])/1000,ylim,'g')
-            plot(EEG_motion.times([latency_offsets(i_onset) latency_offsets(i_onset)])/1000,ylim,'r')
-        end
+        plot(EEG_motion.times([latency_starts;latency_starts])/1000,repmat(ylim',1,length(latency_starts)),'g')
+        plot(EEG_motion.times([latency_stops;latency_stops])/1000,repmat(ylim',1,length(latency_stops)),'r')
         drawnow
     end
     linkaxes(ax)
@@ -205,19 +203,19 @@ end
 
 disp(['Adding "' eventlabel ':start" and "'  eventlabel ':stop" events to data set.'])
 
-for i_onset = 1:length(latency_onsets)
+for i_start = 1:length(latency_starts)
     
     i_event = numel(EEG_motion.event) + 1;
     EEG_motion.event(i_event).type = [eventlabel ':start'];
-    EEG_motion.event(i_event).latency = latency_onsets(i_onset);
+    EEG_motion.event(i_event).latency = latency_starts(i_start);
     EEG_motion.event(i_event).duration = 1/EEG_motion.srate;
     
 end
-for i_offset = 1:length(latency_offsets)
+for i_stop = 1:length(latency_stops)
     
     i_event = numel(EEG_motion.event) + 1;
     EEG_motion.event(i_event).type = [eventlabel ':stop'];
-    EEG_motion.event(i_event).latency = latency_offsets(i_offset);
+    EEG_motion.event(i_event).latency = latency_stops(i_stop);
     EEG_motion.event(i_event).duration = 1/EEG_motion.srate;
     
 end
@@ -227,13 +225,13 @@ EEG_motion = eeg_checkset(EEG_motion, 'eventconsistency');
 % store info
 EEG_motion.etc.motiondetect.idx_detect = idx_detect;
 EEG_motion.etc.motiondetect.eventlabel = eventlabel;
-EEG_motion.etc.motiondetect.latency_onsets = latency_onsets;
-EEG_motion.etc.motiondetect.latency_offsets = latency_offsets;
+EEG_motion.etc.motiondetect.latency_starts = latency_starts;
+EEG_motion.etc.motiondetect.latency_stops = latency_stops;
 EEG_motion.etc.motiondetect.durations = durations;
 EEG_motion.etc.motiondetect.movement_threshold = movement_threshold;
 EEG_motion.etc.motiondetect.movement_threshold_fine = movement_threshold_fine;
 EEG_motion.etc.motiondetect.detection_buffer = detection_buffer;
 EEG_motion.etc.motiondetect.min_duration = min_duration;
 
-disp('Motion onset and offset detection done!')
+disp('Motion start and stop detection done!')
 
