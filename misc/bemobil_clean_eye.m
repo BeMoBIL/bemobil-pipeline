@@ -72,7 +72,7 @@ plothandles = [];
 
 if createplots
     
-    plothandles(1) = figure('color','w');
+    plothandles(1) = figure('color','w','position',[50 100 1500 800]);
     plot(transpose(normalize(EEG_eye.data,2,'range',[0 1.5]) + flipud([1:2:2*EEG_eye.nbchan]')), 'color', [78 165 216]/255)
     xlim([0 EEG_eye.pnts])
     ylim([0 2*EEG_eye.nbchan+1])
@@ -135,7 +135,7 @@ newPR = mean(EEG_eye.data(idx_pupil,:),1);
 
 if createplots
     
-    plothandles(2) = figure('color','w');
+    plothandles(2) = figure('color','w','position',[50 100 1500 800]);
     
     ax1 = subplot(311);
     plot(newPR)
@@ -158,7 +158,7 @@ if createplots
     drawnow
     
     
-    plothandles(3) = figure('color','w');
+    plothandles(3) = figure('color','w','position',[50 100 1500 800]);
     plot(transpose(normalize(EEG_eye.data,2,'range',[0 1.5]) + flipud([1:2:2*EEG_eye.nbchan]')), 'color', [78 165 216]/255)
     xlim([0 EEG_eye.pnts])
     ylim([0 2*EEG_eye.nbchan+1])
