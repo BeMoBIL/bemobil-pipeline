@@ -23,6 +23,8 @@ Here is an example of the final BeMoBIL pipeline output :
 
 ![folder structure of the pipeline output](https://raw.githubusercontent.com/BeMoBIL/bemobil-pipeline/master/wiki_images/mainwiki/output-folders.png)
 
+In the single subject EEG analysis folder there are two final data sets after the complete processing is done (`xxx_preprocessed_and_ICA.set` and `xxx_cleaned_with_ICA.set`). Both sets have basic preprocessing done (line noise removal, channel locations, channel interpolation, removal of very slow trends), and contain ICA information. The `xxx_cleaned_with_ICA.set` file additionally has ICs removed as determined by the settings for ICLabel in the pipeline config. If ICA was only meant to be used for cleaning, any kind of sensor-level analysis (like ERPs at Pz electrode) can now be performed on the cleaned data. If the end goal is source analysis, and potentially analysis of muscle or eye activity in conjunction with other MoBI modalities, this data is still available in `xxx_preprocessed_and_ICA.set`. Consider [our repeated clustering approach](https://github.com/BeMoBIL/bemobil-pipeline/wiki/repeated-clustering) in that case.
+
 ***
 
 The pipeline has more functionalities than this, so don't forget to check out [our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki) with details on the parameters and usage, as well as more info on event creation and other additional options the pipeline has to offer!
