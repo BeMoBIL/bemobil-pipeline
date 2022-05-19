@@ -25,14 +25,25 @@ if ~exist('newfoldername','var') || isempty(newfoldername)
 end
 
 %% copy preprocessing
-mkdir(fullfile(bemobil_config.study_folder,newfoldername))
+[~,message] = mkdir(fullfile(bemobil_config.study_folder,newfoldername));
+
+if strcmp(message,'Directory already exists.')
+    disp('Removing old folder...')
+    rmdir(fullfile(bemobil_config.study_folder,newfoldername),'s')
+    mkdir(fullfile(bemobil_config.study_folder,newfoldername))
+end
 
 disp('Copying preprocessing plots...')
 
 basefilepath = fullfile(bemobil_config.study_folder,bemobil_config.EEG_preprocessing_data_folder);
 allfolders = dir(basefilepath);
 copyfilepath = fullfile(basefilepath,newfoldername);
-mkdir(copyfilepath)
+[~,message] = mkdir(copyfilepath);
+if strcmp(message,'Directory already exists.')
+    disp('Removing old folder...')
+    rmdir(copyfilepath,'s')
+    mkdir(copyfilepath)
+end
 
 for i_folder = 3:length(allfolders)
     disp(allfolders(i_folder).name)
@@ -54,7 +65,12 @@ disp('Copying AMICA plots...')
 basefilepath = fullfile(bemobil_config.study_folder,bemobil_config.spatial_filters_folder,bemobil_config.spatial_filters_folder_AMICA);
 allfolders = dir(basefilepath);
 copyfilepath = fullfile(basefilepath,newfoldername);
-mkdir(copyfilepath)
+[~,message] = mkdir(copyfilepath);
+if strcmp(message,'Directory already exists.')
+    disp('Removing old folder...')
+    rmdir(copyfilepath,'s')
+    mkdir(copyfilepath)
+end
 
 for i_folder = 3:length(allfolders)
     disp(allfolders(i_folder).name)
@@ -76,7 +92,12 @@ disp('Copying final single subject plots...')
 basefilepath = fullfile(bemobil_config.study_folder,bemobil_config.single_subject_analysis_folder);
 allfolders = dir(basefilepath);
 copyfilepath = fullfile(basefilepath,newfoldername);
-mkdir(copyfilepath)
+[~,message] = mkdir(copyfilepath);
+if strcmp(message,'Directory already exists.')
+    disp('Removing old folder...')
+    rmdir(copyfilepath,'s')
+    mkdir(copyfilepath)
+end
 
 for i_folder = 3:length(allfolders)
     disp(allfolders(i_folder).name)
