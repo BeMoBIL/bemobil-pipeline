@@ -12,8 +12,8 @@ function bemobil_xdf2bids(config, varargin)
 %       config.session                = 'VR';                               % optional, string, session name if there were multiple sessions 
 %       config.run                    = 1;                                  % optional, integer, run index
 %       config.task                   = 'rotation';                         % optional, string, task name, default value 'defaultTask'
-%       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]) 
-%       config.markerstreams          = {'markerstream 1', 'event stream 2'}                                % optional, by default all streams with the types "event", "events", "marker", "markers" (not case sensitive) containing at least one entry are defined as markerstreams
+%       config.acquisition_time       = [2021,9,30,18,14,0.00];             % optional ([YYYY,MM,DD,HH,MM,SS]
+%       config.markerstreams          = {'markerstream 1', 'event stream 2'}  % optional, by default all streams with the types "event", "events", "marker", "markers" (not case sensitive) containing at least one entry are defined as markerstreams
 %
 %
 % EEG parameters
@@ -285,6 +285,10 @@ if importMotion
         defaultTrackingSystems(Ti).DeviceSerialNumber               = 'n/a';
         defaultTrackingSystems(Ti).SoftwareVersions                 = 'n/a';
         defaultTrackingSystems(Ti).ExternalSoftwareVersions         = 'n/a';
+        defaultTrackingSystems(Ti).RecordingType                    = 'continuous';
+        defaultTrackingSystems(Ti).SpatialAxes                      = 'n/a';
+        defaultTrackingSystems(Ti).RotationOrder                    = 'n/a';
+        defaultTrackingSystems(Ti).RotationRule                     = 'n/a';
     end
     
     if ~exist('motionInfo', 'var')
@@ -293,7 +297,6 @@ if importMotion
         
         % motion specific fields in json
         motionInfo.motion = [];
-        motionInfo.motion.RecordingType                     = 'continuous';
         
         % default tracking system information
         motionInfo.motion.TrackingSystems = defaultTrackingSystems;
@@ -307,14 +310,6 @@ if importMotion
                 
                 % identify tracking systems in the data but not in metadata
                 trackSysNoMeta  = setdiff(trackSysInData, trackSysInMeta);
-                
-                % construct metadata for ones that are missing them
-                for Ti = 1:numel(trackSysNoMeta)
-                    defaultTrackingSystems(Ti).TrackingSystemName               = tracking_systems{Ti};
-                    defaultTrackingSystems(Ti).Manufacturer                     = 'DefaultManufacturer';
-                    defaultTrackingSystems(Ti).ManufacturersModelName           = 'DefaultModel';
-                    defaultTrackingSystems(Ti).SamplingFrequency                = 'n/a'; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
-                end
                 
                 % identify tracking systems in metadata but not in the data
                 [~, indrm] = setdiff(trackSysInMeta, trackSysInData);
@@ -858,7 +853,6 @@ if importMotion
     
     % data type
     motioncfg.datatype                                = 'motion';
-    motioncfg.TrackingSystemCount                     = numel(trackSysInData);
     
     % construct fieldtrip data
     ftmotion = {};
@@ -878,10 +872,10 @@ if importMotion
     
     MotionChannelCount = 0;
     
-    % copy motion metadata fields
-    motioncfg.motion = motionInfo.motion;
-    
     for tsi = 1:numel(trackSysInData)
+        
+        % copy motion metadata fields
+        motioncfg.motion                        = motionInfo.motion.TrackingSystems(tsi);
         
         motionStreamNames   = kv_trsys_to_st(trackSysInData{tsi});
         trackedPointNames   = kv_trsys_to_trp(trackSysInData{tsi});
@@ -998,16 +992,16 @@ if importMotion
         acq_time = datenum(config.acquisition_time) + (motionTimeShift/(24*60*60));
         motioncfg.scans.acq_time = datestr(acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
         
-        % tracking system information will be appended with iterations
+        % tracking system information 
         %------------------------------------------------------------------
         % effective sampling rate
-        motioncfg.motion.TrackingSystems(tsi).SamplingFrequencyEffective = effectiveSRate;
+        motioncfg.motion.SamplingFrequencyEffective = effectiveSRate;
         
         % RecordingDuration
-        motioncfg.motion.TrackingSystems(tsi).RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
+        motioncfg.motion.RecordingDuration = (motion.hdr.nSamples*motion.hdr.nTrials)/effectiveSRate;
         
         % add the number of tracking points to tracked point count
-        motioncfg.motion.TrackingSystems(tsi).TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
+        motioncfg.motion.TrackedPointsCount = sum(numel(trackedPointNames)); % add entries which contain rb_name for corresponding tracking system
         
         % add the number of channels to MotionChannelCount
         motioncfg.motion.MotionChannelCount = MotionChannelCount + motion.hdr.nChans;
