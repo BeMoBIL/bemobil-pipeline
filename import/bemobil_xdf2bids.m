@@ -370,7 +370,7 @@ end
 % construct file and participant- and file- specific config
 % information needed to construct file paths and names
 %--------------------------------------------------------------------------
-cfg.sub                                     = num2str(config.subject);
+cfg.sub                                     = num2str(config.subject,'%02.f');
 cfg.dataset                                 = config.filename;
 cfg.bidsroot                                = config.bids_target_folder;
 cfg.participants                            = [];
