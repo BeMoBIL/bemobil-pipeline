@@ -40,7 +40,7 @@ function bemobil_xdf2bids(config, varargin)
 %
 %       config.motion.streams{1}.xdfname                = 'PhaseSpaceRigidbody'; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
 %       config.motion.streams{1}.bidsname               = 'PhaseSpace';     % optional, name to be assgined in BIDS file name key-value pair as tracking system name  
-%       config.motion.streams{1}.tracked_points         = {'torso','leftLeg', 'rightLeg'}; %  keyword in channel names, indicating which object (tracked point) is included in the stream
+%       config.motion.streams{1}.tracked_points         = {'torso','leftLeg', 'rightLeg'}; % required, keyword in channel names, indicating which object (tracked point) is included in the stream
 %                                                                                % searched for in field "xdfdata{streamIndex}.info.desc.channels.channel{channelIndex}.label"
 %                                                                                % required to be unique in a single tracking system
 %       config.motion.streams{1}.tracked_points_anat    = {'back center', 'left knee', 'right knee'}; % optional, anatomical description of placing of the trackers in case human body motion is being tracked
@@ -51,7 +51,7 @@ function bemobil_xdf2bids(config, varargin)
 %       config.motion.streams{1}.positions.components   = {'x','y','z'};    % optional, your position components in xdf channel names.
 %       config.motion.streams{1}.positions.keyword      = '_pos';           % optional, string, keyword shared in position channel names but
 %                                                                           % not in other channels. If there is no appropriate keyword, use positions.channel_names field instead.
-%       config.motion.streams{1}.missing_values         = 'NaN'             % optional, string, how to represent missing values in the motion stream. Either '0' or 'NaN' are recognized. Default value 'NaN'
+%       config.motion.streams{1}.missing_values         = 'NaN'             % optional, string, how missing values are represented in the motion stream. These will be searched for and then replaced with NaN if needed. Default value 'NaN'
 %
 %       config.motion.streams{2}.xdfname                = 'HTCRigidbody1';
 %       config.motion.streams{2}.bidsname               = 'HTCViveLeftArm';
