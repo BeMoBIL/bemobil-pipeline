@@ -649,16 +649,16 @@ for iSubject = 2:size(bids.participants,1)
                 splitName       = regexp(otherFileRaw,'_','split');
                 datatype        = splitName{end}(1:end-4);
                
-                tracksys = []; 
-                % json name (for motion data, remove tracksys key-value pair)
-                for SNi = 1:numel(splitName)
-                   if contains(splitName{SNi}, 'tracksys-')
-                        tracksysKeyVal  = splitName{SNi}; 
-                        tracksys        = tracksysKeyVal(10:end); 
-                        splitName(SNi)  = []; 
-                        break; 
-                   end
-                end
+%                 tracksys = []; 
+%                 % json name (for motion data, remove tracksys key-value pair)
+%                 for SNi = 1:numel(splitName)
+%                    if contains(splitName{SNi}, 'tracksys-')
+%                         tracksysKeyVal  = splitName{SNi}; 
+%                         tracksys        = tracksysKeyVal(10:end); 
+%                         splitName(SNi)  = []; 
+%                         break; 
+%                    end
+%                 end
                 
                 joinedName = join(splitName, '_'); 
                 otherFileJSON   = [joinedName{1}(1:end-3) 'json']; 
@@ -677,12 +677,12 @@ for iSubject = 2:size(bids.participants,1)
                         channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
                         channelData         = loadfile(channelFileMotion(1).name, channelFileMotion); % this might have to change along with motion BEP
                         
-                        % in case of motion data, guarantee that the number of channels for the particular tracking system matches the data 
-                        if ~isempty(tracksys)
-                            colNames = channelData(1,:);
-                            trackSysCol = find(strcmp(colNames, 'tracking_system')); 
-                            channelData = channelData([1; find(strcmp(channelData(:,trackSysCol), tracksys))],:); 
-                        end
+%                         % in case of motion data, guarantee that the number of channels for the particular tracking system matches the data 
+%                         if ~isempty(tracksys)
+%                             colNames = channelData(1,:);
+%                             trackSysCol = find(strcmp(colNames, 'tracking_system')); 
+%                             channelData = channelData([1; find(strcmp(channelData(:,trackSysCol), tracksys))],:); 
+%                         end
                         
                         % coordinate system file (potentially shared with EEG)
                         importCoord 	= false;
@@ -760,10 +760,9 @@ for iSubject = 2:size(bids.participants,1)
                                 DATA.data   = dlmread(otherFileRaw,'\t',1,0)';
                             end
                             
-                            if strcmp(datatype,'motion') && isfield(infoData, 'TrackingSystems')
-                                tsi = find(strcmp({infoData.TrackingSystems(:).TrackingSystemName}, tracksys));
-                                DATA.srate                  = infoData.TrackingSystems(tsi).SamplingFrequencyEffective; 
-                                DATA.etc.nominal_srate      = infoData.TrackingSystems(tsi).SamplingFrequency;
+                            if strcmp(datatype,'motion') 
+                                DATA.srate                  = infoData.SamplingFrequencyEffective; 
+                                DATA.etc.nominal_srate      = infoData.SamplingFrequency;
                             else
                                 try
                                     DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate used in motion data. Note that the unit of the time must be in second.
@@ -774,9 +773,7 @@ for iSubject = 2:size(bids.participants,1)
                             
                             useLatency = 0;
                             if strcmp(datatype,'motion')
-                                % check if the tracking system comes with latency
-                                latencyInd      = intersect(find(strcmp(channelData(:,strcmp(channelData(1,:),'tracking_system')), tracksys)),...
-                                    find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency')));
+                                latencyInd = find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency'));
                                 useLatency = ~isempty(latencyInd);
                                 if useLatency
                                     latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};

@@ -444,7 +444,6 @@ for iSub = 1:numel(subDirList)
             end
 
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
-            %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
             eegTimes            = EEG.times;
 
             % round event times to have usable indices
