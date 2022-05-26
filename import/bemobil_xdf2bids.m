@@ -836,7 +836,9 @@ if importEEG % This loop is always executed in current version
     end
     
     % acquisition time processing
-    eegcfg.acq_time = datestr(datenum(config.acquisition_time),'yyyy-mm-ddTHH:MM:SS.FFF'); % microseconds are rounded
+    eegcfg.scans.acq_time = datenum(config.acquisition_time);
+    eegcfg.scans.acq_time = datestr(eegcfg.scans.acq_time,'yyyy-mm-ddTHH:MM:SS.FFF'); % milisecond precision
+    
     
     % write eeg files in bids format
     data2bids(eegcfg, eeg);
