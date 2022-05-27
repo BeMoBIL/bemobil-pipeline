@@ -8,7 +8,7 @@ function bemobil_bids2set(config)
 %
 % In
 %       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';  % required
-%       config.study_folder           = 'P:\...SPOT_rotation\2_EEGlab-basic';  % required
+%       config.set_folder             = 'P:\...SPOT_rotation\2_EEGlab-basic'; % required
 %       config.subject                = 1;                                  % required, can also be an array in case importing a whole data set (e.g., config.subject = [1:10]; )
 %       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set
 %       config.overwrite              = 'on';                               % optional, default value 'off'
@@ -33,8 +33,6 @@ function bemobil_bids2set(config)
 %       reorganizes data on disk
 %
 % required plugins
-%       modified version of SCCN bids-matlab-tools :
-%               (link to be provided)
 %       bva-io for brain vision data :
 %               https://github.com/arnodelorme/bva-io
 %
@@ -45,7 +43,7 @@ function bemobil_bids2set(config)
 %--------------------------------------------------------------------------
 % required fields
 config = checkfield(config, 'bids_target_folder', 'required', '');
-config = checkfield(config, 'study_folder', 'required', '');
+config = checkfield(config, 'set_folder', 'required', '');
 config = checkfield(config, 'subject', 'required', '');
 config = checkfield(config, 'session_names', 'required', '');
 
@@ -72,7 +70,7 @@ otherDataTypes  = config.other_data_types;
 bidsDir         = fullfile(config.bids_target_folder);
 
 % all runs and sessions are merged by default
-targetDir       = fullfile(config.study_folder, config.raw_EEGLAB_data_folder);
+targetDir       = fullfile(config.set_folder, config.raw_EEGLAB_data_folder);
 tempDir         = fullfile(targetDir, 'temp_bids');
 
 if isfolder(tempDir)
@@ -444,7 +442,6 @@ for iSub = 1:numel(subDirList)
             end
 
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
-            %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
             eegTimes            = EEG.times;
 
             % round event times to have usable indices
