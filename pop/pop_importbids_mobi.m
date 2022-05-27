@@ -649,8 +649,9 @@ for iSubject = 2:size(bids.participants,1)
                 splitName       = regexp(otherFileRaw,'_','split');
                 datatype        = splitName{end}(1:end-4);
              
-                joinedName = join(splitName, '_'); 
-                otherFileJSON   = [joinedName{1}(1:end-3) 'json']; 
+                joinedName          = join(splitName, '_'); 
+                otherFileJSON       = [joinedName{1}(1:end-3) 'json']; 
+                otherFileChannels   = [joinedName{1}(1:end-10) 'channels.tsv'];
                 
                 % check needed files according to the data type 
                 switch datatype
@@ -663,7 +664,7 @@ for iSubject = 2:size(bids.participants,1)
                         
                         % channel file 
                         importChan          = true;
-                        channelFileMotion   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
+                        channelFileMotion   = searchparent(subjectFolder{iFold}, otherFileChannels);
                         channelData         = loadfile(channelFileMotion(1).name, channelFileMotion); % this might have to change along with motion BEP
                                       
                         % coordinate system file (potentially shared with EEG)

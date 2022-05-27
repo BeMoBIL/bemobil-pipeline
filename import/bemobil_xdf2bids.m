@@ -862,13 +862,6 @@ if importMotion
     
     % iterate over tracking systems
     %----------------------------------------------------------------------
-    % initialize variables to concatenate over
-    motioncfg.channels.name                 = {};
-    motioncfg.channels.tracking_system      = {};
-    motioncfg.channels.tracked_point        = {};
-    motioncfg.channels.component            = {};
-    motioncfg.channels.placement            = {};
-    motioncfg.channels.type                 = {};
     
     MotionChannelCount = 0;
     
@@ -939,6 +932,13 @@ if importMotion
         rb_names = trackedPointNames;
         rb_anat = anatomicalNames;
         
+        motioncfg.channels.name                 = {};
+        motioncfg.channels.tracking_system      = {};
+        motioncfg.channels.tracked_point        = {};
+        motioncfg.channels.component            = {};
+        motioncfg.channels.placement            = {};
+        motioncfg.channels.type                 = {};
+        
         for ci  = 1:motion.hdr.nChans
             
             motionChanType          = motion.hdr.chantype{ci};
@@ -951,6 +951,7 @@ if importMotion
             end
             
             splitlabel                                      = regexp(motion.hdr.label{ci}, '_', 'split');
+            
             motioncfg.channels.name{end+1}                  = motion.hdr.label{ci};
             motioncfg.channels.tracking_system{end+1}       = trackSysInData{tsi};
             motioncfg.channels.type{end+1}                  = motion.hdr.chantype{ci};
