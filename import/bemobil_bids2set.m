@@ -8,7 +8,7 @@ function bemobil_bids2set(config)
 %
 % In
 %       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';  % required
-%       config.study_folder           = 'P:\...SPOT_rotation\2_EEGlab-basic';  % required
+%       config.study_folder           = 'P:\...SPOT_rotation\2_EEGlab-basic'; % required
 %       config.subject                = 1;                                  % required, can also be an array in case importing a whole data set (e.g., config.subject = [1:10]; )
 %       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set
 %       config.overwrite              = 'on';                               % optional, default value 'off'
@@ -33,8 +33,6 @@ function bemobil_bids2set(config)
 %       reorganizes data on disk
 %
 % required plugins
-%       modified version of SCCN bids-matlab-tools :
-%               (link to be provided)
 %       bva-io for brain vision data :
 %               https://github.com/arnodelorme/bva-io
 %
