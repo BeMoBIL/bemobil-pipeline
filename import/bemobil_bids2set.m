@@ -1062,8 +1062,8 @@ end
 EEG.setname = EEG.filename(1:end-8);
 
 % replace extrapolated values with nan (it shouldnt do it but for some reason it does...)
-EEG.data(:,1:find(EEG.times>nanbegin,1,'first')-1) = deal(nan);
-EEG.data(:,find(EEG.times<nanend,1,'last')+1:end) = deal(nan);
+EEG.data(:,1:find(EEG.times>nanbegin+offset*1000,1,'first')-1) = deal(nan); % offset added because its also added to the interpolation
+EEG.data(:,find(EEG.times<nanend+offset*1000,1,'last')+1:end) = deal(nan);
 
 % checkset
 outEEG = eeg_checkset(EEG, 'makeur');

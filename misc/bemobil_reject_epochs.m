@@ -1,9 +1,42 @@
+% bemobil_reject_epochs automatically detects bad epochs using the mean of channel means (to detect general large
+% shifts), mean of channel SDs (to detect large fluctuations in many channels, e.g. large muscle activity), SD of
+% channel means (to detect phases where single channels went off), and SD of channel SDs (to detect large fluctuations
+% in single channels, even when not going off in one direction) as features.
+% 
+% All info is stored in EEG.etc.bemobil_reject_epochs.
+%
+% Color scheme was checked with https://www.color-blindness.com/coblis-color-blindness-simulator
+%
+% Usage:
+%   EEG = bemobil_reject_epochs(EEG,0.1,[1 1 1 1],0,0,0,0,1,1);
+% 
+% Inputs:
+%   EEG_epoched        - current EEGLAB EEG structure, needs to be epoched
+%   fixed_threshold    - threshold in proportion of epochs to reject (e.g. 0.1 to reject 10%)
+%   weights            - weights for the different features. recommended to keep at [1 1 1 1]
+%   use_kneepoint      - if 1, automatic kneepoint detection is used
+%								instead of fixed threshold for rejection.
+%								can lead to issues if data is too clean or
+%								too noisy because the knee point is shifted
+%								and does not make sense any more. not
+%								recommended, just here for testing and
+%								demonstration purposes.
+%   kneepoint_offset   - offset in % points added to the rejected knee
+%								point threshold to make it more stringent
+%								or lax.
+%   do_plot            - plot diagnostics figures for epoch cleaning
+%   do_reject          - OPTIONAL boolean whether or not the detected epochs should also directly be rejected (default 0)
+%
+% Outputs:
+%   EEG_epoched        - EEG dataset with rejection results stored in the etc field
+%
+% See also:
+%   bemobil_reject_continuous, pop_rejepoch
+%
+% Authors: Marius Klug, 2022
+
 function EEG_epoched = bemobil_reject_epochs(EEG_epoched,fixed_threshold,weights,...
-	use_max_epochs,max_epochs,use_kneepoint,kneepoint_offset,do_plot)
-%
-% color scheme was checked with https://www.color-blindness.com/coblis-color-blindness-simulator/
-%
-% SEE ALSO: BEMOBIL_REJECT_CONTINUOUS
+	use_max_epochs,max_epochs,use_kneepoint,kneepoint_offset,do_plot,do_reject)
 
 %% features
 % simple, fast, but surprisingly informative... best to remove
@@ -157,6 +190,8 @@ if do_plot
 	title(['SDs of SDs, weight = ' num2str(weights(4))])
 	axis square
 	grid on
+    
+    drawnow
 	
 end
 
@@ -175,3 +210,12 @@ EEG_epoched.etc.bemobil_reject_epochs.mean_of_means = mean_of_means;
 EEG_epoched.etc.bemobil_reject_epochs.SDs_of_means = SDs_of_means;
 EEG_epoched.etc.bemobil_reject_epochs.mean_of_SDs = mean_of_SDs;
 EEG_epoched.etc.bemobil_reject_epochs.SDs_of_SDs = SDs_of_SDs;
+
+%% reject
+
+if exist('do_reject','var') && do_reject
+    
+    EEG_epoched = pop_rejepoch(EEG_epoched, EEG_epoched.etc.bemobil_reject_epochs.rejected_epochs, 0);
+    EEG_epoched.etc.bemobil_reject_epochs.do_reject = do_reject;
+    
+end

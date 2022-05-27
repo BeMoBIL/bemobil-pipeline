@@ -5,8 +5,8 @@
 % experimental phase 
 %
 % Usage:
-%   >>  [ALLEEG EEG CURRENTSET] = [ALLEEG EEG CURRENTSET] = bemobil_ssd_signal_decomposition_extended(ALLEEG, EEG, CURRENTSET, 'CCA','Z_target', epoch_zs, 'out_filename',out_filename,'out_filepath',out_filepath);
-%   >>  [ALLEEG EEG CURRENTSET] = bemobil_ssd_signal_decomposition_extended(ALLEEG, EEG, CURRENTSET, 'SPOC_R2','Z_target', epoch_zs,'n_spoc_components',1, 'out_filename',out_filename,'out_filepath',out_filepath);
+%   >>  [ALLEEG EEG CURRENTSET] = [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition_extended(ALLEEG, EEG, CURRENTSET, 'CCA','Z_target', epoch_zs, 'out_filename',out_filename,'out_filepath',out_filepath);
+%   >>  [ALLEEG EEG CURRENTSET] = bemobil_signal_decomposition_extended(ALLEEG, EEG, CURRENTSET, 'SPOC_R2','Z_target', epoch_zs,'n_spoc_components',1, 'out_filename',out_filename,'out_filepath',out_filepath);
 %
 % Inputs:
 %   ALLEEG                  - complete EEGLAB data set structure
