@@ -104,9 +104,10 @@ elseif ~strcmp(config.overwrite, 'on')
     warning('Undefined option for field config.overwrite - assume overwriting is on');
 end
 
+ftPath = fileparts(which('ft_defaults'));
+
 % Import data set saved in BIDS, using a modified version of eeglab plugin
 %--------------------------------------------------------------------------
-
 try
     pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
 catch
@@ -350,7 +351,10 @@ for iSub = 1:numel(subDirList)
                     assert(srate_ratios(iSes,1)>0.9 & srate_ratios(iSes,1)<1.1,'EEG effective and nominal srates are too different!')
                     EEG.srate = EEG.etc.nominal_srate;
                 end
-
+                
+                % to prevent ft alt function from meddling with processing
+                rmpath(genpath(fullfile(ftPath, '\external\signal')))
+                
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
                 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 eegTimes{Ri}        = EEG.times;
@@ -440,10 +444,13 @@ for iSub = 1:numel(subDirList)
                 assert(srate_ratios(iSes,1)>0.9 & srate_ratios(iSes,1)<1.1,'EEG effective and nominal srates are too different!')
                 EEG.srate = EEG.etc.nominal_srate;
             end
-
+            
+            % to prevent ft alt function from meddling with processing
+            rmpath(genpath(fullfile(ftPath, '\external\signal')))
+            
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
             eegTimes            = EEG.times;
-
+            
             % round event times to have usable indices
             for i_event = 1:length(EEG.event)
                 EEG.event(i_event).latency = round(EEG.event(i_event).latency);
@@ -596,6 +603,10 @@ for iSub = 1:numel(subDirList)
                             disp(['Data file ' dataFiles{Ri} config.use_nominal_srate ' using nominal srate!'])
                             assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{Ri} config.use_nominal_srate ' was specified to use nominal srate, but none was found!'])
                             DATA.srate  = DATA.etc.nominal_srate;
+                            
+                            % to prevent ft alt function from meddling with processing
+                            rmpath(genpath(fullfile(ftPath, '\external\signal')))
+                            
                             DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
 
                             % check beginning of data
@@ -694,6 +705,10 @@ for iSub = 1:numel(subDirList)
                         disp(['Data file ' dataFiles{1} ' using nominal srate!'])
                         assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{1} ' was specified to use nominal srate, but none was found!'])
                         DATA.srate  = DATA.etc.nominal_srate;
+                        
+                        % to prevent ft alt function from meddling with processing
+                        rmpath(genpath(fullfile(ftPath, '\external\signal')))
+
                         DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
 
                         % check beginning of data
