@@ -5,8 +5,7 @@ bemobil_config.study_folder = ['path_to_study_folder' filesep 'data' filesep]; %
 bemobil_config.filename_prefix = 'sub-';
 
 % foldernames (NEED to have a filesep at the end, sorry!) 
-bemobil_config.source_data_folder = ['0_source-data' filesep];
-bemobil_config.bids_data_folder = ['1_BIDS-data' filesep]; 
+% see "example_import_xdf2bids.m" and "example_import_bids2set.m" to see how the raw EEGLAB folder is created from data in BIDS
 bemobil_config.raw_EEGLAB_data_folder = ['2_raw-EEGLAB' filesep];
 bemobil_config.EEG_preprocessing_data_folder = ['3_EEG-preprocessing' filesep];
 bemobil_config.spatial_filters_folder = ['4_spatial-filters' filesep];

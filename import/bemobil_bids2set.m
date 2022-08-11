@@ -8,7 +8,7 @@ function bemobil_bids2set(config)
 %
 % In
 %       config.bids_target_folder     = 'P:\...SPOT_rotation\1_BIDS-data';  % required
-%       config.study_folder           = 'P:\...SPOT_rotation\2_EEGlab-basic';  % required
+%       config.set_folder             = 'P:\...SPOT_rotation\2_EEGlab-basic'; % required
 %       config.subject                = 1;                                  % required, can also be an array in case importing a whole data set (e.g., config.subject = [1:10]; )
 %       config.session_names          = {'body', 'joy'};                    % required, enter task name as a string, or enter a cell array when there are multiple sessions in the data set
 %       config.overwrite              = 'on';                               % optional, default value 'off'
@@ -33,8 +33,6 @@ function bemobil_bids2set(config)
 %       reorganizes data on disk
 %
 % required plugins
-%       modified version of SCCN bids-matlab-tools :
-%               (link to be provided)
 %       bva-io for brain vision data :
 %               https://github.com/arnodelorme/bva-io
 %
@@ -45,7 +43,7 @@ function bemobil_bids2set(config)
 %--------------------------------------------------------------------------
 % required fields
 config = checkfield(config, 'bids_target_folder', 'required', '');
-config = checkfield(config, 'study_folder', 'required', '');
+config = checkfield(config, 'set_folder', 'required', '');
 config = checkfield(config, 'subject', 'required', '');
 config = checkfield(config, 'session_names', 'required', '');
 
@@ -72,7 +70,7 @@ otherDataTypes  = config.other_data_types;
 bidsDir         = fullfile(config.bids_target_folder);
 
 % all runs and sessions are merged by default
-targetDir       = fullfile(config.study_folder, config.raw_EEGLAB_data_folder);
+targetDir       = fullfile(config.set_folder, config.raw_EEGLAB_data_folder);
 tempDir         = fullfile(targetDir, 'temp_bids');
 
 if isfolder(tempDir)
@@ -106,9 +104,10 @@ elseif ~strcmp(config.overwrite, 'on')
     warning('Undefined option for field config.overwrite - assume overwriting is on');
 end
 
+ftPath = fileparts(which('ft_defaults'));
+
 % Import data set saved in BIDS, using a modified version of eeglab plugin
 %--------------------------------------------------------------------------
-
 try
     pop_editoptions('option_saveversion6', 0, 'option_single', 0, 'option_memmapdata', 0, 'option_savetwofiles', 1, 'option_storedisk', 0);
 catch
@@ -352,7 +351,10 @@ for iSub = 1:numel(subDirList)
                     assert(srate_ratios(iSes,1)>0.9 & srate_ratios(iSes,1)<1.1,'EEG effective and nominal srates are too different!')
                     EEG.srate = EEG.etc.nominal_srate;
                 end
-
+                
+                % to prevent ft alt function from meddling with processing
+                rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+                
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
                 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 eegTimes{Ri}        = EEG.times;
@@ -442,11 +444,14 @@ for iSub = 1:numel(subDirList)
                 assert(srate_ratios(iSes,1)>0.9 & srate_ratios(iSes,1)<1.1,'EEG effective and nominal srates are too different!')
                 EEG.srate = EEG.etc.nominal_srate;
             end
-
+            
+            % to prevent ft alt function from meddling with processing
+            rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+                
+            
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
-            %             [EEG]               = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
             eegTimes            = EEG.times;
-
+            
             % round event times to have usable indices
             for i_event = 1:length(EEG.event)
                 EEG.event(i_event).latency = round(EEG.event(i_event).latency);
@@ -599,6 +604,10 @@ for iSub = 1:numel(subDirList)
                             disp(['Data file ' dataFiles{Ri} config.use_nominal_srate ' using nominal srate!'])
                             assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{Ri} config.use_nominal_srate ' was specified to use nominal srate, but none was found!'])
                             DATA.srate  = DATA.etc.nominal_srate;
+                            
+                            % to prevent ft alt function from meddling with processing
+                            rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+                
                             DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
 
                             % check beginning of data
@@ -697,6 +706,10 @@ for iSub = 1:numel(subDirList)
                         disp(['Data file ' dataFiles{1} ' using nominal srate!'])
                         assert(isfield(DATA.etc,'nominal_srate'),['Data file ' dataFiles{1} ' was specified to use nominal srate, but none was found!'])
                         DATA.srate  = DATA.etc.nominal_srate;
+                        
+                        % to prevent ft alt function from meddling with processing
+                        rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+
                         DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
 
                         % check beginning of data
