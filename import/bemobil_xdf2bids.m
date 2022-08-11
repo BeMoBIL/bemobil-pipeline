@@ -570,12 +570,12 @@ if ~isempty(xdfmarkers) > 0
     for i_markerstream = 1:length(xdfmarkers)
         
         if xdfmarkers{i_markerstream}.time_stamps(1) < times_stamp_1
-            times_stamp_1 = xdfmarkers{i_markerstream}.time_stamps(1);
-            event_1 = xdfmarkers{i_markerstream}.time_series(1);
+            times_stamp_1 = xdfmarkers{i_markerstream}.time_stamps(find(xdfmarkers{i_markerstream}.time_stamps > xdfeeg{1}.time_stamps(1),1,'first'));
+            event_1 = xdfmarkers{i_markerstream}.time_series(find(xdfmarkers{i_markerstream}.time_stamps > xdfeeg{1}.time_stamps(1),1,'first'));
         end
         if xdfmarkers{i_markerstream}.time_stamps(end) > times_stamp_2
-            times_stamp_2 = xdfmarkers{i_markerstream}.time_stamps(end);
-            event_2 = xdfmarkers{i_markerstream}.time_series(end);
+            times_stamp_2 = xdfmarkers{i_markerstream}.time_stamps(find(xdfmarkers{i_markerstream}.time_stamps< xdfeeg{1}.time_stamps(end),1,'last'));
+            event_2 = xdfmarkers{i_markerstream}.time_series(find(xdfmarkers{i_markerstream}.time_stamps< xdfeeg{1}.time_stamps(end),1,'last'));
         end
         
     end
@@ -605,7 +605,9 @@ if ~isempty(xdfmarkers) > 0
     plot([times_stamp_1 times_stamp_1]-times_stamp_1, [-1 100], 'k')
     
     xaxistimes = eeg_times_1{1};
-    xlim([xdfeeg{1}.time_stamps(xaxistimes(1))  xdfeeg{1}.time_stamps(xaxistimes(end)) ]-times_stamp_1)
+    if ~isempty(xaxistimes)
+        xlim([xdfeeg{1}.time_stamps(xaxistimes(1))  xdfeeg{1}.time_stamps(xaxistimes(end)) ]-times_stamp_1)
+    end
     
     for i=1:length(xdfeeg)
         my_yticks = yticks;
@@ -657,7 +659,9 @@ if ~isempty(xdfmarkers) > 0
     plot([times_stamp_2 times_stamp_2]-times_stamp_2, [-1 100], 'k')
     
     xaxistimes = eeg_times_2{1};
-    xlim([xdfeeg{1}.time_stamps(xaxistimes(1))  xdfeeg{1}.time_stamps(xaxistimes(end)) ]-times_stamp_2)
+    if ~isempty(xaxistimes)
+        xlim([xdfeeg{1}.time_stamps(xaxistimes(1))  xdfeeg{1}.time_stamps(xaxistimes(end)) ]-times_stamp_2)
+    end
     
     for i=1:length(xdfeeg)
         my_yticks = yticks;
