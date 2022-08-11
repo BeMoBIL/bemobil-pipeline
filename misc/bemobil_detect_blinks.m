@@ -105,9 +105,9 @@ if ~isfield(EEG.etc,'ic_classification')
     EEG = iclabel(EEG);
 end
 
-% search HEOG and VEOG ICs in the top 10 ICs
-eye_ICs = find(max(EEG.etc.ic_classification.ICLabel.classifications(1:10,:),[],2)==...
-    EEG.etc.ic_classification.ICLabel.classifications(1:10,3))';
+% search HEOG and VEOG ICs using ICLabel
+eye_ICs = find(max(EEG.etc.ic_classification.ICLabel.classifications,[],2)==...
+    EEG.etc.ic_classification.ICLabel.classifications(:,3))';
 
 idx_VEOG = 0;
 invert_veog = 0;
