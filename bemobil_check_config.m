@@ -23,6 +23,11 @@ if nargin == 0
     return
 end
 
+% remove excess fieldtrip paths in case they are there
+[~, ftpath] = ft_version;
+rmpath(fullfile(ftpath, 'external', 'signal'))
+rmpath(fullfile(ftpath, 'external', 'stats'))
+rmpath(fullfile(ftpath, 'external', 'image'))
 
 all_config_fields = {
     'study_folder', {}
