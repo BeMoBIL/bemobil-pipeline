@@ -104,6 +104,8 @@ for subject = subjects
 
 end
 
+bemobil_copy_plots_in_one(bemobil_config)
+
 subjects
 subject
 
