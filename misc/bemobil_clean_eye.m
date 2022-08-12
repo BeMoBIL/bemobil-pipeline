@@ -16,6 +16,8 @@
 %       ms_search           - OPTIONAL searchbuffer to detect blinks in milliseconds (default = 20)
 %       ms_apply            - OPTIONAL buffer to apply detected blinks in milliseconds (default = 30)
 %       n                   - OPTIONAL standard deviation threshold used for blink detection (default = 3)
+%       min_duration        - OPTIONAL after cleaning the eye data, blink events that lasted less than the minimal
+%                               duration in seconds are removed (default = 0.1)
 %       createplots         - OPTIONAL boolean whether plots should be created (default = 1)
 %
 % Output:
@@ -26,7 +28,7 @@
 %   blinkextract
 
 
-function [EEG_eye, plothandles] = bemobil_clean_eye(EEG_eye,idx_pupil,idx_clean,ms_search,ms_apply,n,createplots)
+function [EEG_eye, plothandles] = bemobil_clean_eye(EEG_eye,idx_pupil,idx_clean,ms_search,ms_apply,n,min_duration,createplots)
 
 if nargin == 0
     help bemobil_clean_eye
@@ -63,9 +65,14 @@ if ~exist('n','var') || ~isscalar(n)
     disp(['Using ' num2str(n) ' standard deviations to detect blinks.'])
 end
 
+if ~exist('min_duration','var') || ~isscalar(min_duration)
+    min_duration = 0.1;
+end
+    
 if ~exist('createplots','var') || ~isscalar(createplots)
     createplots = 1;
 end
+
 plothandles = [];
 
 %% plot raw
@@ -186,5 +193,33 @@ for i_blink = 1:size(blink_onsets_offsets,1)
 end
 
 EEG_eye = eeg_checkset(EEG_eye, 'eventconsistency');
+
+% remove events if below a duration threshold
+if min_duration > 0
+    
+    disp(['Removing blink events that lasted less than ' num2str(min_duration*1000) ' milliseconds.'])
+    
+    idx_remove=[];
+    blink = 0;
+    startlatency = 0;
+    lastidx = 0;
+    
+    for i=1:length(EEG_eye.event)
+        if strcmp(EEG_eye.event(i).type,'blink:start')
+            blink = 1;
+            startlatency = EEG_eye.event(i).latency;
+            lastidx = i;
+        end
+        if blink && strcmp(EEG_eye.event(i).type,'blink:stop')
+            if EEG_eye.event(i).latency - startlatency < min_duration*EEG_eye.srate
+                idx_remove(end+1) = lastidx;
+                idx_remove(end+1) = i;
+            end
+            blink = 0;
+        end
+    end
+    EEG_eye.event(idx_remove) = [];
+    EEG_eye = eeg_checkset(EEG_eye, 'eventconsistency');
+end
 
 disp('Blink detection and eye data cleaning done!')
