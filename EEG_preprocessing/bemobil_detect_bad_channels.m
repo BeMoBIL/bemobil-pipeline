@@ -4,8 +4,9 @@
 % data to check the rejected channels.
 %
 % Usage:
-%   >>  [chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] = bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET,...
-%     chancorr_crit, chan_max_broken_time, chan_detect_num_iter, chan_detected_fraction_threshold, num_chan_rej_target, flatline_crit,line_noise_crit)
+%   >>  [chans_to_interp, chan_detected_fraction_threshold, detected_bad_channels, rejected_chan_plot_handle, detection_plot_handle] =...
+%           bemobil_detect_bad_channels(EEG, ALLEEG, CURRENTSET, chancorr_crit, chan_max_broken_time, chan_detect_num_iter,...
+%           chan_detected_fraction_threshold, num_chan_rej_max_target, flatline_crit, line_noise_crit)
 % 
 % Inputs:
 %   EEG                                 - current EEGLAB EEG structure

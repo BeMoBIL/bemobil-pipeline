@@ -60,6 +60,8 @@ if save_file_on_disk
 end
 
 % fill/copy all ur_structures with raw data (e.g. copy event to urevent)
+EEG.urevent = [];
+EEG.urchanlocs = [];
 EEG = eeg_checkset(EEG, 'makeur');
 
 % remove unused neck electrodes from file (if BeMoBIL layout is used as is)

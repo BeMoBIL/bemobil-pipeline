@@ -353,7 +353,7 @@ for iSub = 1:numel(subDirList)
                 end
                 
                 % to prevent ft alt function from meddling with processing
-                rmpath(genpath(fullfile(ftPath, '\external\signal')))
+                rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
                 
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
                 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
@@ -446,7 +446,8 @@ for iSub = 1:numel(subDirList)
             end
             
             % to prevent ft alt function from meddling with processing
-            rmpath(genpath(fullfile(ftPath, '\external\signal')))
+            rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+                
             
             EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
             eegTimes            = EEG.times;
@@ -605,8 +606,8 @@ for iSub = 1:numel(subDirList)
                             DATA.srate  = DATA.etc.nominal_srate;
                             
                             % to prevent ft alt function from meddling with processing
-                            rmpath(genpath(fullfile(ftPath, '\external\signal')))
-                            
+                            rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+                
                             DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
 
                             % check beginning of data
@@ -707,7 +708,7 @@ for iSub = 1:numel(subDirList)
                         DATA.srate  = DATA.etc.nominal_srate;
                         
                         % to prevent ft alt function from meddling with processing
-                        rmpath(genpath(fullfile(ftPath, '\external\signal')))
+                        rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
 
                         DATA        = pop_resample( DATA, newSRate); % use filter-based resampling
 
