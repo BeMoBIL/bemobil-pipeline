@@ -1,20 +1,17 @@
+
 % initialize EEGLAB 
 if ~exist('ALLCOM','var')
 	eeglab;
 end
 
 % load configuration 
-example_bemobil_config;
+template_bemobil_config;
 
 % enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
-subjects = 1:2; 
+subjects = [1 2]; 
 
 % set to 1 if all files should be computed, independently of whether they are present on disk or not
 force_recompute = 0; 
-
-%% Import 
-
-% not in this example 
 
 %% processing loop
 
@@ -43,7 +40,7 @@ for subject = subjects
 		continue
     end
 	
-	%% load data that is provided by the BIDS importer
+	%% load data in EEGLAB .set structure
     % make sure the data is stored in double precision, large datafiles are supported, no memory mapped objects are
     % used but data is processed locally, and two files are used for storing sets (.set and .fdt)
 	try 
@@ -56,60 +53,42 @@ for subject = subjects
     EEG = pop_loadset('filename',[ bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.merged_filename],'filepath',input_filepath);
     
     %% individual EEG processing to remove non-exp segments
-    % it is stongly recommended to remove these because they may contain strong artifacts that confuse channel detection
-    % and AMICA
+    % it is stongly recommended to remove these segments because they may contain strong artifacts that confuse channel
+    % detection and AMICA
     
-    % this example removes everything before the first and after the last event, plus is searches for the pause keyword
-    % to remove breaks with a buffer of 1 second
+    % this example removes everything before the first and after the last event with a buffer of 1 second
     
     allevents = {EEG.event.type}';
     
-    idx_startpause = find(contains(lower(allevents),'start:pause'));
-    idx_stoppause = find(contains(lower(allevents),'stop:pause'));
+    removeindices = [0 EEG.event(1).latency-EEG.srate]; % remove from start to first event
     
-    if (length(idx_startpause) ~= length(idx_stoppause))
-        if (length(idx_startpause) == length(idx_stoppause)+1) && (idx_startpause(end) > idx_stoppause(end))
-            warning('Last stop pause missing, removing last start pause!')
-            idx_startpause(end) = [];
-        end
-    end
+    % add more removeIndices here for pauses or itnerruptions of the experiment if they have markers or you know their
+    % indices in the data...
     
-    removeindices = [0 EEG.event(1).latency-EEG.srate];
-    
-    for i = 1:length(idx_startpause)
-        removeindices(end+1,1) = round(EEG.event(idx_startpause(i)).latency)+EEG.srate;
-        removeindices(end,2) = round(EEG.event(idx_stoppause(i)).latency)-EEG.srate;
-    end
-    
-    removeindices(end+1,:) = [EEG.event(end).latency+EEG.srate EEG.pnts];
+    removeindices(end+1,:) = [EEG.event(end).latency+EEG.srate EEG.pnts]; % remove from last event to the end
     
     % filter for plot
     EEG_plot = pop_eegfiltnew(EEG, 'locutoff',0.5,'plotfreqz',0);
     
     % plot
     fig1 = figure; set(gcf,'Color','w','InvertHardCopy','off', 'units','normalized','outerposition',[0 0 1 1])
-
-    % basic chan reject for plot
-    chanmaxes = max(EEG_plot.data,[],2);
-    EEG_plot = pop_select( EEG_plot, 'nochannel',find(chanmaxes>median(chanmaxes)+1.4826 * 3* mad(chanmaxes)));
-    chanmins = min(EEG_plot.data,[],2);
-    EEG_plot = pop_select( EEG_plot, 'nochannel',find(chanmins<median(chanmins)-1.4826 * 3* mad(chanmins)));
+    plot(normalize(EEG_plot.data') + [1:10:10*EEG_plot.nbchan], 'color', [78 165 216]/255)
+    yticks([])
     
-    plot(EEG_plot.data' + linspace(0,20000,EEG_plot.nbchan), 'color', [78 165 216]/255)
     xlim([0 EEG.pnts])
-    ylim([-1000 21000])
+    ylim([-10 10*EEG_plot.nbchan+10])
     
     hold on
     
     % plot lines for valid times
     
     for i = 1:size(removeindices,1)
-        plot([removeindices(i,1) removeindices(i,1)],[-1000 21000],'r')
-        plot([removeindices(i,2) removeindices(i,2)],[-1000 21000],'g')
+        plot([removeindices(i,1) removeindices(i,1)],ylim,'r')
+        plot([removeindices(i,2) removeindices(i,2)],ylim,'g')
     end
     
     % save plot
-    print(gcf,fullfile(input_filepath,[bemobil_config.filename_prefix num2str(subject) '_raw-full.png']),'-dpng')
+    print(gcf,fullfile(input_filepath,[bemobil_config.filename_prefix num2str(subject) '_raw-full_EEG.png']),'-dpng')
     close
 
     % reject
@@ -124,6 +103,8 @@ for subject = subjects
 	bemobil_process_all_AMICA(ALLEEG, EEG_preprocessed, CURRENTSET, subject, bemobil_config, force_recompute);
 
 end
+
+bemobil_copy_plots_in_one(bemobil_config)
 
 subjects
 subject
