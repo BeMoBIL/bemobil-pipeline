@@ -45,9 +45,7 @@ function vers = eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
     
     % add bemobil pipeline folder to path
     % -----------------------
-    if ~exist('bemobil_check_config')
-        p = fileparts(which('eegplugin_bemobil_pipeline'));
-        addpath(genpath(p));
-    end
+    p = fileparts(which('eegplugin_bemobil_pipeline'));
+    addpath(genpath(p));
     
 end
