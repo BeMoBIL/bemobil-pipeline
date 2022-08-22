@@ -220,6 +220,11 @@ if ~exist('EEG_preprocessed_and_ICA','var')
             bemobil_config.do_remove_outside_head, bemobil_config.number_of_dipoles,...
             [bemobil_config.filename_prefix num2str(subject) '_' bemobil_config.dipfitted_filename], output_filepath);
         
+        [~, ftpath] = ft_version;
+        rmpath(fullfile(ftpath, 'external', 'signal'))
+        rmpath(fullfile(ftpath, 'external', 'stats'))
+        rmpath(fullfile(ftpath, 'external', 'image'))
+
     end
     
     % save RAM

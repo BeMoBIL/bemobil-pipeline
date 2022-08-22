@@ -15,17 +15,25 @@
 %                                       to be exceeded for a motion to be detected (default = 0.65)
 %       movement_threshold_fine     - OPTIONAL fine movement threshold that is used when the coarse detection is positive (default = 0.05)
 %       min_duration                - OPTIONAL minimal movement duration in seconds (default = 0)
-%       detection_buffer            - buffer that is used when a coarse movement is detected (default = 2)
+%       detection_buffer            - OPTIONAL buffer that is used when a coarse movement is detected (default = 2)
+%       fine_relative_to_range      - OPTIONAL bool whether or not the fine threshold should be determined relative to
+%                                       the range in the buffer instead of only the maximum (default = 0)
+%       search_timerange            - OPTIONAL timerange in which the search should happen (useful if different
+%                                       conditions exist, default = all data)
 %       createplots                 - OPTIONAL boolean whether plots should be created (default = 1)
 %
 % Output:
-%       EEG_heart           - EEGLAB dataset containing detected "heartbeat" events
-%       plothandles         - handle to the three created plots to allow script-based saving and closing
+%       EEG_motion          - EEGLAB dataset containing detected events
+%       plothandles         - handle to the created plots to allow script-based saving and closing
 %
-
+% Example: 
+%         [EEG_motion, plothandles] = bemobil_detect_motion_startstops(EEG_motion,idx_detect,eventlabel,movement_threshold,...
+%             movement_threshold_fine,min_duration,detection_buffer,fine_relative_to_range,search_timerange,createplots)
+% 
+% Authors: Marius Klug, 2022
 
 function [EEG_motion, plothandles] = bemobil_detect_motion_startstops(EEG_motion,idx_detect,eventlabel,movement_threshold,...
-    movement_threshold_fine,min_duration,detection_buffer,createplots)
+    movement_threshold_fine,min_duration,detection_buffer,fine_relative_to_range,search_timerange,createplots)
 
 if nargin == 0
     help bemobil_ECG_analysis
@@ -66,6 +74,16 @@ if ~exist('detection_buffer','var') || ~isscalar(detection_buffer)
     disp(['Using the default fine detection buffer of ' num2str(detection_buffer) '.'])
 end
 
+if ~exist('fine_relative_to_range','var') || ~(fine_relative_to_range==1 || fine_relative_to_range==0)
+    fine_relative_to_range = 0;
+    disp('Using the default fine threshold relative to the maximum inside the buffer instead of the range.')
+end
+
+if ~exist('search_timerange','var') || ~isvector(search_timerange)
+    search_timerange = [1 EEG_motion.pnts];
+    disp('Using the default search time range of the entire data set.')
+end
+
 if ~exist('createplots','var') || ~isscalar(createplots)
     createplots = 1;
 end
@@ -94,23 +112,27 @@ data = sqrt(sum(data.^2,1)); % pythagoras / abs
 numberstarts = 0;
 numberstops = 0;
 
-thresholdData = quantile(abs(data),movement_threshold);
+coarseThreshold = quantile(abs(data(:,search_timerange(1):search_timerange(2))),movement_threshold);
 
 movement = false;
 
-timePoint = 1;
+timePoint = search_timerange(1);
 laststopTimePoint = 0;
 
-while timePoint <= length(data)-detection_buffer_use
+while timePoint <= search_timerange(2)-detection_buffer_use
     step = 1;
     if ~movement
-        if data(timePoint) > thresholdData
+        if data(timePoint) > coarseThreshold
             
-            fineAccThreshold = max(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
+            if ~fine_relative_to_range
+                fineThreshold = max(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
+            else
+                fineThreshold = min(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))+range(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
+            end
             
             fineTimePoint = timePoint;
             
-            while data(fineTimePoint) > fineAccThreshold && fineTimePoint > laststopTimePoint + 1
+            while data(fineTimePoint) > fineThreshold && fineTimePoint > laststopTimePoint + 1
                 fineTimePoint = fineTimePoint - 1;
             end
             
@@ -123,7 +145,7 @@ while timePoint <= length(data)-detection_buffer_use
             
         end
     else
-        if data(timePoint) < fineAccThreshold
+        if data(timePoint) < fineThreshold
             numberstops = numberstops + 1;
             latency_stops(numberstops) = timePoint-1;
             movement = false;
@@ -157,7 +179,7 @@ if createplots
     hold on
     plot(EEG_motion.times/1000,data)
     xlim([EEG_motion.times(1) EEG_motion.times(end)]/1000)
-    plot(xlim,[thresholdData thresholdData],'k')
+    plot(xlim,[coarseThreshold coarseThreshold],'k')
     title({['Detected starts (green) and stops (red) of "' eventlabel '", N = ' num2str(length(durations))]
         ['movement threshold = ' num2str(movement_threshold) ', fine movement threshold = ' num2str(movement_threshold_fine)...
         ', detection buffer = ' num2str(detection_buffer) 's, min duration = ' num2str(min_duration) 's']})
@@ -191,7 +213,7 @@ if createplots
     end
     linkaxes(ax)
     
-    plothandles(3) = figure('color','w');
+    plothandles(2) = figure('color','w');
     histogram(durations,0:0.05:max(durations))
     xlabel('durations (seconds)')
     ylabel('count')
