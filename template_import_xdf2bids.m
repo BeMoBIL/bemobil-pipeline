@@ -5,6 +5,7 @@ if ~exist('ALLCOM','var')
 end
 
 % initialize fieldtrip without adding alternative files to path 
+% assuming FT is on your path already or is added via EEGlab plugin manager
 global ft_default
 ft_default.toolbox.signal = 'matlab';  % can be 'compat' or 'matlab'
 ft_default.toolbox.stats  = 'matlab';
@@ -12,7 +13,7 @@ ft_default.toolbox.image  = 'matlab';
 ft_defaults % this sets up the FieldTrip path
 
 %% [OPTIONAL] check the .xdf data to explore the structure
-ftPath      = fileparts(which('ft_defaults'));
+ftPath      = fileparts(which('ft_defaults')); 
 addpath(fullfile(ftPath, 'external','xdf')); 
 xdfPath     = '...yourpath\yourfile.xdf'; % enter full path to your .xdf file 
 
@@ -75,7 +76,7 @@ eegInfo.eeg.SamplingFrequency               = 1000; % nominal sampling frequency
 %--------------------------------------------------------------------------
 motionInfo  = []; 
 
-tracking_systems = {'System1', 'System2', 'System3'}; % enter the names of your tracking systems 
+tracking_systems = {'System1', 'System2'}; % enter the names of your tracking systems 
 
 % motion specific fields in json
 motionInfo.motion = [];
@@ -102,17 +103,6 @@ motionInfo.motion.TrackingSystems(2).SpatialAxes                       = 'FRU';
 motionInfo.motion.TrackingSystems(2).RotationRule                     = 'left-hand'; 
 motionInfo.motion.TrackingSystems(2).RotationOrder                    = 'ZXY'; 
 
-
-% system 3 information
-motionInfo.motion.TrackingSystems(3).TrackingSystemName               = tracking_systems{3};
-motionInfo.motion.TrackingSystems(3).Manufacturer                     = 'Virtual System Manufacturer';
-motionInfo.motion.TrackingSystems(3).ManufacturersModelName           = 'Virtual System Manufacturer Model';
-motionInfo.motion.TrackingSystems(3).SamplingFrequency                = 60;
-motionInfo.motion.TrackingSystems(3).DeviceSerialNumber               = 'n/a'; 
-motionInfo.motion.TrackingSystems(3).SoftwareVersions                 = 'n/a'; 
-motionInfo.motion.TrackingSystems(3).SpatialAxes                      = 'FRU'; 
-motionInfo.motion.TrackingSystems(3).RotationRule                     = 'left-hand'; 
-motionInfo.motion.TrackingSystems(3).RotationOrder                    = 'ZXY'; 
 
 
 % participant information 
@@ -164,7 +154,10 @@ subjectInfo.data = {1,     30,     'F',     'R' ; ...
                
 
                 
-%%
+%% iterate over participants, sessions, and runs to import file-by-file
+studyFolder                         = '...\yourstudyfolder';                % full path to your study folder  
+sessionNames                        = {'sessionA', 'ssssionB'};             % replace with names of your sessions (if there are no multiple sessions, remove confg.ses and the session loop in the following)
+
 % loop over participants
 for subject = 1:20
     
@@ -172,52 +165,39 @@ for subject = 1:20
     for session = 1:2
         
         config                        = [];                                 % reset for each loop ´
-        config.bids_target_folder     = 'P:\Sein_Jeung\Project_BIDS\Example_datasets\SPOT_rotation\1_BIDS-data'; % required
-        config.filename               = fullfile(['P:\Sein_Jeung\Project_BIDS\Example_datasets\SPOT_rotation\0_raw-data\' num2str(subject) '\test_' sessionNames{session} '.xdf']); % required
-        config.eeg.chanloc            = fullfile(['P:\Sein_Jeung\Project_BIDS\Example_datasets\SPOT_rotation\0_raw-data\' num2str(subject) '\channel_locations.elc']); % optional
+        config.bids_target_folder     = '...\BIDS-data';                    % required, replace with the folder where you want to store your bids data
+        config.filename               = fullfile('...\yourxdffile.xdf');    % required, replace with your xdf file full path
+        config.eeg.chanloc            = fullfile('...\yourelocfile.elc');   % optional, if you have electrode location file, replace with the full patht to the file. 
         
-        config.task                   = 'Rotation';                         % optional
+        config.task                   = 'YourTaskName';                     % optional, replace with your task name
         config.subject                = subject;                            % required
         config.session                = sessionNames{session};              % optional
-        config.overwrite              = 'on';
+        config.overwrite              = 'on';                               % optional
         
-        config.eeg.stream_name        = 'BrainVision';                      % required
-        % config.eeg. sampling frequency % override xdf nominal srate 
+        config.eeg.stream_name        = 'YourEEGStreamName';                % required, replace with the unique keyword in your eeg .xdf stream
         
         %------------------------------------------------------------------
         
-        if session == 1 % session body
-            config.motion.streams{1}.xdfname            = 'headrigid';
-            config.motion.streams{1}.bidsname           = tracking_systems{1};
-            config.motion.streams{1}.tracked_points     = 'headRigid';
-            config.motion.streams{1}.tracked_points_anat= 'head';
-            config.motion.streams{1}.positions.channel_names = {'headRigid_Rigid_headRigid_X';  'headRigid_Rigid_headRigid_Y' ; 'headRigid_Rigid_headRigid_Z' }; 
-            config.motion.streams{1}.quaternions.channel_names  = {'headRigid_Rigid_headRigid_quat_W';'headRigid_Rigid_headRigid_quat_Z';...
-                                                                  'headRigid_Rigid_headRigid_quat_X';'headRigid_Rigid_headRigid_quat_Y'};
-            
-            if subject ~= 6 && subject ~= 13 && subject ~= 16 && subject ~= 19 && subject ~= 20 % subject ~= 6 && subject ~= 13 && subject ~= 19 && subject ~= 20 % subject 6 missing phasespace data and sub 13, 19, 20 has all zero stream
-                config.motion.streams{2}.xdfname        = 'AllPhaseSpace';
-                config.motion.streams{2}.bidsname    = tracking_systems{2};
-                config.motion.streams{2}.tracked_points     = {'Rigid1', 'Rigid2', 'Rigid3', 'Rigid4'};
-                config.motion.streams{2}.positions.channel_names = {'vizardAllPhasespaceLog_Rigid1_X', 'vizardAllPhasespaceLog_Rigid2_X', 'vizardAllPhasespaceLog_Rigid3_X', 'vizardAllPhasespaceLog_Rigid4_X';...
-                                                                     'vizardAllPhasespaceLog_Rigid1_Y', 'vizardAllPhasespaceLog_Rigid2_Y', 'vizardAllPhasespaceLog_Rigid3_Y', 'vizardAllPhasespaceLog_Rigid4_Y';...
-                                                                     'vizardAllPhasespaceLog_Rigid1_Z', 'vizardAllPhasespaceLog_Rigid2_Z', 'vizardAllPhasespaceLog_Rigid3_Z', 'vizardAllPhasespaceLog_Rigid4_Z'};
-                config.motion.streams{2}.quaternions.channel_names = {'vizardAllPhasespaceLog_Rigid1_A', 'vizardAllPhasespaceLog_Rigid2_A', 'vizardAllPhasespaceLog_Rigid3_A', 'vizardAllPhasespaceLog_Rigid4_A';...
-                                                                     'vizardAllPhasespaceLog_Rigid1_B', 'vizardAllPhasespaceLog_Rigid2_B', 'vizardAllPhasespaceLog_Rigid3_B', 'vizardAllPhasespaceLog_Rigid4_B';...
-                                                                     'vizardAllPhasespaceLog_Rigid1_C', 'vizardAllPhasespaceLog_Rigid2_C', 'vizardAllPhasespaceLog_Rigid3_C', 'vizardAllPhasespaceLog_Rigid4_C'; ...
-                                                                     'vizardAllPhasespaceLog_Rigid1_D', 'vizardAllPhasespaceLog_Rigid2_D', 'vizardAllPhasespaceLog_Rigid3_D', 'vizardAllPhasespaceLog_Rigid4_D'};
-                                                              
-            end
-        else
-            config.motion.streams{1}.xdfname                    = 'head';
-            config.motion.streams{1}.bidsname                   = tracking_systems{3};
-            config.motion.streams{1}.tracked_points             = 'headRigid';
-            config.motion.streams{1}.positions.channel_names    = {'headRigid_Rigid_headRigid_X';  'headRigid_Rigid_headRigid_Y' ; 'headRigid_Rigid_headRigid_Z' }; 
-            config.motion.streams{1}.quaternions.channel_names  = {'headRigid_Rigid_headRigid_quat_W';'headRigid_Rigid_headRigid_quat_Z';...
-                                                                    'headRigid_Rigid_headRigid_quat_X';'headRigid_Rigid_headRigid_quat_Y'};
-            config.motion.POS.unit                              = 'vm';
-        end
+        config.motion.streams{1}.xdfname            = 'YourStreamNameInXDF'; % replace with name of the stream corresponding to the first tracking system
+        config.motion.streams{1}.bidsname           = tracking_systems{1};  % new, comprehensible name to represent the tracking system 
+        config.motion.streams{1}.tracked_points     = 'headRigid';          % name of the point that is being tracked in the tracking system, the keyword has to be containted in the channel name (see "bemobil_bids_motionconvert")
+        config.motion.streams{1}.tracked_points_anat= 'head';               % example of how the tracked point can be renamed to body part name for metadata
+        config.motion.streams{1}.positions.channel_names    = {'headRigid_Rigid_headRigid_X';  'headRigid_Rigid_headRigid_Y' ; 'headRigid_Rigid_headRigid_Z' };
+        config.motion.streams{1}.quaternions.channel_names  = {'headRigid_Rigid_headRigid_quat_W';'headRigid_Rigid_headRigid_quat_Z';...
+                                                               'headRigid_Rigid_headRigid_quat_X';'headRigid_Rigid_headRigid_quat_Y'};
         
+        config.motion.streams{2}.xdfname            = 'YourStreamNameInXDF2';
+        config.motion.streams{2}.bidsname           = tracking_systems{2};
+        config.motion.streams{2}.tracked_points     = {'Rigid1', 'Rigid2', 'Rigid3', 'Rigid4'}; % example when there are multiple points tracked by the system
+        config.motion.streams{2}.positions.channel_names = {'Rigid1_X', 'Rigid2_X', 'Rigid3_X', 'Rigid4_X';... % each column is one tracked point and rows are different coordinates
+                                                            'Rigid1_Y', 'Rigid2_Y', 'Rigid3_Y', 'Rigid4_Y';...
+                                                            'Rigid1_Z', 'Rigid2_Z', 'Rigid3_Z', 'Rigid4_Z'};
+        config.motion.streams{2}.quaternions.channel_names = {'Rigid1_A', 'Rigid2_A', 'Rigid3_A', 'Rigid4_A';...
+                                                            'Rigid1_B', 'Rigid2_B', 'Rigid3_B', 'Rigid4_B';...
+                                                            'Rigid1_C', 'Rigid2_C', 'Rigid3_C', 'Rigid4_C'; ...
+                                                            'Rigid1_D', 'Rigid2_D', 'Rigid3_D', 'Rigid4_D'};
+        
+
         bemobil_xdf2bids(config, ...
             'general_metadata', generalInfo,...
             'participant_metadata', subjectInfo,...
@@ -229,23 +209,9 @@ for subject = 1:20
     %----------------------------------------------------------------------
     config.set_folder             = studyFolder;
     config.session_names            = sessionNames;
-    config.raw_EEGLAB_data_folder   = '2_raw-EEGLAB-testing';
+    config.raw_EEGLAB_data_folder   = '2_raw-EEGLAB';                       % a folder to store .set files 
     
-    % match labels in electrodes.tsv and channels.tsv
-    matchlocs = {};
-    letters = {'g', 'y', 'r', 'w', 'n'};
-    for Li = 1:numel(letters)
-        letter = letters{Li}; 
-        for Ni = 1:32
-            matchlocs{Ni + (Li-1)*32,1} = [letter num2str(Ni)]; % channel name in electrodes.tsv
-            matchlocs{Ni + (Li-1)*32,2} = ['BrainVision RDA_' upper(letter) num2str(Ni, '%02.f')]; % channel name in channels.tsv 
-        end
-    end
-    
-    [matchlocs{157:159,1}] = deal(''); 
-    config.match_electrodes_channels = matchlocs; 
-    config.other_data_types = {'motion'}; 
-    config.use_nominal_srate = {'phasespace'};
-%     bemobil_bids2set(config);
+    config.other_data_types = {'motion'};                                   % specify which other data type than eeg is there (only 'motion' and 'physio' supported atm)
+    bemobil_bids2set(config);
 
 end
