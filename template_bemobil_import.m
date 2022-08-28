@@ -40,7 +40,7 @@ generalInfo = [];
 
 % required for dataset_description.json
 generalInfo.dataset_description.Name                = 'name of your data set';
-generalInfo.dataset_description.BIDSVersion         = 'version of BIDS-specification you are following';
+generalInfo.dataset_description.BIDSVersion         = 'version of BIDS-specification you are following'; % if sharing motion data, use "unofficial extension"
 
 % optional for dataset_description.json
 generalInfo.dataset_description.License             = 'licence type';
@@ -83,14 +83,14 @@ motionInfo.motion = [];
 
 % system 1 information
 motionInfo.motion.TrackingSystems(1).TrackingSystemName               = tracking_systems{1};
-motionInfo.motion.TrackingSystems(1).Manufacturer                     = 'HTC';
-motionInfo.motion.TrackingSystems(1).ManufacturersModelName           = 'Vive Pro';
+motionInfo.motion.TrackingSystems(1).Manufacturer                     = 'HTC'; % manufacturer of the motion capture system
+motionInfo.motion.TrackingSystems(1).ManufacturersModelName           = 'Vive Pro'; % model name of the tracking system
 motionInfo.motion.TrackingSystems(1).SamplingFrequency                = 90; %  If no nominal Fs exists, n/a entry returns 'n/a'. If it exists, n/a entry returns nominal Fs from motion stream.
 motionInfo.motion.TrackingSystems(1).DeviceSerialNumber               = 'n/a'; 
 motionInfo.motion.TrackingSystems(1).SoftwareVersions                 = 'n/a'; 
-motionInfo.motion.TrackingSystems(1).SpatialAxes                      = 'FRU'; 
-motionInfo.motion.TrackingSystems(1).RotationRule                     = 'left-hand'; 
-motionInfo.motion.TrackingSystems(1).RotationOrder                    = 'ZXY'; 
+motionInfo.motion.TrackingSystems(1).SpatialAxes                      = 'FRU'; % XYZ spatial axes description 
+motionInfo.motion.TrackingSystems(1).RotationRule                     = 'left-hand'; % if rotation is present, does it follow the left-hand or right-hand rule?
+motionInfo.motion.TrackingSystems(1).RotationOrder                    = 'ZXY'; % order of euler angles' extrinsic rotation
 
 % system 2 information
 motionInfo.motion.TrackingSystems(2).TrackingSystemName               = tracking_systems{2};
@@ -174,14 +174,16 @@ for subject = 1:20
         config.session                = sessionNames{session};              % optional
         config.overwrite              = 'on';                               % optional
         
-        config.eeg.stream_name        = 'YourEEGStreamName';                % required, replace with the unique keyword in your eeg .xdf stream
+        config.eeg.stream_name        = 'YourEEGStreamName';                % required, replace with the unique keyword in your eeg stream in the .xdf file
         
         %------------------------------------------------------------------
         
         config.motion.streams{1}.xdfname            = 'YourStreamNameInXDF'; % replace with name of the stream corresponding to the first tracking system
-        config.motion.streams{1}.bidsname           = tracking_systems{1};  % new, comprehensible name to represent the tracking system 
+        config.motion.streams{1}.bidsname           = tracking_systems{1};  % a comprehensible name to represent the tracking system 
         config.motion.streams{1}.tracked_points     = 'headRigid';          % name of the point that is being tracked in the tracking system, the keyword has to be containted in the channel name (see "bemobil_bids_motionconvert")
         config.motion.streams{1}.tracked_points_anat= 'head';               % example of how the tracked point can be renamed to body part name for metadata
+       
+        % names of position and quaternion channels in each stream
         config.motion.streams{1}.positions.channel_names    = {'headRigid_Rigid_headRigid_X';  'headRigid_Rigid_headRigid_Y' ; 'headRigid_Rigid_headRigid_Z' };
         config.motion.streams{1}.quaternions.channel_names  = {'headRigid_Rigid_headRigid_quat_W';'headRigid_Rigid_headRigid_quat_Z';...
                                                                'headRigid_Rigid_headRigid_quat_X';'headRigid_Rigid_headRigid_quat_Y'};
