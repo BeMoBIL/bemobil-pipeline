@@ -1,3 +1,10 @@
+% This example was used to import data set used in MoBI workshop, SanDiego 2022 
+% All paths are examples and to be adjusted to match where you have your
+% toolboxes and data on your PC
+% TODO : where to find the data
+%--------------------------------------------------------------------------
+% author : sein.jeung@campus.tu-berlin.de
+
 addpath('M:\8_Conferences\MoBI_Workshop_2022\public\toolboxes\eeglab2022.0')
 addpath('M:\8_Conferences\MoBI_Workshop_2022\public\toolboxes\fieldtrip-master') 
 
@@ -8,12 +15,11 @@ eeglab;
 ftPath = fileparts(which('ft_defaults'));
 addpath(fullfile(ftPath, 'external','xdf')); 
 
-% your data folder 
+% data folder 
 dataFolder                  = 'P:\Sein_Jeung\Project_BIDS\Workshop_2022'; 
 
 
-%% inspect .xdf data
-
+%% [optional] inspect.xdf data
 % file name 
 xdfFilePath                 = fullfile(dataFolder, 'source-data\vp_24\vp_24_walk.xdf');
 
@@ -33,56 +39,10 @@ for iStream = 1:nStreams
 end
 
 % find out the right permutation for quaternion conversion 
-% bemobil_inspect_quaternion_convert(xdfStreams{1}, [4:7])
-
-%% convert xdf to bids with minimal metadata 
-config                        = []; 
-config.filename               = xdfFilePath;                                % required, string, full path to the xdf file 
-config.bids_target_folder     = '1_BIDS-data';                              % required, string, bids target folder to be created
-config.subject                = 24;                                         % required, subject numerical ID
-config.session                = 'walk';                                     % optional, string, session name if there were multiple sessions 
-config.task                   = 'VisualDiscrimination';                     % optional, string, task name, default value 'defaultTask'
-
-config.eeg.stream_name        = 'BrainVision';                              % required, string, a unique keyword in EEG stream to be searched for
-
-% cell array of stream and tracking system names to be assigned to the streams
-xdfNames                      = {'PhaseSpace_Rigid1',...
-                                'PhaseSpace_Rigid2',...
-                                'PhaseSpace_Rigid3',...
-                                'PhaseSpace_Rigid4',...
-                                'PhaseSpace_Rigid5',...
-                                'PhaseSpace_Rigid6',...
-                                'PhaseSpace_Rigid7',...
-                                'PhaseSpace_Rigid8',...
-                                'PhaseSpace_Rigid9'};
-bidsNames                     = {'PhaseSpaceHead',...
-                                'PhaseSpaceLeftThigh',...
-                                'PhaseSpaceLeftLowerLeg',...
-                                'PhaseSpaceLeftAnkle',...
-                                'PhaseSpaceLeftForeFoot',...
-                                'PhaseSpaceRightThigh',...
-                                'PhaseSpaceRightLowerLeg',...
-                                'PhaseSpaceRightAnkle',...
-                                'PhaseSpaceRightForeFoot'};
-
-% iterate over streams to configure each of them
-for Si = 1:9
-    config.motion.streams{Si}.xdfname        = xdfNames{Si}; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
-    config.motion.streams{Si}.bidsname       = bidsNames{Si}; % optional, name to be assgined in BIDS file name key-value pair as tracking system name
-    config.motion.streams{Si}.tracked_points = {['Rigid' num2str(Si)]}; % reuired, keyword in channel names, indicating which object (tracked point) is included in the stream
-    config.motion.streams{Si}.positions.channel_names =  {['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_X'];...
-                                                            ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_Y'];...
-                                                            ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_Z']};
-    config.motion.streams{Si}.quaternions.channel_names = {['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_A'];...
-                                                            ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_B'];...
-                                                            ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_C'];...
-                                                            ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_D']};
-end
-
-bemobil_xdf2bids(config); 
+bemobil_inspect_quaternion_convert(xdfStreams{1}, [4:7])
 
 
-%% convert xdf to bids with more metadata 
+%% specify metadata
 % general metadata shared across all modalities
 %--------------------------------------------------------------------------
 generalInfo = [];
@@ -174,25 +134,78 @@ for TSi=1:9
     motionInfo.motion.TrackingSystems(TSi).RotationOrder               = 'ZXY';
 end
 
-% change output directory for contrasting with the version with no meta
-config.bids_target_folder     = '1_BIDS-data-fullmeta';     
+%% fill out config fields common to all .xdf files 
+config                        = [];
+config.bids_target_folder     = '1_BIDS-data';                              % required, string, bids target folder to be created
+config.task                   = 'VisualDiscrimination';                     % optional, string, task name, default value 'defaultTask'
 
-bemobil_xdf2bids(config, ...
-    'general_metadata', generalInfo,...
-    'participant_metadata', subjectInfo,...
-    'motion_metadata', motionInfo, ...
-    'eeg_metadata', eegInfo);
+config.eeg.stream_name        = 'BrainVision';                              % required, string, a unique keyword in EEG stream to be searched for
+
+% cell array of stream and tracking system names to be assigned to the streams
+xdfNames                      = {'PhaseSpace_Rigid1',... % stream name (or unique keyword) in .xdf file
+                                 'PhaseSpace_Rigid2',...
+                                 'PhaseSpace_Rigid3',...
+                                 'PhaseSpace_Rigid4',...
+                                 'PhaseSpace_Rigid5',...
+                                 'PhaseSpace_Rigid6',...
+                                 'PhaseSpace_Rigid7',...
+                                 'PhaseSpace_Rigid8',...
+                                 'PhaseSpace_Rigid9'};
+bidsNames                     = {'PhaseSpaceHead',... % how the tracking system (= stream) should be renamed in BIDS
+                                 'PhaseSpaceLeftThigh',...
+                                 'PhaseSpaceLeftLowerLeg',...
+                                 'PhaseSpaceLeftAnkle',...
+                                 'PhaseSpaceLeftForeFoot',...
+                                 'PhaseSpaceRightThigh',...
+                                 'PhaseSpaceRightLowerLeg',...
+                                 'PhaseSpaceRightAnkle',...
+                                 'PhaseSpaceRightForeFoot'};
+
+% iterate over streams to configure each of them
+for Si = 1:9
+    config.motion.streams{Si}.xdfname        = xdfNames{Si}; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
+    config.motion.streams{Si}.bidsname       = bidsNames{Si}; % optional, name to be assgined in BIDS file name key-value pair as tracking system name
+    config.motion.streams{Si}.tracked_points = {['Rigid' num2str(Si)]}; % reuired, keyword in channel names, indicating which object (tracked point) is included in the stream
+    config.motion.streams{Si}.positions.channel_names =  {['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_X'];...
+        ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_Y'];...
+        ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_Z']};
+    config.motion.streams{Si}.quaternions.channel_names = {['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_A'];...
+        ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_B'];...
+        ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_C'];...
+        ['PhaseSpace_Rigid' num2str(Si) '_Rigid' num2str(Si) '_D']};
+end
+
+
+%% iterate over participants and sessions to convert .xdf to BIDS formatted data
+subjects        = cell2mat(subjectInfo.data(:,1)); 
+sessionNames 	= {'walk', 'stand'}; 
+
+for subject = subjects
+     
+    config.subject                = subject;                                         % required, subject numerical ID
+       
+    for iSes = 1:2
         
+        config.filename               = fullfile(dataFolder, 'source-data\vp_' num2str(subject) '\vp_' num2str(subject) '_ ' sessionNames[iSes} '.xdf');
+        config.session                = sessionNames{iSes};                                     % optional, string, session name if there were multiple sessions
 
-%% convert bids to set
-%--------------------------------------------------------------------------
-config                          = [];
-config.bids_target_folder       = '1_BIDS-data-fullmeta';                          
-config.set_folder               = dataFolder;
-config.subject                  = 24; 
-config.session_names            = {'walk'};
-config.raw_EEGLAB_data_folder   = '1_raw-EEGLAB';
-config.other_data_types         = {'motion'};
+        bemobil_xdf2bids(config, ...
+            'general_metadata', generalInfo,...
+            'participant_metadata', subjectInfo,...
+            'motion_metadata', motionInfo, ...
+            'eeg_metadata', eegInfo);
+    end
+    
+    %% convert bids to set
+    %----------------------------------------------------------------------
+    config                          = [];
+    config.set_folder               = dataFolder;
+    config.session_names            = sessionNames;
+    config.raw_EEGLAB_data_folder   = '1_raw-EEGLAB';
+    config.other_data_types         = {'motion'};
+    
+    bemobil_bids2set(config);
+end
 
-bemobil_bids2set(config);
+
 
