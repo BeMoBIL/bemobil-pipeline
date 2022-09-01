@@ -177,7 +177,7 @@ end
 
 
 %% iterate over participants and sessions to convert .xdf to BIDS formatted data
-subjects        = cell2mat(subjectInfo.data(:,1)); 
+subjects        = cell2mat(subjectInfo.data(:,1))'; 
 sessionNames 	= {'walk', 'stand'}; 
 
 for subject = subjects
@@ -186,7 +186,7 @@ for subject = subjects
        
     for iSes = 1:2
         
-        config.filename               = fullfile(dataFolder, 'source-data\vp_' num2str(subject) '\vp_' num2str(subject) '_ ' sessionNames[iSes} '.xdf');
+        config.filename               = fullfile(dataFolder, ['source-data\vp_' num2str(subject) '\vp_' num2str(subject) '_' sessionNames{iSes} '.xdf']);
         config.session                = sessionNames{iSes};                                     % optional, string, session name if there were multiple sessions
 
         bemobil_xdf2bids(config, ...
