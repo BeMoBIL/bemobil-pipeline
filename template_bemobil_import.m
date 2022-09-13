@@ -207,9 +207,11 @@ for subject = 1:20
             'eeg_metadata', eegInfo);
     end
     
-    % configuration for bemobil bids2set
+    fclose all
+    
+    %% configuration for bemobil bids2set
     %----------------------------------------------------------------------
-    config.set_folder             = studyFolder;
+    config.set_folder               = studyFolder;
     config.session_names            = sessionNames;
     config.raw_EEGLAB_data_folder   = '2_raw-EEGLAB';                       % a folder to store .set files 
     
