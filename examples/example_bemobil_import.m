@@ -29,6 +29,7 @@ addpath(fullfile(ftPath, 'external','xdf'));
 % ------------ IMPORTANT --------------
 % Adapt this data path to the place where you put the example data!
 studyDataFolder             = 'P:\bemobil-pipeline\example-upload-folder\data';
+error('You need to adjust the data path in the example import script!') % Delete this line if you have adjusted the path!
 % ------------ IMPORTANT --------------
 
 sourceFolder                = '0_source-data';
