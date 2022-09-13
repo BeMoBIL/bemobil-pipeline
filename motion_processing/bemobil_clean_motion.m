@@ -44,10 +44,16 @@ for i_dim = 1:3
     
     disp(['Cleaning and interpolating ' EEG_motion.chanlocs(eul_indices(i_dim)).labels ', allowing a maximum of ' num2str(this_threshold*EEG_motion.srate) ' rad/sec as angular velocity...'])
     
-    if this_threshold < 0.04 || this_threshold > 0.4
-        warning(['threshold for cleaning was ' num2str(this_threshold*EEG_motion.srate) 'rad/sec as angular velocity, which is not suitable for cleaning. Using default of '...
-            num2str(0.25*EEG_motion.srate) '!'])
-        this_threshold = 0.25;
+    minthresh = 0.04;
+    maxthresh = 0.4;
+    if this_threshold < minthresh
+        warning(['threshold for cleaning was ' num2str(this_threshold*EEG_motion.srate) 'rad/sec as angular velocity, which is not suitable for cleaning. Using minimum of '...
+            num2str(minthresh*EEG_motion.srate) '!'])
+        this_threshold = minthresh;
+    elseif this_threshold > maxthresh
+        warning(['threshold for cleaning was ' num2str(this_threshold*EEG_motion.srate) 'rad/sec as angular velocity, which is not suitable for cleaning. Using maximum of '...
+            num2str(maxthresh*EEG_motion.srate) '!'])
+        this_threshold = maxthresh;
     end
         
     idx = [false ((velocities < -this_threshold) & ~(velocities < -2*pi - -this_threshold)) |...
