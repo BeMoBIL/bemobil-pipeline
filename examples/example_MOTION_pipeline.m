@@ -1,7 +1,6 @@
 % close all; clear
 
-bemobil_config_script;
-bemobil_config.processed_motion_filename = 'motion_processed_unfilt.set';
+example_bemobil_config_script;
 
 % enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
 subjects = [64 66 76 78];

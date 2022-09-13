@@ -24,7 +24,8 @@ if nargin == 0
 end
 
 % remove excess fieldtrip paths in case they are there
-[~, ftpath] = ft_version;
+ftpath = fileparts(which('ft_defaults'));
+disp('Removing fieldtrip paths that would otherwise replace MATLAB toolboxes...')
 rmpath(fullfile(ftpath, 'external', 'signal'))
 rmpath(fullfile(ftpath, 'external', 'stats'))
 rmpath(fullfile(ftpath, 'external', 'image'))

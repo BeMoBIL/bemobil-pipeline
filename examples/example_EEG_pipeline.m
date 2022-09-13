@@ -1,11 +1,11 @@
 % close all; clear
 
-bemobil_config_script;
+example_bemobil_config_script;
 
 % enter all subjects to process here (you can split it up in more MATLAB instances if you have more CPU power and RAM)
-subjects = [66 64 76 78]; 
+subjects = [64 66 76 78]; 
 
-force_recompute = 1;
+force_recompute = 0;
 
 %% processing loop
 
