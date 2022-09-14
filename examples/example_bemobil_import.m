@@ -213,13 +213,6 @@ for subject = subjects
         config.filename               = fullfile(studyDataFolder, sourceFolder, ['sub-' num2str(subject)] , ['sub-' num2str(subject) '_' sessionNames{iSes} '.xdf']);
         config.session                = sessionNames{iSes};                                     % optional, string, session name if there were multiple sessions
         
-        if subject ~= 24
-            % load electrode position matrix (was first created manually and then exported for this automatic processing)
-            % these were not created for the first small example
-            elec_struct_loaded            = load(fullfile(studyDataFolder, sourceFolder, ['sub-' num2str(subject)] , ['sub-' num2str(subject) '_elec_struct.mat']));
-            config.eeg.elec_struct        = elec_struct_loaded.elec_struct;
-        end
-        
         bemobil_xdf2bids(config, ...
             'general_metadata', generalInfo,...
             'participant_metadata', subjectInfo,...
@@ -230,6 +223,11 @@ for subject = subjects
             
             config.filename               = fullfile(studyDataFolder, sourceFolder, ['sub-' num2str(subject)] , ['sub-' num2str(subject) '_' sessionNames{iSes} '.xdf']);
             config.session                = sessionNames{iSes};                                     % optional, string, session name if there were multiple sessions
+            
+            % load electrode position matrix (was first created manually and then exported for this automatic processing)
+            % these were not created for the first small example
+            elec_struct_loaded            = load(fullfile(studyDataFolder, sourceFolder, ['sub-' num2str(subject)] , ['sub-' num2str(subject) '_elec_struct.mat']));
+            config.eeg.elec_struct        = elec_struct_loaded.elec_struct;
             
             bemobil_xdf2bids(config, ...
                 'general_metadata', generalInfo,...
