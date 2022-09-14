@@ -1,10 +1,10 @@
-% bemobil_process_all_preprocessing - wrapper function that incorporates all necessary processing steps from the basic EEG
+% bemobil_process_all_EEG_preprocessing - wrapper function that incorporates all necessary processing steps from the basic EEG
 % struct (e.g. all blocks merged together, nothing else done before except resampling) up to the preprocessed dataset
 % which has line noise removed, channels interpolated, average reference, and relevant information stored in the EEG
 % struct. Also plots several analytics plots along the way which are stored on disk alongside their respective files.
 %
 % Usage:
-%   >>  [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG_merged,...
+%   >>  [ALLEEG, EEG_interp_avRef, CURRENTSET] = bemobil_process_all_EEG_preprocessing(subject, bemobil_config, ALLEEG, EEG_merged,...
 %     CURRENTSET, force_recompute)
 %
 % Inputs:
@@ -29,7 +29,7 @@
 %
 % Authors: Marius Klug, 2021
 
-function [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_process_all_preprocessing(subject, bemobil_config, ALLEEG, EEG_to_process,...
+function [ALLEEG, EEG_preprocessed, CURRENTSET] = bemobil_process_all_EEG_preprocessing(subject, bemobil_config, ALLEEG, EEG_to_process,...
     CURRENTSET, force_recompute)
 
 % check config

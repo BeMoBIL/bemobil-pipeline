@@ -1,6 +1,7 @@
 
 function motionOut = bemobil_bids_motionconvert(motionIn, objects, streamsConfig)
 % This function performs minimal preprocessing and channel sorting for motion data 
+% Follows WIP BIDS motion specification  
 %--------------------------------------------------------------------------
 
 newCell = {}; 
@@ -217,7 +218,6 @@ for iM = 1:numel(motionIn)
             orientationInEuler         = orientationInEuler';
             occindices                 = find(orientationInQuaternion(1,:) == missingval);
             orientationInEuler(:,occindices) = nan;
-%             orientationInEuler  = fillmissing(orientationInEuler', 'nearest')';
             
             % unwrap euler angles
             orientationInEuler  = unwrap(orientationInEuler, [], 2);
@@ -262,7 +262,7 @@ for iM = 1:numel(motionIn)
         for ii = 1:size(otherData,1)
             motionStream.label{end + 1}                 = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.label;
             motionStream.hdr.label{end + 1}             = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.label;
-            motionStream.hdr.chantype{end + 1}          = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.type;
+            motionStream.hdr.chantype{end + 1}          = 'MISC';
             if isfield( motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}, 'unit')
                 motionStream.hdr.chanunit{end + 1}          = motionStream.hdr.orig.desc.channels.channel{otherChans(ii)}.unit;
             else

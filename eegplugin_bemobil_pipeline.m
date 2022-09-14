@@ -1,6 +1,13 @@
-% eegplugin_bemobil_pipeline() - BeMoBIL pipeline plugin for eeglab
-%   BeMoBIL pipeline is a collection of functionalities
-%   for processing EEG/MoBI data collected at BeMoBIL.
+% eegplugin_bemobil_pipeline() - BeMoBIL pipeline plugin for eeglab 
+% 
+% The BeMoBIL Pipeline is an open-source MATLAB toolbox for fully synchronized, automatic, transparent, and replicable
+% import, processing and visualization of mobile brain/body imaging and other EEG data. It includes wrappers for EEGLAB
+% functions, the use of various EEGLAB plugins, and comes with additional new functionalities. All parameters are
+% configurable in central scripts and everything is stored in the EEG.etc struct. Additionally, analytics plots are
+% generated for each step. A comprehensive guide to installing, using, and understanding the pipeline can be found in
+% our wiki on github!
+%
+% https://github.com/BeMoBIL/bemobil-pipeline
 %
 % Usage:
 %   >> eegplugin_bemobil_pipeline(fig, trystrs, catchstrs);
@@ -10,11 +17,9 @@
 %   trystrs    - [struct] "try" strings for menu callbacks.
 %   catchstrs  - [struct] "catch" strings for menu callbacks.
 %
-% Author: Lukas Gehrke, TU Berlin
+% Author: Lukas Gehrke, Marius Klug, 2022, TU Berlin
 %
 % See also: eeglab()
-
-% Copyright (C) 2016, Lukas Gehrke
 %
 % This program is free software; you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -30,41 +35,17 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1.07  USA
 
-function eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
+function vers = eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
 
-p = fileparts(which('eegplugin_bemobil_pipeline'));
-addpath(genpath(p));
-
-highlevelmenu = findobj(fig,'Label','Tools');
-
-menu = uimenu(highlevelmenu, 'label', 'BeMoBIL Pipeline', 'separator', 'on', 'userdata', 'startup:on');
-
-load_data_menu = uimenu(menu, 'label', '1. Load data');
-uimenu( load_data_menu, 'label', 'From MoBILab', 'CallBack', 'disp(''Starting MoBILab...''); runmobilab;');
-uimenu( load_data_menu, 'label', 'Convert .xdf to .set', 'CallBack', 'disp(''Starting data conversion plugin...''); pop_convert_xdf_to_set();');
-uimenu( load_data_menu, 'label', 'From .set file(s)', 'CallBack', 'disp(''Loading data for eeglab...''); ALLEEG = pop_loadset(); eeglab redraw; disp(''Done.'')');
-uimenu( load_data_menu, 'label', 'Merge multiple .set files and save the created file (optional step)', 'CallBack', 'disp(''Starting merging datasets...''); [ ALLEEG EEG CURRENTSET ] = bemobil_merge( ALLEEG, EEG, CURRENTSET ); eeglab redraw; disp(''Done.'')');
-
-preprocess_menu = uimenu(menu, 'label', '2. Preprocessing', 'CallBack', 'disp(''Starting preprocessing...''); [ ALLEEG EEG CURRENTSET ] = pop_bemobil_process_EEG_basics(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
-
-channel_data_cleaning_menu = uimenu(menu, 'label', '3. Data cleaning (channel level)');
-uimenu( channel_data_cleaning_menu, 'label', '1. Reject irrelevant experiment segments', 'CallBack', 'disp(''Starting segments GUI...''); EEG = pop_bemobil_segment(EEG); eeglab redraw;');
-uimenu( channel_data_cleaning_menu, 'label', 'CleanLine (optional)', 'CallBack', 'disp(''Starting CleanLine...''); EEG = pop_cleanline(EEG); eeglab redraw;');
-uimenu( channel_data_cleaning_menu, 'label', 'Clean_Rawdata (ASR) (optional)', 'CallBack', 'disp(''Starting Clean_Rawdata...''); EEG = pop_clean_rawdata(EEG); eeglab redraw;');
-uimenu( channel_data_cleaning_menu, 'label', '2. Manual channel rejection', 'CallBack', 'disp(''Select channels...''); EEG = pop_select(EEG); eeglab redraw;');
-uimenu( channel_data_cleaning_menu, 'label', '3. Manual time domain cleaning', 'CallBack', 'disp(''Starting data cleaning on channel level...''); pop_eegplot(EEG); eeglab redraw;');
-
-signal_decomposition_menu = uimenu( menu, 'label', '4. Signal decomposition', 'CallBack', 'disp(''Opening AMICA GUI...''); [ALLEEG EEG CURRENTSET] = pop_bemobil_signal_decomposition(ALLEEG, EEG, CURRENTSET); eeglab redraw;');
-
-comp_data_cleaning_menu = uimenu( menu, 'label', '5. Data cleaning (component level)', 'CallBack', 'disp(''Starting data cleaning on component level...''); pop_eegplot(EEG, 0);');
-
-dipfit_menu = uimenu( menu, 'label', '6. Fit single/dual dipoles');
-uimenu( dipfit_menu, 'label', '1. Interpolation & Av Ref', 'CallBack', 'disp(''Starting interpolation and average referencing...''); EEG = bemobil_interp_avref(EEG); eeglab redraw;');
-uimenu( dipfit_menu, 'label', '2. Dipfit', 'CallBack', 'disp(''Starting dipfit GUI...''); EEG = pop_bemobil_dipfit(EEG); eeglab redraw;');
-
-finalize_single_subject_menu = uimenu( menu, 'label', '7. Finalize single subject processing', 'CallBack', 'disp(''Started GUI to copy weights...''); EEG = pop_editset(EEG); eeglab redraw;');
-
-batch_script_menu = uimenu( menu, 'label', '8. Batch processing', 'CallBack', 'disp(''Opening batch template script...''); edit sample_bemobil_batch.m;');
-%uimenu( finalize_single_subject_menu, 'label', '2. Epoching');
-
+    %global EEG
+    vers = '1.9.0';
+    if nargin < 3
+        error('eegplugin_bemobil_pipeline requires 3 arguments');
+    end
+    
+    % add bemobil pipeline folder to path
+    % -----------------------
+    p = fileparts(which('eegplugin_bemobil_pipeline'));
+    addpath(genpath(p));
+    
 end

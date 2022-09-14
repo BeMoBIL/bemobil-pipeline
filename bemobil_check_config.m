@@ -23,6 +23,12 @@ if nargin == 0
     return
 end
 
+% remove excess fieldtrip paths in case they are there
+ftpath = fileparts(which('ft_defaults'));
+disp('Removing fieldtrip paths that would otherwise replace MATLAB toolboxes...')
+rmpath(fullfile(ftpath, 'external', 'signal'))
+rmpath(fullfile(ftpath, 'external', 'stats'))
+rmpath(fullfile(ftpath, 'external', 'image'))
 
 all_config_fields = {
     'study_folder', {}

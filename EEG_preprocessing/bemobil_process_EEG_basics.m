@@ -60,6 +60,8 @@ if save_file_on_disk
 end
 
 % fill/copy all ur_structures with raw data (e.g. copy event to urevent)
+EEG.urevent = [];
+EEG.urchanlocs = [];
 EEG = eeg_checkset(EEG, 'makeur');
 
 % remove unused neck electrodes from file (if BeMoBIL layout is used as is)
@@ -189,7 +191,7 @@ if ~isempty(channel_locations_filepath) % chanlocs are read in here
         {channel_locations_filepath 'filetype' 'autodetect'});
     EEG.urchanlocs = EEG.chanlocs;
 elseif all(~cellfun(@isempty,{EEG.chanlocs.X}))
-    disp('All chanlocs have X coordinates - assuming channel location have been imported.'); 
+    disp('All chanlocs have X coordinates - assuming channel location have been imported already.'); 
 else % no chanlocs present, use default chanlocs
     disp('No chanlocs were provided as path and none were found in the EEG set - looking up standard locs.')
     standard_channel_locations_path =...
@@ -197,6 +199,8 @@ else % no chanlocs present, use default chanlocs
     
     EEG = pop_chanedit(EEG,'lookup',standard_channel_locations_path);
 end
+
+assert(all(~cellfun(@isempty,{EEG.chanlocs.X})),'No chanlocs were present, could be loaded from file, or looked up in the standard dictionary!')
 
 
 % this has to happen after loading chanlocs because chanlocs are being completely overwritten in the process
