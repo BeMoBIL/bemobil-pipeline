@@ -1,4 +1,4 @@
-% bemobil_detect_steps detects walking steps based on the ICA decomposition and a provided gait IC index. Steps are
+% bemobil_detect_steps_from_ICA detects walking steps based on the ICA decomposition and a provided gait IC index. Steps are
 % detected using findpeaks with distance, prominence, and width of the peaks. The parameters can be set and
 % an informed decision about the detector efficacy can be made by the plots of the detection which includes a histogram
 % of the prominences and widths (including those exceeding the thresholds). The detection can be repeated with varying
@@ -25,17 +25,17 @@
 %       plothandles         - handle to the created plots to allow script-based saving and closing
 %
 % Example:
-%        [EEG, plothandles] = bemobil_detect_steps(EEG,idx_step_IC)
-%        [EEG, plothandles] = bemobil_detect_steps(EEG,idx_step_IC,'endSearch',round(3373*EEG.srate))
+%        [EEG, plothandles] = bemobil_detect_steps_from_ICA(EEG,idx_step_IC)
+%        [EEG, plothandles] = bemobil_detect_steps_from_ICA(EEG,idx_step_IC,'endSearch',round(3373*EEG.srate))
 %
 % See also: findpeaks
 %
 % Authors: Marius Klug, Anna Wunderlich, 2022
 
-function [EEG, plothandles] = bemobil_detect_steps(EEG, idx_gait, varargin)
+function [EEG, plothandles] = bemobil_detect_steps_from_ICA(EEG, idx_gait, varargin)
 
 if nargin == 0
-    help bemobil_detect_steps
+    help bemobil_detect_steps_from_ICA
     return
 end
 

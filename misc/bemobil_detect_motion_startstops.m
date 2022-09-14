@@ -16,8 +16,6 @@
 %       movement_threshold_fine     - OPTIONAL fine movement threshold that is used when the coarse detection is positive (default = 0.05)
 %       min_duration                - OPTIONAL minimal movement duration in seconds (default = 0)
 %       detection_buffer            - OPTIONAL buffer that is used when a coarse movement is detected (default = 2)
-%       fine_relative_to_range      - OPTIONAL bool whether or not the fine threshold should be determined relative to
-%                                       the range in the buffer instead of only the maximum (default = 0)
 %       search_timerange            - OPTIONAL timerange in which the search should happen (useful if different
 %                                       conditions exist, default = all data)
 %       createplots                 - OPTIONAL boolean whether plots should be created (default = 1)
@@ -28,12 +26,12 @@
 %
 % Example: 
 %         [EEG_motion, plothandles] = bemobil_detect_motion_startstops(EEG_motion,idx_detect,eventlabel,movement_threshold,...
-%             movement_threshold_fine,min_duration,detection_buffer,fine_relative_to_range,search_timerange,createplots)
+%             movement_threshold_fine,min_duration,detection_buffer,search_timerange,createplots)
 % 
 % Authors: Marius Klug, 2022
 
 function [EEG_motion, plothandles] = bemobil_detect_motion_startstops(EEG_motion,idx_detect,eventlabel,movement_threshold,...
-    movement_threshold_fine,min_duration,detection_buffer,fine_relative_to_range,search_timerange,createplots)
+    movement_threshold_fine,min_duration,detection_buffer,search_timerange,createplots)
 
 if nargin == 0
     help bemobil_ECG_analysis
@@ -72,11 +70,6 @@ end
 if ~exist('detection_buffer','var') || ~isscalar(detection_buffer)
     detection_buffer = 2;
     disp(['Using the default fine detection buffer of ' num2str(detection_buffer) '.'])
-end
-
-if ~exist('fine_relative_to_range','var') || ~(fine_relative_to_range==1 || fine_relative_to_range==0)
-    fine_relative_to_range = 0;
-    disp('Using the default fine threshold relative to the maximum inside the buffer instead of the range.')
 end
 
 if ~exist('search_timerange','var') || ~isvector(search_timerange)
@@ -124,11 +117,7 @@ while timePoint <= search_timerange(2)-detection_buffer_use
     if ~movement
         if data(timePoint) > coarseThreshold
             
-            if ~fine_relative_to_range
-                fineThreshold = max(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
-            else
-                fineThreshold = min(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))+range(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
-            end
+            fineThreshold = min(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))+range(data(max(laststopTimePoint+1,timePoint):timePoint+detection_buffer_use))*movement_threshold_fine;
             
             fineTimePoint = timePoint;
             

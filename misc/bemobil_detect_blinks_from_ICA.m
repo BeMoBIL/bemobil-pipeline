@@ -1,4 +1,4 @@
-% bemobil_detect_blinks detects blinks and saccades based on the ICA decomposition. HEOG and VEOG ICs are automatically
+% bemobil_detect_blinks_from_ICA detects blinks and saccades based on the ICA decomposition. HEOG and VEOG ICs are automatically
 % detected based on their topographies and their spectral power <5Hz. Blinks and saccades are detected using findpeaks
 % with distance, prominence, and width of the peaks. The parameters can be set and an informed decision about the
 % detector efficacy can be made by the plots of the detection which includes a histogram of the prominences and widths
@@ -31,36 +31,36 @@
 %       plothandles         - handle to the created plots to allow script-based saving and closing
 %
 % Example:
-%        [EEG, plothandles] = bemobil_detect_blinks(EEG)
-%        [EEG, plothandles] = bemobil_detect_blinks(EEG,'blink_minProminence',30)
+%        [EEG, plothandles] = bemobil_detect_blinks_from_ICA(EEG)
+%        [EEG, plothandles] = bemobil_detect_blinks_from_ICA(EEG,'blink_minProminence',30)
 %
 % See also: findpeaks
 %
 % Authors: Marius Klug, Anna Wunderlich, 2022
 
-function [EEG, plothandles] = bemobil_detect_blinks(EEG, varargin)
+function [EEG, plothandles] = bemobil_detect_blinks_from_ICA(EEG, varargin)
 
 if nargin == 0
-    help bemobil_detect_blinks
+    help bemobil_detect_blinks_from_ICA
     return
 end
 
 p = inputParser;
 
 % set the desired and optional input arguments
-addRequired(p, 'EEG', @(x) validateattributes(x,{'struct'},{},'bemobil_detect_blinks','EEG'));
-addOptional(p, 'idx_VEOG', [],  @(x) validateattributes(x,{'numeric'},{'positive','integer','scalar'},'bemobil_detect_blinks','idx_VEOG')) 
-addOptional(p, 'idx_HEOG', [],  @(x) validateattributes(x,{'numeric'},{'positive','integer','scalar'},'bemobil_detect_blinks','idx_HEOG')) 
-addOptional(p, 'medianFilterLength', 0.08,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','medianFilterLength')) 
-addOptional(p, 'blink_minPeakDistance', 0.15,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','blink_minPeakDistance')) 
-addOptional(p, 'blink_minPeakWidth', 0.04,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','blink_minPeakWidth')) 
-addOptional(p, 'blink_maxPeakWidth', 0.3,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','blink_maxPeakWidth')) 
-addOptional(p, 'blink_minProminence', 20,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','blink_minProminence')) 
-addOptional(p, 'saccade_minPeakDistance', 0.2,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','saccade_minPeakDistance')) 
-addOptional(p, 'saccade_minPeakWidth', 0,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','saccade_minPeakWidth')) 
-addOptional(p, 'saccade_minProminence', 4,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','saccade_minProminence')) 
-addOptional(p, 'saccade_blink_distance', 0.1,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks','saccade_blink_distance')) 
-addOptional(p, 'store_saccades', 1,  @(x) validateattributes(x,{'numeric','logical'},{'scalar','binary'},'bemobil_detect_blinks','store_saccades')) 
+addRequired(p, 'EEG', @(x) validateattributes(x,{'struct'},{},'bemobil_detect_blinks_from_ICA','EEG'));
+addOptional(p, 'idx_VEOG', [],  @(x) validateattributes(x,{'numeric'},{'positive','integer','scalar'},'bemobil_detect_blinks_from_ICA','idx_VEOG')) 
+addOptional(p, 'idx_HEOG', [],  @(x) validateattributes(x,{'numeric'},{'positive','integer','scalar'},'bemobil_detect_blinks_from_ICA','idx_HEOG')) 
+addOptional(p, 'medianFilterLength', 0.08,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','medianFilterLength')) 
+addOptional(p, 'blink_minPeakDistance', 0.15,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','blink_minPeakDistance')) 
+addOptional(p, 'blink_minPeakWidth', 0.04,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','blink_minPeakWidth')) 
+addOptional(p, 'blink_maxPeakWidth', 0.3,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','blink_maxPeakWidth')) 
+addOptional(p, 'blink_minProminence', 20,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','blink_minProminence')) 
+addOptional(p, 'saccade_minPeakDistance', 0.2,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','saccade_minPeakDistance')) 
+addOptional(p, 'saccade_minPeakWidth', 0,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','saccade_minPeakWidth')) 
+addOptional(p, 'saccade_minProminence', 4,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','saccade_minProminence')) 
+addOptional(p, 'saccade_blink_distance', 0.1,  @(x) validateattributes(x,{'numeric'},{'positive','scalar'},'bemobil_detect_blinks_from_ICA','saccade_blink_distance')) 
+addOptional(p, 'store_saccades', 1,  @(x) validateattributes(x,{'numeric','logical'},{'scalar','binary'},'bemobil_detect_blinks_from_ICA','store_saccades')) 
 
 
 % parse the input
