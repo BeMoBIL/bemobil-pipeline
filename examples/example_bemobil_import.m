@@ -183,7 +183,8 @@ config.bids_target_folder     = fullfile(studyDataFolder, BIDSTargetFolder);    
 config.task                   = 'VisualDiscrimination';                     % optional, string, task name, default value 'defaultTask'
 
 config.eeg.stream_name        = 'BrainVision';                              % required, string, a unique keyword in EEG stream to be searched for
-
+config.eeg.ref_channel        = 'FCz';                                      % optional, relevant only if you want to re-use the ref channel after re-referencing
+        
 % iterate over streams to configure each of them
 for Si = 1:9
     config.motion.streams{Si}.xdfname        = xdfNames{Si}; % required, keyword in stream name, searched for in field "xdfdata{streamIndex}.info.name"
@@ -202,7 +203,7 @@ end
 %% iterate over participants and sessions to convert .xdf to BIDS formatted data and finally BIDS to EEGLAB .set
 subjects        = cell2mat(subjectInfo.data(:,1))';
 
-for subject = subjects(2:end)
+for subject = subjects
     
     config.subject                = subject;                                         % required, subject numerical ID
     
@@ -211,6 +212,13 @@ for subject = subjects(2:end)
         
         config.filename               = fullfile(studyDataFolder, sourceFolder, ['sub-' num2str(subject)] , ['sub-' num2str(subject) '_' sessionNames{iSes} '.xdf']);
         config.session                = sessionNames{iSes};                                     % optional, string, session name if there were multiple sessions
+        
+        if subject ~= 24
+            % load electrode position matrix (was first created manually and then exported for this automatic processing)
+            % these were not created for the first small example
+            elec_struct_loaded            = load(fullfile(studyDataFolder, sourceFolder, ['sub-' num2str(subject)] , ['sub-' num2str(subject) '_elec_struct.mat']));
+            config.eeg.elec_struct        = elec_struct_loaded.elec_struct;
+        end
         
         bemobil_xdf2bids(config, ...
             'general_metadata', generalInfo,...
