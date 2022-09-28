@@ -101,7 +101,7 @@ end
         error(['Colormap not recognized. Please use standard maps, eg. "magma", "summer", or "winter"'...
             newline 'or matrix of at least two rows, eg. [0 0 0; .5 .5 .5];']);
     end
-
+figure;
 t = tiledlayout(2, length(EEG));
 t.TileSpacing = 'compact';
 t.Padding = 'compact';

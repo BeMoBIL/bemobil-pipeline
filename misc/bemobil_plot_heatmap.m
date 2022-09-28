@@ -101,6 +101,7 @@ elseif ~isempty(EEG{1}.epoch)
 end
 pause(.1)
 
+figure('color','w');
 tiledlayout('flow', 'TileSpacing','compact' , 'Padding', 'compact');
 for i = 1:length(EEG)
     
@@ -175,7 +176,11 @@ for i = 1:length(EEG)
     shading interp; xlabel('x coordinate'); ylabel('y coordinate');
     view(0,90);
     axis('image');
-    if addAxes; yline([0 0],'w'); xline([0 0],'w');end
+    if addAxes
+        hold on
+        plot(ylim,[0 0],'w');
+        plot([0 0],xlim,'w');
+    end
     handleList = [handleList; gcf];
 end
 set(gcf, 'Color', 'w');
