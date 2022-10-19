@@ -130,8 +130,8 @@ EEG_motion_filt = pop_eegfiltnew(EEG_motion, 0.5, [], [], 0, [], 0);
 EEG_motion_filt.data(idx_z_1,:) = EEG_motion_filt.data(idx_z_1,:)-min(EEG_motion_filt.data(idx_z_1,:));
 EEG_motion_filt.data(idx_z_2,:) = EEG_motion_filt.data(idx_z_2,:)-min(EEG_motion_filt.data(idx_z_2,:));
 
-[EEG_motion_filt, plots1] = bemobil_detect_motion_startstops(EEG_motion_filt,idx_z_1,'foot1',movement_threshold_quantile,movement_threshold_fine_quantile,min_duration,detection_buffer,1,search_timerange,1);
-[EEG_motion_filt, plots2] = bemobil_detect_motion_startstops(EEG_motion_filt,idx_z_2,'foot2',movement_threshold_quantile,movement_threshold_fine_quantile,min_duration,detection_buffer,1,search_timerange,1);
+[EEG_motion_filt, plots1] = bemobil_detect_motion_startstops(EEG_motion_filt,idx_z_1,'foot1',movement_threshold_quantile,movement_threshold_fine_quantile,min_duration,detection_buffer,search_timerange,1);
+[EEG_motion_filt, plots2] = bemobil_detect_motion_startstops(EEG_motion_filt,idx_z_2,'foot2',movement_threshold_quantile,movement_threshold_fine_quantile,min_duration,detection_buffer,search_timerange,1);
 
 EEG_motion.event = EEG_motion_filt.event;
 plothandles = [plots1 plots2];
