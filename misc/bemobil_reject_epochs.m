@@ -14,6 +14,8 @@
 %   EEG_epoched        - current EEGLAB EEG structure, needs to be epoched
 %   fixed_threshold    - threshold in proportion of epochs to reject (e.g. 0.1 to reject 10%)
 %   weights            - weights for the different features. recommended to keep at [1 1 1 1]
+%   use_max_epochs     - if 1, don't reject based on % or kneepoint, but use a set number of maximum epochs that remains
+%   max_epochs         - the number of best epochs that remain in the data if use_max_epochs is 1
 %   use_kneepoint      - if 1, automatic kneepoint detection is used
 %								instead of fixed threshold for rejection.
 %								can lead to issues if data is too clean or

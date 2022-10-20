@@ -1,7 +1,9 @@
 % This example was used to import data set used in MoBI workshop, SanDiego 2022
 % All paths are examples and to be adjusted to match where you have your
 % toolboxes and data on your PC
-% TODO : where to find the data
+
+% The link to download this data can be found on the BeMoBIL Pipeline git repository!
+
 %--------------------------------------------------------------------------
 % author : sein.jeung@campus.tu-berlin.de
 
