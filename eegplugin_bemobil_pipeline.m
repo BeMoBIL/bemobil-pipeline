@@ -38,7 +38,7 @@
 function vers = eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
 
     %global EEG
-    vers = '2.0.0';
+    vers = '1.9.0';
     if nargin < 3
         error('eegplugin_bemobil_pipeline requires 3 arguments');
     end

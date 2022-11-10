@@ -200,6 +200,7 @@ if ~epoched; ticksXlabels = (num2cell(EEG.times(ticksX)/1000)); labelsX = 's'; e
 
 
 % Design plot
+figure;
 fHandle = tiledlayout(3,2, 'TileSpacing','compact' , 'Padding', 'compact');
 if iscell(motionChannels); motionsize = size(motionChannels,2); end
 if ~iscell(motionChannels); motionsize = 1; end
