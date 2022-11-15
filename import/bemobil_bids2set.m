@@ -354,6 +354,11 @@ for iSub = 1:numel(subDirList)
                 % to prevent ft alt function from meddling with processing
                 rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
                 
+                % remove events with NaN latency before resampling
+                eventLatencies      = [EEG.event(:).latency];
+                nanInds             = find(isnan(eventLatencies));
+                EEG.event(nanInds)  = []; 
+                
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
                 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
                 eegTimes{Ri}        = EEG.times;
