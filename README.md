@@ -8,7 +8,7 @@ A comprehensive guide to installing, using, and understanding the pipeline can b
 
 ***
 
-For a quick start, we recommend you to have a look at the following scripts in the root directory of the pipeline. 
+For a quick start, we recommend you to have a look at the following scripts in the `examples` directory of the pipeline. 
 
     example_bemobil_config.m
     example_bemobil_import_xdf2bids.m
