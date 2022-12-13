@@ -48,7 +48,6 @@ config = checkfield(config, 'subject', 'required', '');
 config = checkfield(config, 'session_names', 'required', '');
 
 % default values
-config = checkfield(config, 'raw_EEGLAB_data_folder', ['2_raw-EEGLAB' filesep], ['2_raw-EEGLAB' filesep]);
 config = checkfield(config, 'filename_prefix', 'sub-', 'sub-');
 config = checkfield(config, 'merged_filename', 'merged', 'merged');
 config = checkfield(config, 'other_data_types', {}, '{}');
@@ -70,7 +69,7 @@ otherDataTypes  = config.other_data_types;
 bidsDir         = fullfile(config.bids_target_folder);
 
 % all runs and sessions are merged by default
-targetDir       = fullfile(config.set_folder, config.raw_EEGLAB_data_folder);
+targetDir       = fullfile(config.set_folder);
 tempDir         = fullfile(targetDir, 'temp_bids');
 
 if isfolder(tempDir)
@@ -354,6 +353,11 @@ for iSub = 1:numel(subDirList)
                 
                 % to prevent ft alt function from meddling with processing
                 rmpath(genpath(fullfile(ftPath, [filesep 'external' filesep 'signal'])))
+                
+                % remove events with NaN latency before resampling
+                eventLatencies      = [EEG.event(:).latency];
+                nanInds             = find(isnan(eventLatencies));
+                EEG.event(nanInds)  = []; 
                 
                 EEG                 = pop_resample( EEG, newSRate); % use filter-based resampling
                 %                 [EEG]       = resampleToTime(EEG, newSRate, EEG.times(1), EEG.times(end), 0); % resample
