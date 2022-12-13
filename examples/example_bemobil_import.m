@@ -30,7 +30,7 @@ addpath(fullfile(ftPath, 'external','xdf'));
 
 % ------------ IMPORTANT --------------
 % Adapt this data path to the place where you put the example data!
-studyDataFolder             = 'P:\bemobil-pipeline\example-upload-folder\data';
+studyDataFolder             = 'P:\bemobil-pipeline\example-upload-folder\visualDiscrimination\data';
 error('You need to adjust the data path in the example import script!') % Delete this line if you have adjusted the path!
 % ------------ IMPORTANT --------------
 
@@ -243,14 +243,13 @@ for subject = subjects
     
     %% convert bids to set
     %----------------------------------------------------------------------
-    config.set_folder               = studyDataFolder;
+    config.set_folder               = fullfile(studyDataFolder,EEGLABTargetFolder);
     config.session_names            = sessionNames;
     if subject == 24
         config.session_names       	= sessionNames(1);
     else
         config.session_names     	= sessionNames;
     end
-    config.raw_EEGLAB_data_folder   = EEGLABTargetFolder;
     config.other_data_types         = {'motion'};
     
     bemobil_bids2set(config);

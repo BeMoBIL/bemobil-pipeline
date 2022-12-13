@@ -211,9 +211,8 @@ for subject = 1:20
     
     %% configuration for bemobil bids2set
     %----------------------------------------------------------------------
-    config.set_folder               = studyFolder;
+    config.set_folder               = fullfile(studyFolder,'2_raw-EEGLAB');
     config.session_names            = sessionNames;
-    config.raw_EEGLAB_data_folder   = '2_raw-EEGLAB';                       % a folder to store .set files 
     
     config.other_data_types = {'motion'};                                   % specify which other data type than eeg is there (only 'motion' and 'physio' supported atm)
     bemobil_bids2set(config);
