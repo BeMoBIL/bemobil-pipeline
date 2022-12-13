@@ -10,15 +10,12 @@ A comprehensive guide to installing, using, and understanding the pipeline can b
 
 For a quick start, we recommend you to have a look at the following scripts in the `examples` directory of the pipeline. 
 
-    example_bemobil_config.m
-    example_bemobil_import_xdf2bids.m
-    example_bemobil_import_bids2set.m
-    example_bemobil_process_all_EEG_data.m
-    example_bemobil_process_all_motion_data.m
+    example_bemobil_config_script.m
+    example_bemobil_import.m
+    example_EEG_pipeline.m
+    example_MOTION_pipeline.m
 
-The importing scripts are complete on their own. If the data is already in BIDS format, one can start with example_bemobil_import_bids2set.m and skip xdf2bids.m.
-
-The scripts `example_bemobil_process_all_EEG_data.m` and `example_bemobil_process_all_motion_data.m` will all load `example_bemobil_config.m`. So the configuration file serves as the summary of settings used throughout the pipeline. Comments within the files explain the parameters. These scripts are the only scripts that need to be run. They contain all steps from the source xdf data over the raw imported data to the processed and cleaned data, and allow batch processing of all subjects.
+The import script is complete on its own. The scripts `example_EEG_pipeline.m` and `example_MOTION_pipeline.m` will all load `example_bemobil_config_script.m`. So the configuration file serves as the summary of settings used throughout the processing. Comments within the files explain the parameters. These scripts are the only scripts that need to be run. They contain all steps from the source xdf data over the raw imported data to the processed and cleaned data, and allow batch processing of all subjects.
 
 The `example_bemobil_import.m` script contains an exemplary import process from xdf over BIDS to EEGLAB structure. If you already have your data in EEGLAB set files you may skip this step entirely, if you have your data already in BIDS, you can just run the bottom part that loads from BIDS to EEGLAB set. Specific instruction is given as comments.
 
