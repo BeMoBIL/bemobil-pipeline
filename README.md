@@ -6,6 +6,8 @@ All parameters are configurable in central scripts and everything is stored in t
 
 A comprehensive guide to installing, using, and understanding the pipeline can be found [in our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki)!
 
+A full example dataset can be found [on OSF](https://doi.org/10.17605/OSF.IO/8UPNW).
+
 ***
 
 For a quick start, we recommend you to have a look at the following scripts in the `examples` directory of the pipeline. 
