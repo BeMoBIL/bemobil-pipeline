@@ -6,7 +6,7 @@ All parameters are configurable in central scripts and everything is stored in t
 
 A comprehensive guide to installing, using, and understanding the pipeline can be found [in our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki)!
 
-The BeMoBIL Pipeline can be cited as a preprint: 
+The BeMoBIL Pipeline can be cited as follows: 
 
 Klug, M., Jeung, S., Wunderlich, A., Gehrke, L., Protzak, J., Djebbara, Z., Argubi-Wollesen, A., Wollesen, B., & Gramann, K. (2022). The BeMoBIL Pipeline for automated analyses of multimodal mobile brain and body imaging data. In bioRxiv (p. 2022.09.29.510051). https://doi.org/10.1101/2022.09.29.510051
 
