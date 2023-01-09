@@ -10,8 +10,8 @@ bemobil_config.filename_prefix = 'sub-';
 
 % ------------ IMPORTANT --------------
 % Adapt this data path to the place where you put the example data!
-bemobil_config.study_folder             = 'P:\bemobil-pipeline\example-upload-folder\data\';
 error('You need to adjust the data path in the example config script!') % Delete this line if you have adjusted the path!
+bemobil_config.study_folder             = 'P:\bemobil-pipeline\example-upload-folder\visualDiscrimination\data\';
 % ------------ IMPORTANT --------------
 
 bemobil_config.source_data_folder = ['0_source-data' filesep];
