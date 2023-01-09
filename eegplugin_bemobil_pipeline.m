@@ -17,7 +17,7 @@
 %   trystrs    - [struct] "try" strings for menu callbacks.
 %   catchstrs  - [struct] "catch" strings for menu callbacks.
 %
-% Author: Lukas Gehrke, Marius Klug, 2022, TU Berlin
+% Author: Klug, M., Jeung, S., Wunderlich, A., Gehrke, L., Protzak, J., Djebbara, Z., Argubi-Wollesen, A., Wollesen, B., & Gramann, K. (2022). 
 %
 % See also: eeglab()
 %
@@ -38,7 +38,7 @@
 function vers = eegplugin_bemobil_pipeline(fig, try_strings, catch_strings)
 
     %global EEG
-    vers = '1.9.0';
+    vers = '2.0.0';
     if nargin < 3
         error('eegplugin_bemobil_pipeline requires 3 arguments');
     end
