@@ -75,7 +75,10 @@ function bemobil_xdf2bids(config, varargin)
 %--------------------------------------------------------------------------
 %       config.phys.streams{1}.stream_name             = 'force1';             % optional
 %
-%--------------------------------------------------------------------------
+% 
+% 
+%
+%
 % Optional Inputs :
 %       Provide optional inputs as key value pairs.
 %       Usage:
@@ -90,6 +93,7 @@ function bemobil_xdf2bids(config, varargin)
 % Authors :
 %       Sein Jeung (seinjeung@gmail.com) & Soeren Grothkopp (s.grothkopp@secure.mailbox.org)
 %--------------------------------------------------------------------------
+
 
 % add load_xdf to path
 ft_defaults
@@ -162,14 +166,15 @@ if importMotion
     end
     
     % default channel types and units
+    % following CMIXF-12, BIDS v1.8.0 appendix on Units
     motion_type.POS.unit        = 'm';
     motion_type.ORNT.unit       = 'rad';
     motion_type.VEL.unit        = 'm/s';
-    motion_type.ANGVEL.unit     = 'r/s';
-    motion_type.ACC.unit        = 'm/s^2';
-    motion_type.ANGACC.unit     = 'r/s^2';
+    motion_type.GYRO.unit       = 'rad/s';
+    motion_type.ACCEL.unit      = 'm/s^2';
+    motion_type.ANGACC.unit     = 'rad/s^2';
     motion_type.MAGN.unit       = 'fm';
-    motion_type.JNTANG.unit     = 'r';
+    motion_type.JNTANG.unit     = 'rad';
     motion_type.LATENCY.unit    = 'seconds';
     
 end
