@@ -179,6 +179,10 @@ if importMotion
     
 end
 
+% BIDS-motion Keywords list (according to BEP 029, Jan 2023)
+componentKeywords       = {'x' ,'y', 'z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'n/a'};
+channelTypeKeywords     = {'ACCEL', 'ANGACC', 'GYRO', 'JNTANG', 'LATENCY', 'MAGN', 'MISC', 'ORNT', 'POS', 'TIME', 'VEL'};
+
 % physio-related fields
 %--------------------------------------------------------------------------
 if importPhys
@@ -957,6 +961,8 @@ if importMotion
                 disp(['Using custom unit ' config.motion.(motionChanType).unit ' for type ' motionChanType])
             elseif isfield(motion_type, motionChanType)
                 motion.hdr.chanunit{ci} = motion_type.(motionChanType).unit;
+            else
+                motion.hdr.chanunit{ci} = 'n/a';
             end
             
             splitlabel                                      = regexp(motion.hdr.label{ci}, '_', 'split');
@@ -981,6 +987,14 @@ if importMotion
             
             motioncfg.channels.component{end+1}    = splitlabel{end};
             
+            % make sure that the type and component keywords conform to BIDS 
+            if ~any(strcmp(motioncfg.channels.type{end},channelTypeKeywords))
+                motioncfg.channels.type{end}         = 'MISC';
+            end
+            
+            if ~any(strcmp(motioncfg.channels.component{end},componentKeywords))
+                motioncfg.channels.component{end}    = 'n/a'; 
+            end
         end
         
         % tracking system-specific information
