@@ -985,7 +985,11 @@ if importMotion
                 motioncfg.channels.placement{end+1}            = 'n/a';
             end
             
-            motioncfg.channels.component{end+1}    = splitlabel{end};
+            if strcmp(splitlabel{end-1}, 'quat')
+                motioncfg.channels.component{end+1}    = ['quat_' splitlabel{end}];
+            else
+                motioncfg.channels.component{end+1}    = splitlabel{end};
+            end
             
             % make sure that the type and component keywords conform to BIDS 
             if ~any(strcmp(motioncfg.channels.type{end},channelTypeKeywords))
