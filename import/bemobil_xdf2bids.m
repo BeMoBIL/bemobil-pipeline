@@ -934,6 +934,10 @@ if importMotion
             end
         end
         
+        if isempty(streamInds)
+            continue; 
+        end
+        
         % select stream configuration
         streamsConfig       = config.motion.streams(streamConfigInds);
         
@@ -973,7 +977,7 @@ if importMotion
             
             % assign object names and anatomical positions
             for iN = 1:numel(rb_names)
-                if contains(lower(motion.hdr.label{ci}),lower(rb_names{iN}))
+                if contains(lower(motion.hdr.label{ci}),lower(rb_names{iN})) && ~contains(lower(motion.hdr.label{ci}), 'latency')
                     motioncfg.channels.tracked_point{end+1}        = rb_names{iN};
                     motioncfg.channels.placement{end+1}            = rb_anat{iN};
                 end
