@@ -4,7 +4,7 @@ The BeMoBIL Pipeline is an open-source MATLAB toolbox for fully synchronized, au
 
 All parameters are configurable in central scripts and everything is stored in the EEG.etc struct. Additionally, analytics plots are generated for each step.
 
-A comprehensive guide to using and understanding the pipeline can be found [in our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki)!
+A comprehensive guide to using and understanding the pipeline can be found [in our wiki on github](https://github.com/BeMoBIL/bemobil-pipeline/wiki) and example data and scripts can be downloaded [from OSF](https://doi.org/10.17605/OSF.IO/8UPNW)!
 
 The BeMoBIL Pipeline can be cited as follows: 
 
