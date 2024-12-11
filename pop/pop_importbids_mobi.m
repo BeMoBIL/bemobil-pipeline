@@ -646,8 +646,8 @@ for iSubject = 2:size(bids.participants,1)
                 bids.otherdata  = [];
                 
                 % extract data type
-                splitName       = regexp(otherFileRaw,'_','split');
-                datatype        = splitName{end}(1:end-4);
+                splitName           = regexp(otherFileRaw,'_','split');
+                datatype            = splitName{end}(1:end-4);
              
                 joinedName          = join(splitName, '_'); 
                 otherFileJSON       = [joinedName{1}(1:end-3) 'json']; 
@@ -760,7 +760,7 @@ for iSubject = 2:size(bids.participants,1)
                                 useLatency = ~isempty(latencyInd);
                                 if useLatency
                                     latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
-                                    latencyRowInData = find(strcmp(headers, latencyHeader));
+                                    latencyRowInData = latencyInd-1;
                                 end
                             elseif strcmp(datatype,'physio')
                                 % check if the tracking system comes with latency
